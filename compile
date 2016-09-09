@@ -1,0 +1,40 @@
+#!/bin/bash
+
+name=$1
+cpp=$2
+
+
+/software/gcc/5.2.0/bin/g++ \
+-std=c++11 \
+-msse4.2 \
+-Wall \
+-Wextra \
+-O3 \
+-g \
+source/$cpp \
+-I. \
+ \
+-L/software/gcc/5.2.0/lib64/ \
+-Wl,-rpath,/software/gcc/5.2.0/lib64/ \
+ \
+-o $name
+
+
+
+#-pedantic -Wall -Wextra -Werror
+#/software/gcc/5.2.0/bin/g++ src/j_test.cpp -std=c++11 -pthread -O3 -mavx -mcx16 -msse4.2 -g -L/software/gcc/5.2.0/lib64/ -Wl,-rpath,/software/gcc/5.2.0/lib64/ -ldl -Iinclude/ -I/home/maier/PHD/HashTables/Implementation/Competitors/junction/ -I/home/maier/PHD/HashTables/Implementation/Competitors/junction/ -I/home/maier/PHD/HashTables/Implementation/Competitors/junction/build/include/ -I/home/maier/PHD/HashTables/Implementation/Competitors/turf/ -I/home/maier/PHD/HashTables/Implementation/Competitors/junction/build/turf/include/ -L/home/maier/PHD/HashTables/Implementation/Competitors/junction/build/ -L/home/maier/PHD/HashTables/Implementation/Competitors/junction/build/turf/ -ljunction -lturf -o compiled/j_test
+
+
+#-D USE_MEM_POOL \
+#\
+#../linear_probing/simplehashelement.cpp \
+#../linear_probing/markableelement.cpp \
+
+#-fsanitize=thread \
+#-fPIE \
+#-pie \
+#-I/home/maier/RANDOM/glog/glog_install/include/ \
+
+#-Wl,-rpath,/home/maier/RANDOM/glog/glog_install/lib/ \
+#-L/home/maier/RANDOM/glog/glog_install/lib/ \
+#-lglog \
