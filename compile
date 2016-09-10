@@ -4,7 +4,7 @@ name=$1
 cpp=$2
 
 
-/software/gcc/5.2.0/bin/g++ \
+g++ \
 -std=c++11 \
 -msse4.2 \
 -Wall \
@@ -13,9 +13,6 @@ cpp=$2
 -g \
 source/$cpp \
 -I. \
- \
--L/software/gcc/5.2.0/lib64/ \
--Wl,-rpath,/software/gcc/5.2.0/lib64/ \
  \
 -o $name
 

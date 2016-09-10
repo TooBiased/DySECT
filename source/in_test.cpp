@@ -33,10 +33,10 @@ int main(int, char**)
     std::cout << "table generated"      << std::endl;
     for (size_t i = 0; i < n; ++i)
     {
-        std::cout << "i: " << i << std::endl;
+        //std::cout << "i: " << i << std::endl;
         if (!table.insert(keys[i], i))
         {
-            std::cout << "!!!" << std::endl;
+            //std::cout << "!!!" << std::endl;
             ++errors;
             
             if (first)
@@ -45,8 +45,11 @@ int main(int, char**)
                 std::cout << "first error at i=" << i << std::endl;
             }
         }
-        std::cout << "ei: " << i << std::endl;
+        //std::cout << "ei: " << i << std::endl;
     }
+
+    std::cout << "number of errors: " << errors << std::endl;
+     
 
     delete[] keys;
     
