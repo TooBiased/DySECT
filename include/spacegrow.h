@@ -6,6 +6,7 @@
 #include <iostream>
 #include <vector>
 #include <tuple>
+#include <random>
 
 #define MIN_LLS 256
 
@@ -24,50 +25,60 @@ public:
 
     using BFSQueue     = std::vector<std::tuple<Key, size_t, size_t> >;
 
-    static constexpr size_t max_vis_nodes = 20;
-    
-    inline static bool expand(Parent_t& p, BFSQueue& q, size_t tab, size_t loc)
-    {
-        Bucket_t tbuck = p.llt[tab].getBucket(loc);
-        if (!tbuck.p[4-1].first) return true;
+    static constexpr size_t max_vis_nodes = 256;
 
-        for (size_t i = 0; i < 4; ++i)
+    Parent& p;
+
+    dstrat_bfs(Parent& _p) : p(_p) { }
+    
+    inline bool expand(BFSQueue& q, size_t tab, size_t loc)
+    {
+        Bucket_t* tbuck = p.llt[tab].getBucket(loc);
+        if (!(tbuck->p[p.bs-1].first)) return true; // There is empty space in the bucket
+
+        for (size_t i = 0; i < p.bs; ++i)
         {
-            Key k = tbuck.p[i].first;
+            Key k = tbuck->p[i].first;
             
-            std::cout << k << std::flush;
+            //std::cout << k << std::flush;
 
             auto hash = p.h(k);
-            if ((tab == hash.tab1) && (loc == hash.loc1))
+            size_t t1 = hash.tab1;
+            size_t t2 = hash.tab2;
+            size_t l1 = hash.loc1;
+            size_t l2 = hash.loc2;
+            
+            if        (tab == t1)
             {
-                size_t tab = hash.tab2;
-                size_t loc = hash.loc2;
-                std::cout << "   tab: " << tab << "   loc: " << loc << std::endl;
-                q.push_back(std::tuple<Key, size_t, size_t>(k, tab, loc));
+                //std::cout << "1: " << k <<"   tab: " << t2 << "   loc: " << l2 << std::endl;
+                q.push_back(std::tuple<Key, size_t, size_t>(k, t2, l2));
+            } else if (tab == t2)
+            {
+                //std::cout << "2: " << k << "   tab: " << t1 << "   loc: " << l1 << std::endl;
+                q.push_back(std::tuple<Key, size_t, size_t>(k, t1, l1));
             } else
             {
-                size_t tab = hash.tab1;
-                size_t loc = hash.loc1;
-                std::cout << "   tab: " << tab << "   loc: " << loc << std::endl;
-                q.push_back(std::tuple<Key, size_t, size_t>(k, tab, loc));
+                //std::cout << "3:" << k << "ts: " << t1 << " " << t2 << "  ls: " << l1 << " " << l2 << std::endl;
             }
         }
         return false;
     }
 
-    inline static bool rollBackDisplacements(Parent_t& p, BFSQueue& q, size_t i)
+    inline bool rollBackDisplacements(BFSQueue&, size_t)
     {
         return true;
     }
     
-    inline static bool insert(Parent_t& p, Key k, Data , HashSplitter hash)
+    inline bool insert(Key k, Data , HashSplitter hash)
     {
         std::vector<std::tuple<Key, size_t, size_t> > bq;
         size_t tab = hash.tab1;
         size_t loc = hash.loc1;
+        //std::cout << "b1: " << tab << " " << loc << std::endl;
         bq.push_back(std::tuple<Key, size_t, size_t>(k, tab, loc));
         tab = hash.tab2;
         loc = hash.loc2;
+        //std::cout << "b2: " << tab << " " << loc << std::endl;
         bq.push_back(std::tuple<Key, size_t, size_t>(k, tab, loc));
         for (size_t i = 0; i < max_vis_nodes; ++i)
         {
@@ -75,7 +86,40 @@ public:
             size_t tab;
             size_t loc;
             std::tie(k, tab, loc) = bq[i];
-            if (expand(p, bq, tab, loc)) return rollBackDisplacements(p, bq, i);
+            if (expand(bq, tab, loc)) return rollBackDisplacements(bq, i);
+        }
+        
+        return false;
+    }
+};
+
+template<class Parent>
+class dstrat_rwalk
+{
+public:
+    using Key          = typename Parent::Key;
+    using Data         = typename Parent::Data;
+    using Parent_t     = typename Parent::This_t;
+    using HashSplitter = typename Parent::HashSplitter;
+    using LLTable_t    = typename Parent::LLTable_t;
+    using Bucket_t     = typename Parent::Bucket_t;
+
+    static constexpr size_t max_steps = 256;
+
+    Parent& p;
+    std::mt19937 re;
+    
+    bool insert(Key k, Data d, HashSplitter hash)
+    {
+        std::vector<std::pair<Key, Data> > queue;
+        std::uniform_int_distribution<size_t> bin(0,1);
+        std::uniform_int_distribution<size_t> bsd(0,p.bs);
+
+        queue.push_back(std::make_pair(k,d));
+        
+        for (size_t i = 0; i < max_steps; ++i)
+        {
+            std::cout << "." << std::endl;
         }
         
         return false;
@@ -101,15 +145,19 @@ public:
     using HashFct   = H;
     
 
-    SpaceGrow(size_t capacity, double size_constraint = 1.05)
+    SpaceGrow(size_t capacity, double size_constraint = 1.05) : displacer(*this)
     {
+        std::cout << "this_size:      " << sizeof(This_t)     << std::endl;
+        std::cout << "dis_strat_size: " << sizeof(DisStrat_t) << std::endl;
+        std::cout << "hasher_size:    " << sizeof(HashFct)    << std::endl;
+        std::cout << "lltable_size:   " << sizeof(LLTable_t)  << std::endl;
+        
         double dIni = double(capacity) * size_constraint / double(TL);
         if (dIni < MIN_LLS)
         {
             for (size_t i = 0; i < TL; ++i)
             {
                 //std::cout << i <<  ":" << std::flush;
-                lls[i] = MIN_LLS;
                 llt[i] = LLTable_t(MIN_LLS);
             }
         } else
@@ -122,7 +170,6 @@ public:
             for (size_t i = gIni; i < TL; ++i)
             {
                 //std::cout << i << ":" << std::flush;
-                lls[i] = iIni;
                 llt[i] = LLTable_t(iIni);
             }
 
@@ -131,7 +178,6 @@ public:
             for (size_t i = 0; i < gIni; ++i)
             {
                 //std::cout << i <<  ":" << std::flush;
-                lls[i] = iIni;
                 llt[i] = LLTable_t(iIni);
             }
 
@@ -152,18 +198,6 @@ public:
     bool remove(Key k);
     
 private:
-    using  This_t     = SpaceGrow<K,D,H,DS,TL,BS>;
-    using  LLTable_t  = LowerLevelTable<K,D,BS>;
-    using  Bucket_t   = Bucket<K,D,BS>;
-    using  DisStrat_t = DS<This_t>;
-    friend DisStrat_t;
-    //constexpr size_t nll = TL; // number of lower level tables
-    
-    size_t    lls[TL];  // sizes of lower level tables
-    LLTable_t llt[TL];  // lower level tables
-
-    HashFct   hasher;
-
     union HashSplitter {
         std::uint64_t hash;
         struct
@@ -174,15 +208,31 @@ private:
             uint64_t loc2: 24;
         };
     };
+    
     static_assert( sizeof(HashSplitter)==8,
                    "Size of HashSep Object does is not 64bit=8Byte!" );
-
+    
     HashSplitter h(Key k)
     {
         HashSplitter a;
         a.hash = hasher(k);
         return a;
     }
+    
+    using  This_t     = SpaceGrow<K,D,H,DS,TL,BS>;
+    using  LLTable_t  = LowerLevelTable<K,D,BS>;
+    using  Bucket_t   = Bucket<K,D,BS>;
+    using  DisStrat_t = DS<This_t>;
+    friend DisStrat_t;
+    //constexpr size_t nll = TL; // number of lower level tables
+    
+    alignas(128) LLTable_t llt[TL];  // lower level tables
+
+    const size_t bs = BS;
+    HashFct    hasher;  
+    DisStrat_t displacer;
+
+    void grow(size_t i);
 };
 
 
@@ -221,8 +271,9 @@ public:
     bool   remove(Key k,         size_t loc);
 
     int    probe (Key k,         size_t loc);
-    Bucket_t getBucket(size_t loc) { return btable[bucket(loc)]; }
-    
+    Bucket_t* getBucket(size_t loc) { return &(btable[bucket(loc)]); }
+    void   migrate(const LowerLevelTable& target);
+        
 private:
     //constexpr size_t sB = BS;
 
@@ -291,10 +342,10 @@ bool SpaceGrow<K,D,HF,DS,TL,BS>::insert(Key k, Data d)
     }
     else
     {
-        DisStrat_t::insert(*this, k, d, hash);
+        return displacer.insert(k, d, hash);
         // no space, make space
         //std::cout << "no space left, make space" << std::endl;
-        return false;
+        //return false;
     }
 }
 
@@ -316,6 +367,15 @@ bool SpaceGrow<K,D,HF,DS,TL,BS>::remove(Key k)
     if (p1) return true;
     else    return llt[hash.tab2].remove(k,hash.loc2);
 }
+
+template<class K, class D, class HF, template<class> class DS, size_t TL, size_t BS>
+void SpaceGrow<K,D,HF,DS,TL,BS>::grow(size_t i)
+{
+    LLTable_t ntab((llt[i].bitmask+1) << 1); // generates a table with twice the size
+    llt[i].migrate(ntab);
+    llt[i] = std::move(ntab);
+}
+
 
 
 
@@ -348,6 +408,20 @@ int LowerLevelTable<K,D,BS>::probe(Key k, size_t loc)
     return btable[bucket(loc)].probe(k);
 }
 
+template<class K, class D, size_t BS>
+void LowerLevelTable<K,D,BS>::migrate(const LowerLevelTable& target)
+{
+    for (size_t i = 0; i <= bitmask; ++i)
+    {
+        Bucket_t& b = btable[i];
+        for (size_t j = 0; j < BS; ++j)
+        {
+            if (!b.p[j].first) break;
+            
+        }
+    }
+}
+
 
 
 
@@ -373,7 +447,7 @@ typename Bucket<K,D,BS>::FRet Bucket<K,D,BS>::find(Key k)
     for (size_t i = 0; i < BS; ++i)
     {
         if (!p[i].first )      return std::make_pair(false, Data());
-        if ( p[i].first == k ) return std::make_pair(true, p[i].data);
+        if ( p[i].first == k ) return std::make_pair(true, p[i].second);
     }
     return std::make_pair(false, Data());
 }

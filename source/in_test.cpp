@@ -31,6 +31,7 @@ int main(int, char**)
     SpaceGrow<size_t, size_t, crc_hasher> table(n);
     
     std::cout << "table generated"      << std::endl;
+    
     for (size_t i = 0; i < n; ++i)
     {
         //std::cout << "i: " << i << std::endl;
@@ -43,13 +44,24 @@ int main(int, char**)
             {
                 first = false;
                 std::cout << "first error at i=" << i << std::endl;
-                break;
+                //break;
             }
         }
         //std::cout << "ei: " << i << std::endl;
     }
 
-    std::cout << "number of errors: " << errors << std::endl;
+    std::cout << "inserted elements encountered " << errors << " errors" << std::endl;
+
+    auto count = 0;
+    errors = 0;
+    for (size_t i = 0; i < n; ++i)
+    {
+        auto e = table.find(keys[i]);
+        if (e.first && (e.second == i)) count++;
+        else errors++;
+    }
+
+    std::cout << "count: " << count << "  errors: " << errors << std::endl;
      
 
     delete[] keys;
