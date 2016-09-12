@@ -24,23 +24,32 @@ public:
 
     using BFSQueue     = std::vector<std::tuple<Key, size_t, size_t> >;
 
-    static constexpr size_t max_vis_nodes = 1024;
+    static constexpr size_t max_vis_nodes = 20;
     
     inline static bool expand(Parent_t& p, BFSQueue& q, size_t tab, size_t loc)
     {
         Bucket_t tbuck = p.llt[tab].getBucket(loc);
-        if (!tbuck[4-1].first) return true;
+        if (!tbuck.p[4-1].first) return true;
 
         for (size_t i = 0; i < 4; ++i)
         {
-            Key k = tbuck[i].first;
+            Key k = tbuck.p[i].first;
+            
+            std::cout << k << std::flush;
+
             auto hash = p.h(k);
             if ((tab == hash.tab1) && (loc == hash.loc1))
             {
-                q.push_back(std::tuple<Key, size_t, size_t>(k, hash.tab2, hash.loc2));
+                size_t tab = hash.tab2;
+                size_t loc = hash.loc2;
+                std::cout << "   tab: " << tab << "   loc: " << loc << std::endl;
+                q.push_back(std::tuple<Key, size_t, size_t>(k, tab, loc));
             } else
             {
-                q.push_back(std::tuple<Key, size_t, size_t>(k, hash.tab1, hash.loc1));
+                size_t tab = hash.tab1;
+                size_t loc = hash.loc1;
+                std::cout << "   tab: " << tab << "   loc: " << loc << std::endl;
+                q.push_back(std::tuple<Key, size_t, size_t>(k, tab, loc));
             }
         }
         return false;
@@ -48,14 +57,18 @@ public:
 
     inline static bool rollBackDisplacements(Parent_t& p, BFSQueue& q, size_t i)
     {
-        return false;
+        return true;
     }
     
     inline static bool insert(Parent_t& p, Key k, Data , HashSplitter hash)
     {
         std::vector<std::tuple<Key, size_t, size_t> > bq;
-        bq.push_back(std::tuple<Key, size_t, size_t>(k, hash.tab1, hash.loc1));
-        bq.push_back(std::tuple<Key, size_t, size_t>(k, hash.tab2, hash.loc2));
+        size_t tab = hash.tab1;
+        size_t loc = hash.loc1;
+        bq.push_back(std::tuple<Key, size_t, size_t>(k, tab, loc));
+        tab = hash.tab2;
+        loc = hash.loc2;
+        bq.push_back(std::tuple<Key, size_t, size_t>(k, tab, loc));
         for (size_t i = 0; i < max_vis_nodes; ++i)
         {
             Key k;
@@ -239,8 +252,6 @@ public:
     
     int    probe (Key k);
     
-    
-private:
     std::pair<Key, Data> p[BS];
 };
 

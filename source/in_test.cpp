@@ -43,6 +43,7 @@ int main(int, char**)
             {
                 first = false;
                 std::cout << "first error at i=" << i << std::endl;
+                break;
             }
         }
         //std::cout << "ei: " << i << std::endl;
