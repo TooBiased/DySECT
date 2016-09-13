@@ -28,7 +28,7 @@ int main(int, char**)
     auto errors = 0;
     bool first  = true;
     
-    SpaceGrow<size_t, size_t, crc_hasher> table(n);
+    SpaceGrow<size_t, size_t, murmur_hasher> table(n);
     
     std::cout << "table generated"      << std::endl;
     
@@ -58,11 +58,13 @@ int main(int, char**)
     {
         auto e = table.find(keys[i]);
         if (e.first && (e.second == i)) count++;
+        else if (e.first) std::cout << "wat" << std::endl;
         else errors++;
     }
 
     std::cout << "count: " << count << "  errors: " << errors << std::endl;
-     
+
+    table.printHist();
 
     delete[] keys;
     
