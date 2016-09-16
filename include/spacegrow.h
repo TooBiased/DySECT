@@ -21,12 +21,11 @@ public:
     using Data         = typename Parent::Data;
     using Parent_t     = typename Parent::This_t;
     using HashSplitter = typename Parent::HashSplitter;
-    //using LLTable_t    = typename Parent::LLTable_t;
     using Bucket_t     = typename Parent::Bucket_t;
 
     using BFSQueue     = std::vector<std::tuple<Key, int, Bucket_t*> >;
 
-    static constexpr size_t max_vis_nodes = 256;
+    static constexpr size_t max_vis_nodes = 180;
 
     Parent& p;
 
@@ -34,12 +33,7 @@ public:
     
     inline bool expand(BFSQueue& q, size_t index)
     {
-        Key       tk;
-        int       prev;
-        Bucket_t* b;
-        std::tie(tk, prev, b) = q[index];
-            
-        if (! b->p[p.bs-1].first) return true; // There is empty space in the bucket
+        Bucket_t* b = std::get<2>(q[index]);
 
         if (q.size() >= max_vis_nodes) return false;
         
@@ -47,8 +41,6 @@ public:
         {
             Key k = b->p[i].first;
             
-            //std::cout << k << std::flush;
-
             auto hash = p.h(k);
             Bucket_t* b1 = p.getBucket1(hash);
             Bucket_t* b2 = p.getBucket2(hash);
@@ -56,9 +48,11 @@ public:
             if        (b == b1)
             {
                 q.push_back(std::tuple<Key, int, Bucket_t*>(k, index, b2));
+                if (! b2->p[p.bs-1].first) return true;
             } else if (b == b2)
             {
                 q.push_back(std::tuple<Key, int, Bucket_t*>(k, index, b1));
+                if (! b1->p[p.bs-1].first) return true;
             } else
             {
                 std::cout << "unexpectedly in wrong bucket?" << std::endl;
@@ -67,16 +61,12 @@ public:
         return false;
     }
 
-    inline bool rollBackDisplacements(Key k, Data d, BFSQueue& bq, size_t start)
+    inline bool rollBackDisplacements(Key k, Data d, BFSQueue& bq)
     {
-        //std::cout << "start: " << start << std::endl;
-        
         Key       k1;
         int       prev1;
         Bucket_t* b1;
-        std::tie(k1, prev1, b1) = bq[start];
-
-        //std::cout << "prev1: " << prev1 << std::endl;
+        std::tie(k1, prev1, b1) = bq[bq.size()-1];
 
         Key       k2;
         int       prev2;
@@ -120,15 +110,8 @@ public:
         
         for (size_t i = 0; i < max_vis_nodes; ++i)
         {
-            if (expand(bq, i)) return rollBackDisplacements(k, d, bq, i);
+            if (expand(bq, i)) return rollBackDisplacements(k, d, bq);
         }
-
-        //std::cout << "expanded nodes: ";
-        //for (size_t i = 0; i < max_vis_nodes; ++i)
-        //{
-        //   std::cout << std::get<2>(bq[i]) << "  ";
-        //}
-        //std::cout << std::endl;
         
         return false;
     }
@@ -142,10 +125,9 @@ public:
     using Data         = typename Parent::Data;
     using Parent_t     = typename Parent::This_t;
     using HashSplitter = typename Parent::HashSplitter;
-    //using LLTable_t    = typename Parent::LLTable_t;
     using Bucket_t     = typename Parent::Bucket_t;
 
-    static constexpr size_t max_steps = 512;
+    static constexpr size_t max_steps = 128;
 
     Parent& p;
     std::mt19937 re;
@@ -203,25 +185,24 @@ class Bucket;
 //class LowerLevelTable;
 
 template<class K, class D, class H = std::hash<K>,
-         template<class> class DS = dstrat_rwalk,
-         size_t TL = 256, size_t BS = 4>   // ALPHA (SIZE CONSTRAINT COULD BE PARAMETER BUT INTEGRAL TYPE PROBLEM)
+         template<class> class DS = dstrat_bfs,
+         size_t TL = 512, size_t BS = 4>   // ALPHA (SIZE CONSTRAINT COULD BE PARAMETER BUT INTEGRAL TYPE PROBLEM)
 class SpaceGrow
 {
 public:
     using Key       = K;
     using Data      = D;
-    using FRet      = std::pair<bool, Data>;
-    using HashFct   = H;
-    
+    using FRet      = std::pair<bool, Data>;    
 
-    SpaceGrow(size_t capacity, double size_constraint = 1.05) : displacer(*this)
+    SpaceGrow(size_t _capacity = 0, double size_constraint = 1.1)
+        : nElements(0), alpha(size_constraint), displacer(*this)
     {
         std::cout << "this_size:      " << sizeof(This_t)     << std::endl;
         std::cout << "dis_strat_size: " << sizeof(DisStrat_t) << std::endl;
-        std::cout << "hasher_size:    " << sizeof(HashFct)    << std::endl;
+        std::cout << "hasher_size:    " << sizeof(HashFct_t)    << std::endl;
         //std::cout << "lltable_size:   " << sizeof(LLTable_t)  << std::endl;
         
-        double dIni = double(capacity) * size_constraint / double(TL);
+        double dIni = double(_capacity) * size_constraint / double(TL);
         if (dIni < MIN_LLS)
         {
             for (size_t i = 0; i < TL; ++i)
@@ -229,12 +210,16 @@ public:
                 llb[i] = (MIN_LLS/BS) - 1;
                 llt[i] = std::make_unique<Bucket_t[]>(MIN_LLS/BS);
             }
+            curGrowAmount = MIN_LLS;
+            curGrowTable  = 0;
+            capacity      = MIN_LLS*TL;
+            
         } else
         {
             size_t iIni = MIN_LLS;
             while (dIni > (iIni << 1)) iIni <<= 1;
 
-            size_t gIni = std::floor(double(capacity) * size_constraint / double(iIni))-TL;;
+            size_t gIni = std::floor(double(_capacity) * size_constraint / double(iIni))-TL;;
             
             for (size_t i = gIni; i < TL; ++i)
             {
@@ -242,7 +227,12 @@ public:
                 llt[i] = std::make_unique<Bucket_t[]>(iIni/BS);
             }
 
-            iIni <<= 1;
+            curGrowAmount = iIni;
+            curGrowTable  = gIni;
+            capacity       = (gIni+TL) * iIni;
+            std::cout << "capacity:          " << (gIni+TL)*iIni << std::endl;
+            
+            iIni         <<= 1;
 
             for (size_t i = 0; i < gIni; ++i)
             {
@@ -250,7 +240,6 @@ public:
                 llt[i] = std::make_unique<Bucket_t[]>(iIni/BS);
             }
 
-            std::cout << "space:          " << (gIni+TL)*(iIni >> 1) << std::endl;
         }
     }
 
@@ -269,16 +258,31 @@ public:
     void printHist();
     
 private:
+    static_assert(TL > 0, "TL must be a power of two > 0");
+    
+    using  This_t     = SpaceGrow<K,D,H,DS,TL,BS>;
+    using  Bucket_t   = Bucket<K,D,BS>;
+    using  HashFct_t  = H;
+    using  DisStrat_t = DS<This_t>;
+    friend DisStrat_t;
+
+    static constexpr size_t log(size_t k)
+    {
+        return (k) ? 1+log(k>>1) : 0;
+    }
+    
     union HashSplitter {
         std::uint64_t hash;
         struct
         {
-            uint64_t tab1: 8;
-            uint64_t tab2: 8;
-            uint64_t loc1: 24;
-            uint64_t loc2: 24;
+            uint64_t tab1 : log(TL)-1;
+            uint64_t tab2 : log(TL)-1;
+            uint64_t loc1 : 32-log(TL)+1;
+            uint64_t loc2 : 32-log(TL)+1;
         };
     };
+    
+    static_assert( (log(4) == 3), "log(4) should be 3" );
     
     static_assert( sizeof(HashSplitter)==8,
                    "Size of HashSep Object does is not 64bit=8Byte!" );
@@ -289,20 +293,21 @@ private:
         a.hash = hasher(k);
         return a;
     }
-    
-    using  This_t     = SpaceGrow<K,D,H,DS,TL,BS>;
-    using  Bucket_t   = Bucket<K,D,BS>;
-    using  DisStrat_t = DS<This_t>;
-    friend DisStrat_t;
-    
-    alignas(128) size_t                      llb[TL];
-    alignas(128) std::unique_ptr<Bucket_t[]> llt[TL];  // lower level tables
 
+    size_t       nElements;
+    size_t       curGrowAmount;
+    size_t       curGrowTable;;
+    size_t       capacity;
+    double       alpha;
     const size_t bs = BS;
-    HashFct    hasher;  
-    DisStrat_t displacer;
+    HashFct_t    hasher;  
+    DisStrat_t   displacer;
+    
+    alignas(64) size_t                      llb[TL];
+    alignas(64) std::unique_ptr<Bucket_t[]> llt[TL];  // lower level tables
 
-    void grow(size_t i);
+    void incElements();
+    void grow();
     void migrate(size_t i, std::unique_ptr<Bucket_t[]>& target, size_t tBitmask);
 
     Bucket_t* getBucket1(HashSplitter h)
@@ -347,32 +352,36 @@ bool SpaceGrow<K,D,HF,DS,TL,BS>::insert(Key k, Data d)
         
     auto p1 = getBucket1(hash)->probe(k);//llt[ hash.tab1 ].probe( k, hash.loc1 );
     auto p2 = getBucket2(hash)->probe(k);//llt[ hash.tab2 ].probe( k, hash.loc2 );
-
-
     
     if ((p1 < 0) || (p2 < 0)) return false;
+
+    auto r = false;
     
     // SHOULD CHECK, IF ALREADY INCLUDED
     if (p1 > p2)
     {
         // insert into p1
-        return getBucket1(hash)->insert(k,d); //llt[ hash.tab1 ].insert(k, d, hash.loc1);
+        r = getBucket1(hash)->insert(k,d);
     }
     else if (p2 > p1)
     {
         // insert into p2
-        return getBucket2(hash)->insert(k,d); //llt[ hash.tab2 ].insert(k, d, hash.loc2);
+        r = getBucket2(hash)->insert(k,d);
     }
     else if (p1)
     {
         // insert into p1
-        return getBucket1(hash)->insert(k,d); //llt[ hash.tab1 ].insert(k, d, hash.loc1);
+        r = getBucket1(hash)->insert(k,d);
     }
     else
     {
         // no space => displace stuff
-        return displacer.insert(k, d, hash);
+        r = displacer.insert(k, d, hash);
     }
+    
+    if (r) incElements();
+
+    return r;
 }
 
 template<class K, class D, class HF, template<class> class DS, size_t TL, size_t BS>
@@ -396,23 +405,34 @@ bool SpaceGrow<K,D,HF,DS,TL,BS>::remove(Key k)
 }
 
 template<class K, class D, class HF, template<class> class DS, size_t TL, size_t BS>
-void SpaceGrow<K,D,HF,DS,TL,BS>::grow(size_t i)
+void SpaceGrow<K,D,HF,DS,TL,BS>::grow()
 {
-    size_t nsize = (llb[i]+1) << 1; //double the previous size
-    auto   ntab  = std::make_unique<Bucket_t[]>((llb[i]+1)<<1);
-    migrate(i, ntab, nsize-1);
-    llb[i] = nsize-1;
-    llt[i] = ntab;
+    size_t nsize = (curGrowAmount << 1)/BS; //double the previous size
+    auto   ntab  = std::make_unique<Bucket_t[]>(nsize);
+    migrate(curGrowTable, ntab, nsize-1);
+    llb[curGrowTable] = nsize-1;
+    llt[curGrowTable] = std::move(ntab);
+    capacity          += curGrowAmount;
+    if (++curGrowTable == TL) { curGrowTable = 0; curGrowAmount <<= 1; }
 }
 
 template<class K, class D, class HF, template<class> class DS, size_t TL, size_t BS>
-void SpaceGrow<K,D,HF,DS,TL,BS>::migrate(size_t i, std::unique_ptr<Bucket_t[]>& target, size_t bitmask)
+void SpaceGrow<K,D,HF,DS,TL,BS>::incElements()
 {
-    for (Bucket_t* curr = &(llt[i][0]); curr <= &(llt[i][llb[i]]); ++curr)
+    ++nElements;
+    if (capacity + curGrowAmount < nElements * alpha) grow();
+}
+
+template<class K, class D, class HF, template<class> class DS, size_t TL, size_t BS>
+void SpaceGrow<K,D,HF,DS,TL,BS>::migrate(size_t tab, std::unique_ptr<Bucket_t[]>& target, size_t bitmask)
+{
+    for (size_t i = 0; i <= llb[tab]; ++i) //Bucket_t* curr = &(llt[i][0]); curr <= &(llt[i][llb[i]]); ++curr)
     {
-        for (size_t i = 0; i < BS; ++i)
+        Bucket_t* curr = &(llt[tab][i]);
+        for (size_t j = 0; j < BS; ++j)
         {
-            auto e    = curr.p[i];
+            auto e    = curr->p[j];
+            if (! e.first) break;
             auto hash = h(e.first);
             if      (getBucket1(hash) == curr) target[bitmask & hash.loc1].insert(e.first, e.second);
             else if (getBucket2(hash) == curr) target[bitmask & hash.loc2].insert(e.first, e.second);
@@ -445,6 +465,24 @@ void SpaceGrow<K,D,HF,DS,TL,BS>::printHist()
     }
 
     std::cout << "contains: " << count << std::endl;
+
+
+    for (size_t i = 0; i < BS; ++i) hist[i] = 0;
+    
+    for (size_t j = 0; j <= llb[0]; ++j)
+    {
+        auto a = llt[0][j].probe(1);
+        if (a >= 0) ++hist[a];
+    }
+
+    count = 0u;
+    for (size_t i = 0; i < BS; ++i)
+    {
+        std::cout << i << "  " << hist[i] << std::endl;
+        count += hist[i] * (BS - i);
+    }
+    std::cout << "first table contains: " << count << std::endl;
+    
 }
 
 

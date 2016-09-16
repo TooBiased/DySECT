@@ -28,7 +28,7 @@ int main(int, char**)
     auto errors = 0;
     bool first  = true;
     
-    SpaceGrow<size_t, size_t, murmur_hasher> table(n);
+    SpaceGrow<size_t, size_t, murmur_hasher> table(0, 1.16);
     
     std::cout << "table generated"      << std::endl;
     
