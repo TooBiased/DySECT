@@ -28,26 +28,22 @@ int main(int, char**)
     auto errors = 0;
     bool first  = true;
     
-    SpaceGrow<size_t, size_t, murmur_hasher> table(0, 1.16);
+    SpaceGrow<size_t, size_t, murmur_hasher> table(0, 1.1, 1007);
     
     std::cout << "table generated"      << std::endl;
     
     for (size_t i = 0; i < n; ++i)
     {
-        //std::cout << "i: " << i << std::endl;
         if (!table.insert(keys[i], i))
         {
-            //std::cout << "!!!" << std::endl;
             ++errors;
             
             if (first)
             {
                 first = false;
                 std::cout << "first error at i=" << i << std::endl;
-                //break;
             }
         }
-        //std::cout << "ei: " << i << std::endl;
     }
 
     std::cout << "inserted elements encountered " << errors << " errors" << std::endl;

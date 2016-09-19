@@ -11,7 +11,12 @@
 
 #define MIN_LLS 256
 
-
+template <class T>
+inline void out (const T& t, size_t w)
+{
+    std::cout.width(w);
+    std::cout << t << " " << std::flush;
+}
 
 template<class Parent>
 class dstrat_bfs
@@ -25,12 +30,12 @@ public:
 
     using BFSQueue     = std::vector<std::tuple<Key, int, Bucket_t*> >;
 
-    Parent&      p;
+    Parent&      tab;
     const size_t visit;
     size_t*      hist;
 
     dstrat_bfs(Parent& parent, size_t steps = 256, size_t t = 0)
-        : p(parent), visit((steps) ? steps : 256)
+        : tab(parent), visit((steps) ? steps : 256)
     {
         (void)t; /* parameter t is for symmetry with "rwalk" therefore unused*/
         hist = new size_t[visit];
@@ -45,23 +50,23 @@ public:
 
         if (q.size() >= visit) return false;
         
-        for (size_t i = 0; i < p.bs; ++i)
+        for (size_t i = 0; i < tab.bs; ++i)
         {
             Key k = b->p[i].first;
             
-            auto hash = p.h(k);
-            Bucket_t* b1 = p.getBucket1(hash);
-            Bucket_t* b2 = p.getBucket2(hash);
+            auto hash = tab.h(k);
+            Bucket_t* b1 = tab.getBucket1(hash);
+            Bucket_t* b2 = tab.getBucket2(hash);
             
             if        (b == b1)
             {
-                q.push_back(std::tuple<Key, int, Bucket_t*>(k, index, b2));
-                if (! b2->p[p.bs-1].first) return true;
+                q.emplace_back(k, index, b2);
+                if (! b2->p[tab.bs-1].first) return true;
             }
             else if (b == b2)
             {
-                q.push_back(std::tuple<Key, int, Bucket_t*>(k, index, b1));
-                if (! b1->p[p.bs-1].first) return true;
+                q.emplace_back(k, index, b1);
+                if (! b1->p[tab.bs-1].first) return true;
             }
             else
             {
@@ -92,7 +97,7 @@ public:
             {
                 std::cout << "serious issue with rollBack " << k1
                           << " pop " << pop.first << " " << pop.second << std::endl;
-                for (size_t i = 0; i < p.bs; ++i)
+                for (size_t i = 0; i < tab.bs; ++i)
                 {
                     std::cout << b2->p[i].first << " " << b2->p[i].second << std::endl;
                 }
@@ -114,8 +119,8 @@ public:
     inline bool insert(Key k, Data d, HashSplitter hash)
     {
         BFSQueue bq;
-        Bucket_t* b1 = p.getBucket1(hash);
-        Bucket_t* b2 = p.getBucket2(hash);
+        Bucket_t* b1 = tab.getBucket1(hash);
+        Bucket_t* b2 = tab.getBucket2(hash);
 
         bq.push_back(std::tuple<Key, int, Bucket_t*>(k, -1, b1));
         bq.push_back(std::tuple<Key, int, Bucket_t*>(k, -1, b2));
@@ -139,13 +144,13 @@ public:
     using HashSplitter = typename Parent::HashSplitter;
     using Bucket_t     = typename Parent::Bucket_t;
 
-    Parent&      p;
+    Parent&      tab;
     std::mt19937 re;
     const size_t max_steps;
     size_t*      hist;
 
     dstrat_rwalk(Parent& parent, size_t steps=256, size_t seed=30982391937209388ull)
-        : p(parent), re((seed) ? seed : 30982391937209388ull), max_steps((steps) ? steps : 256)
+        : tab(parent), re((seed) ? seed : 30982391937209388ull), max_steps((steps) ? steps : 256)
     {
         hist = new size_t[max_steps];
         for (size_t i = 0; i < max_steps; ++i)
@@ -157,68 +162,52 @@ public:
     {        
         std::vector<std::tuple<Key, Data, Bucket_t*> > queue;
         std::uniform_int_distribution<size_t> bin(0,1);
-        std::uniform_int_distribution<size_t> bsd(0,p.bs-1);
+        std::uniform_int_distribution<size_t> bsd(0,tab.bs-1);
 
         auto    tk = k;
         auto    td = d;
         Bucket_t* tb;
         
-        if (bin(re)) tb = p.getBucket1(hash);
-        else         tb = p.getBucket2(hash);
+        if (bin(re)) tb = tab.getBucket1(hash);
+        else         tb = tab.getBucket2(hash);
 
-        queue.push_back(std::tuple<Key, Data, Bucket_t*>(tk,td,tb));
+        queue.emplace_back(tk,td,tb);
 
-        for (size_t i = 0; tb->p[p.bs-1].first && i<max_steps; ++i)
+        for (size_t i = 0; tb->p[tab.bs-1].first && i<max_steps; ++i)
         {
             auto r = bsd(re);
             tk = tb->p[r].first;
             td = tb->p[r].second;
-            auto hash = p.h(tk);
-            if (p.getBucket1(hash) == tb) tb = p.getBucket2(hash);
-            else                          tb = p.getBucket1(hash);
+            auto hash = tab.h(tk);
+            if (tab.getBucket1(hash) == tb) tb = tab.getBucket2(hash);
+            else                          tb = tab.getBucket1(hash);
 
             queue.push_back(std::tuple<Key, Data, Bucket_t*>(tk,td,tb));
-        }
 
-        if (tb->p[p.bs-1].first) { return false; }
+
+            // Explicit Cycle Detection (they are popped from the displacement queue)
+            for (size_t j = 0; j < queue.size() - 1; ++j)
+            {
+                if (std::get<2>(queue[j]) == tb)
+                {
+                    while (queue.size() > j+1) queue.pop_back();
+                    break;
+                }
+            }            
+        }
+        
+        if (tb->p[tab.bs-1].first) { return false; }
 
         hist[queue.size() -1] += 1;
-
-        static size_t asdf = 0;
         
         for (size_t i = queue.size()-1; i > 0; --i)
-        {
+        {            
             std::tie(tk,td,tb) = queue[i];
-            if (! std::get<2>(queue[i-1])->remove(tk))
-            {
-                for (size_t i = 0; i < queue.size(); ++i)
-                {
-                    size_t    tk, td;
-                    Bucket_t* tb;
-                    std::tie(tk,td,tb) = queue[i];
-                    std::cout << "key:" << tk << " into:" << tb << std::endl;
-                }
-                /*
-                std::cout << "e2 i:" << i << " s:" << queue.size()  << " " << asdf << std::endl
-                                 << std::get<2>(queue[i-1])->p[0].first
-                          << " " << std::get<2>(queue[i-1])->p[1].first
-                          << " " << std::get<2>(queue[i-1])->p[2].first
-                          << " " << std::get<2>(queue[i-1])->p[3].first << std::endl
-                                 << std::get<2>(queue[i])->p[0].first
-                          << " " << std::get<2>(queue[i])->p[1].first
-                          << " " << std::get<2>(queue[i])->p[2].first
-                          << " " << std::get<2>(queue[i])->p[3].first << std::endl
-                          << " r:" << tk << std::endl;*/
-                exit(1);
-                return false;
-            }
-            
+            if (! std::get<2>(queue[i-1])->remove(tk)) { std::cout << "e2" << std::endl; return false; }
             if (! tb->insert(tk, td)) { std::cout << "e1" << std::endl; return false; }           
         }
 
         if (! std::get<2>(queue[0])->insert(k, d)) { std::cout << "e3" << std::endl; return false; }
-
-        ++asdf;
         return true;
     }
 };
@@ -230,7 +219,7 @@ class Bucket;
 
 template<class K, class D, class H = std::hash<K>,
          template<class> class DS = dstrat_rwalk,
-         size_t TL = 512, size_t BS = 4>   // ALPHA (SIZE CONSTRAINT COULD BE PARAMETER BUT INTEGRAL TYPE PROBLEM)
+         size_t TL = 128, size_t BS = 4>   // ALPHA (SIZE CONSTRAINT COULD BE PARAMETER BUT INTEGRAL TYPE PROBLEM)
 class SpaceGrow
 {
 public:
@@ -274,7 +263,6 @@ public:
             curGrowAmount = iIni;
             curGrowTable  = gIni;
             capacity       = (gIni+TL) * iIni;
-            std::cout << "capacity:          " << (gIni+TL)*iIni << std::endl;
             
             iIni         <<= 1;
 
@@ -488,45 +476,52 @@ void SpaceGrow<K,D,HF,DS,TL,BS>::migrate(size_t tab, std::unique_ptr<Bucket_t[]>
 template<class K, class D, class HF, template<class> class DS, size_t TL, size_t BS>
 void SpaceGrow<K,D,HF,DS,TL,BS>::printHist()
 {
-    size_t hist[BS];
-    for (size_t i = 0; i < BS; ++i) hist[i] = 0;
+    size_t gHist[BS];
+    for (size_t i = 0; i < BS; ++i) gHist[i] = 0;
+
+    out ("# tab", 5);
+    out ("full" , 6);
+    out ("1 sp" , 6);
+    out ("2 sp" , 6);
+    out ("empt" , 6);
+    out ("n"    , 8);
+    out ("cap"  , 8);
+    std::cout << std::endl;
     
-    for (size_t i = 0; i < TL; ++i)
+    for (size_t tl = 0; tl < TL; ++tl)
     {
-        for (size_t j = 0; j <= llb[i]; ++j)
+        size_t lHist[BS];
+        for (size_t i = 0; i < BS; ++i) lHist[i] = 0;
+        
+        for (size_t j = 0; j <= llb[tl]; ++j)
         {
-            auto a = llt[i][j].probe(1);
-            if (a >= 0) ++hist[a];
-            else std::cout << "1 in table" << std::endl;
+            auto a = llt[tl][j].probe(1);
+            if (a >= 0) ++lHist[a];
         }
+
+        size_t n = 0;
+        out (tl, 5);
+        for (size_t i = 0; i < BS; ++i)
+        {
+            out (lHist[i], 6);
+            n += lHist[i] * (BS - i);
+            gHist[i] += lHist[i];
+        }
+        out (n, 8);
+        out (llb[tl]*BS, 8);
+        std::cout << std::endl;
     }
 
-    auto count = 0u;
+    size_t n = 0;
+    out ("#all", 5);
     for (size_t i = 0; i < BS; ++i)
     {
-        std::cout << i << "  " << hist[i] << std::endl;
-        count += hist[i] * (BS - i);
+        out (gHist[i], 6);
+        n += gHist[i] * (BS - i);
     }
-
-    std::cout << "contains: " << count << std::endl;
-
-
-    for (size_t i = 0; i < BS; ++i) hist[i] = 0;
-    
-    for (size_t j = 0; j <= llb[0]; ++j)
-    {
-        auto a = llt[0][j].probe(1);
-        if (a >= 0) ++hist[a];
-    }
-
-    count = 0u;
-    for (size_t i = 0; i < BS; ++i)
-    {
-        std::cout << i << "  " << hist[i] << std::endl;
-        count += hist[i] * (BS - i);
-    }
-    std::cout << "first table contains: " << count << std::endl;
-    
+    out (n, 8);
+    out (curGrowAmount * (TL+curGrowTable), 8);
+    std::cout << std::endl;    
 }
 
 
