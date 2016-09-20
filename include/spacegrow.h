@@ -213,12 +213,88 @@ public:
 };
 
 
+template<class Parent>
+class dstrat_rwalk_cyclic
+{
+public:
+    using Key          = typename Parent::Key;
+    using Data         = typename Parent::Data;
+    using Parent_t     = typename Parent::This_t;
+    using HashSplitter = typename Parent::HashSplitter;
+    using Bucket_t     = typename Parent::Bucket_t;
+
+    Parent&      tab;
+    std::mt19937 re;
+    const size_t max_steps;
+    size_t*      hist;
+
+    dstrat_rwalk_cyclic(Parent& parent, size_t steps=256, size_t seed=30982391937209388ull)
+        : tab(parent), re((seed) ? seed : 30982391937209388ull), max_steps((steps) ? steps : 256)
+    {
+        hist = new size_t[max_steps];
+        for (size_t i = 0; i < max_steps; ++i)
+        {   hist[i] = 0;   }
+    }
+    ~dstrat_rwalk_cyclic() { delete[] hist; }
+    
+    bool insert(Key k, Data d, HashSplitter hash)
+    {        
+        std::vector<std::pair<std::pair<Key, Data>, Bucket_t*> > queue;
+        std::uniform_int_distribution<size_t> bin(0,1);
+        std::uniform_int_distribution<size_t> bsd(0,tab.bs-1);
+
+        auto tp = std::pair<Key,Data>(k, d);
+        Bucket_t* tb;
+        
+        if (bin(re)) tb = tab.getBucket1(hash);
+        else         tb = tab.getBucket2(hash);
+
+        queue.emplace_back(tp,tb);
+        auto ttp = tp;
+        for (size_t i = 0; tb->p[tab.bs-1].first && i<max_steps; ++i)
+        {
+            auto r = bsd(re);
+            tp = tb->p[r];
+            tb->p[r] = ttp;
+            ttp = tp;
+
+            auto hash = tab.h(tp.first);
+            if (tab.getBucket1(hash) == tb) tb = tab.getBucket2(hash);
+            else                            tb = tab.getBucket1(hash);
+
+            queue.emplace_back(tp,tb);
+        }
+        
+        if (tb->insert(ttp.first, ttp.second))
+        {
+            hist[queue.size() -1] += 1;
+            return true;
+        }
+
+
+        // No spot found -> revert all changes
+        std::tie(ttp, tb) = queue[queue.size() - 1];
+        for (size_t i = queue.size() - 2; i >= 1; --i)
+        {
+            std::tie(tp, tb) = queue[i];
+            if (!(tb->remove(tp.first)))
+            { std::cout << "f1" << std::endl; }
+            if (!(tb->insert(ttp.first, ttp.second)))
+            { std::cout << "f2" << std::endl; };
+            ttp = tp;
+        }
+        
+        return false;
+    }
+};
+
+
 template<class, class, size_t>
 class Bucket;
 
 
 template<class K, class D, class H = std::hash<K>,
-         template<class> class DS = dstrat_rwalk,
+         template<class> class DS = dstrat_rwalk_cyclic,
          size_t TL = 128, size_t BS = 4>   // ALPHA (SIZE CONSTRAINT COULD BE PARAMETER BUT INTEGRAL TYPE PROBLEM)
 class SpaceGrow
 {

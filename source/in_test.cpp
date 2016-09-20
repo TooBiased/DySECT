@@ -48,6 +48,8 @@ int main(int, char**)
 
     std::cout << "inserted elements encountered " << errors << " errors" << std::endl;
 
+    std::cout << ((table.find(79079).first) ? "found" : "not found") << std::endl;
+    
     auto count = 0;
     errors = 0;
     for (size_t i = 0; i < n; ++i)
