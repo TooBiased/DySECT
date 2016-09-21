@@ -35,10 +35,8 @@ public:
     inline bool expand(BFSQueue& q, size_t index)
     {
         Bucket_t* b = std::get<2>(q[index]);
-
-        if (q.size() >= steps) return false;
         
-        for (size_t i = 0; i < tab.bs; ++i)
+        for (size_t i = 0; i < tab.bs && q.size() < steps; ++i)
         {
             Key k = b->get(i).first;
             
@@ -96,7 +94,7 @@ public:
             k1 = k2; prev1 = prev2; b1 = b2;
         }
         
-        if (!b1->insert(t))
+        if (! b1->insert(t) )
         {   std::cout << "failed final insert" << std::endl; return false; }
         
         return true;
@@ -113,7 +111,10 @@ public:
         
         for (size_t i = 0; i < steps; ++i)
         {
-            if (expand(bq, i)) return rollBackDisplacements(t, bq);
+            if (expand(bq, i))
+            {
+                return rollBackDisplacements(t, bq);
+            }
         }
         
         return false;
