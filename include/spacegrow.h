@@ -310,7 +310,11 @@ void SpaceGrow<K,D,HF,DS,TL,BS>::migrate(size_t tab, std::unique_ptr<Bucket_t[]>
             auto hash = h(e.first);
             if      (getBucket1(hash) == curr) target[bitmask & hash.loc1].insert(e.first, e.second);
             else if (getBucket2(hash) == curr) target[bitmask & hash.loc2].insert(e.first, e.second);
-            else { std::cout << "something is wrong neither in first, nor second bucket." << std::endl; }
+            else
+            {
+                std::cout << "something is wrong neither in first, nor second bucket." << std::endl;
+                exit(64);
+            }
         }
     }
 }

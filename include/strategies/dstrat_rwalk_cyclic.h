@@ -42,7 +42,6 @@ public:
         else         tb = tab.getBucket2(hash);
 
         queue.emplace_back(tp,tb);
-        auto ttp = tp;
         for (size_t i = 0; !tb->space() && i<steps; ++i)
         {
             auto r = bsd(re);
@@ -55,13 +54,13 @@ public:
             queue.emplace_back(tp,tb);
         }
         
-        if (tb->insert(ttp.first, ttp.second))
+        if (tb->insert(tp))
         {
             hist[queue.size() -1] += 1;
             return true;
         }
-
-        // No spot found -> revert all changes
+        
+        std::pair<Key,Data> ttp;
         std::tie(ttp, tb) = queue[queue.size() - 1];
         for (size_t i = queue.size() - 2; i >= 1; --i)
         {
