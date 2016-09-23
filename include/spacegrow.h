@@ -106,7 +106,7 @@ private:
         a.hash = hasher(k);
         return a;
     }
-    
+
 public: //temporary should be removed
 
     size_t       nElements;
@@ -128,7 +128,9 @@ public: //temporary should be removed
     Bucket_t* getBucket1(HashSplitter h)
     {   return &(llt[h.tab1][(h.loc1 & llb[h.tab1])]);   }
     Bucket_t* getBucket2(HashSplitter h)
-    {   return &(llt[h.tab2][(h.loc2 & llb[h.tab2])]);   }
+    {
+        return &(llt[h.tab2][(h.loc2 & llb[h.tab2])]);
+    }
     
 };
 
@@ -223,7 +225,7 @@ template<class K, class D, class HF, template<class> class DS, size_t TL, size_t
 bool SpaceGrow<K,D,HF,DS,TL,BS>::insert(std::pair<Key, Data> t)
 {
     auto hash = h(t.first);
-        
+    
     auto p1 = getBucket1(hash)->probe(t.first);//llt[ hash.tab1 ].probe( k, hash.loc1 );
     auto p2 = getBucket2(hash)->probe(t.first);//llt[ hash.tab2 ].probe( k, hash.loc2 );
     
@@ -251,10 +253,11 @@ bool SpaceGrow<K,D,HF,DS,TL,BS>::insert(std::pair<Key, Data> t)
     {
         // no space => displace stuff
         r = displacer.insert(t, hash);
+        
     }
     
     if (r) incElements();
-
+    
     return r;
 }
 
@@ -299,7 +302,7 @@ void SpaceGrow<K,D,HF,DS,TL,BS>::incElements()
 
 template<class K, class D, class HF, template<class> class DS, size_t TL, size_t BS>
 void SpaceGrow<K,D,HF,DS,TL,BS>::migrate(size_t tab, std::unique_ptr<Bucket_t[]>& target, size_t bitmask)
-{
+{    
     for (size_t i = 0; i <= llb[tab]; ++i) //Bucket_t* curr = &(llt[i][0]); curr <= &(llt[i][llb[i]]); ++curr)
     {
         Bucket_t* curr = &(llt[tab][i]);
@@ -410,7 +413,7 @@ bool Bucket<K,D,BS>::insert(std::pair<Key,Data> t)
     {
         if (elements[i].first) continue;
         
-        elements[i]  = t;
+        elements[i]  = t;       
         return true;
     }
 
