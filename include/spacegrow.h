@@ -97,8 +97,8 @@ private:
     static_assert( sizeof(HashSplitter)==8,
                    "HashSplitter must be 64bit!" );
 
-    //static_assert( !(((1<<log(TL))-1) & TL),
-    //               "TL must be a power of two >0!");
+    static_assert( TL == 1ull<<(log(TL) - 1),
+                   "TL must be a power of two >0!");
 
     HashSplitter h(Key k)
     {

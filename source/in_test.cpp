@@ -158,7 +158,7 @@ int main(int argn, char** argc)
         return test<dstrat_rwalk_cyclic>(n, cap, steps, alpha, name, tl, bs);
     }
 
-    std::cout << "ERROR" << std::endl;
+    std::cout << "ERROR: choose Displacement Strategy" << std::endl;
 
     return 1;
 }
