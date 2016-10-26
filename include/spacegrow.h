@@ -32,7 +32,7 @@ public:
 
     size_t  steps = 0;
     size_t* hist  = nullptr;
-    
+
     bool insert(std::pair<Key, Data>, HashSplitter)
     {   return false;   }
 };
@@ -50,7 +50,7 @@ class SpaceGrow
 public:
     using Key       = K;
     using Data      = D;
-    using FRet      = std::pair<bool, Data>;    
+    using FRet      = std::pair<bool, Data>;
 
     SpaceGrow(size_t _capacity = 0, double size_constraint = 1.1,
               size_t dis_steps = 0, size_t seed = 0);
@@ -70,8 +70,8 @@ public:
 
     void printDist(std::ostream& out);
     void printHist(std::ostream& out);
-    
-private:    
+
+private:
     using  This_t     = SpaceGrow<K,D,H,DS,TL,BS>;
     using  Bucket_t   = Bucket<K,D,BS>;
     using  HashFct_t  = H;
@@ -82,7 +82,7 @@ private:
     {
         return (k) ? 1+log(k>>1) : 0;
     }
-    
+
     union HashSplitter {
         std::uint64_t hash;
         struct
@@ -93,13 +93,13 @@ private:
             uint64_t loc2 : 32-log(TL)+1;
         };
     };
-    
+
     static_assert( sizeof(HashSplitter)==8,
                    "HashSplitter must be 64bit!" );
-    
+
     //static_assert( !(((1<<log(TL))-1) & TL),
     //               "TL must be a power of two >0!");
-    
+
     HashSplitter h(Key k)
     {
         HashSplitter a;
@@ -117,7 +117,7 @@ public: //temporary should be removed
     const size_t bs = BS;
     HashFct_t    hasher;
     DisStrat_t   displacer;
-    
+
     alignas(64) size_t                      llb[TL];
     alignas(64) std::unique_ptr<Bucket_t[]> llt[TL];  // lower level tables
 
@@ -131,7 +131,7 @@ public: //temporary should be removed
     {
         return &(llt[h.tab2][(h.loc2 & llb[h.tab2])]);
     }
-    
+
 };
 
 
@@ -146,19 +146,19 @@ public:
     Bucket() { for (size_t i = 0; i < BS; ++i) elements[i] = std::make_pair(Key(), Data());}
     Bucket(const Bucket& rhs) = default;
     Bucket& operator=(const Bucket& rhs) = default;
-    
+
     bool   insert(Key k, Data d);
     bool   insert(std::pair<Key, Data> t);
     FRet   find  (Key k);
     bool   remove(Key k);
     FRet   pop   (Key k);
-    
+
     int    probe (Key k);
 
     bool   space ();
     std::pair<Key, Data> get(size_t i);
     std::pair<Key, Data> replace(size_t i, std::pair<Key, Data> t);
-    
+
     std::pair<Key, Data> elements[BS];
 };
 
@@ -173,7 +173,7 @@ SpaceGrow<K,D,HF,DS,TL,BS>::SpaceGrow(size_t _capacity, double size_constraint,
     std::cout << "this_size:      " << sizeof(This_t)       << std::endl;
     std::cout << "dis_strat_size: " << sizeof(DisStrat_t)   << std::endl;
     std::cout << "hasher_size:    " << sizeof(HashFct_t)    << std::endl;
-        
+
     double dIni = double(_capacity) * size_constraint / double(TL);
     if (dIni < MIN_LLS)
     {
@@ -185,7 +185,7 @@ SpaceGrow<K,D,HF,DS,TL,BS>::SpaceGrow(size_t _capacity, double size_constraint,
         curGrowAmount = MIN_LLS;
         curGrowTable  = 0;
         capacity      = MIN_LLS*TL;
-            
+
     }
     else
     {
@@ -193,7 +193,7 @@ SpaceGrow<K,D,HF,DS,TL,BS>::SpaceGrow(size_t _capacity, double size_constraint,
         while (dIni > (iIni << 1)) iIni <<= 1;
 
         size_t gIni = std::floor(double(_capacity) * size_constraint / double(iIni))-TL;;
-            
+
         for (size_t i = gIni; i < TL; ++i)
         {
             llb[i] = (iIni/BS)-1;
@@ -203,7 +203,7 @@ SpaceGrow<K,D,HF,DS,TL,BS>::SpaceGrow(size_t _capacity, double size_constraint,
         curGrowAmount = iIni;
         curGrowTable  = gIni;
         capacity       = (gIni+TL) * iIni;
-            
+
         iIni         <<= 1;
 
         for (size_t i = 0; i < gIni; ++i)
@@ -225,14 +225,14 @@ template<class K, class D, class HF, template<class> class DS, size_t TL, size_t
 bool SpaceGrow<K,D,HF,DS,TL,BS>::insert(std::pair<Key, Data> t)
 {
     auto hash = h(t.first);
-    
+
     auto p1 = getBucket1(hash)->probe(t.first);//llt[ hash.tab1 ].probe( k, hash.loc1 );
     auto p2 = getBucket2(hash)->probe(t.first);//llt[ hash.tab2 ].probe( k, hash.loc2 );
-    
+
     if ((p1 < 0) || (p2 < 0)) return false;
 
     auto r = false;
-    
+
     // SHOULD CHECK, IF ALREADY INCLUDED
     if (p1 > p2)
     {
@@ -253,11 +253,11 @@ bool SpaceGrow<K,D,HF,DS,TL,BS>::insert(std::pair<Key, Data> t)
     {
         // no space => displace stuff
         r = displacer.insert(t, hash);
-        
+
     }
-    
+
     if (r) incElements();
-    
+
     return r;
 }
 
@@ -276,7 +276,7 @@ bool SpaceGrow<K,D,HF,DS,TL,BS>::remove(Key k)
 {
     auto hash = h(k);
     auto p1 = getBucket1(hash)->remove(k);
-    
+
     if (p1) return true;
     else    return getBucket2(hash)->remove(k);
 }
@@ -302,7 +302,7 @@ void SpaceGrow<K,D,HF,DS,TL,BS>::incElements()
 
 template<class K, class D, class HF, template<class> class DS, size_t TL, size_t BS>
 void SpaceGrow<K,D,HF,DS,TL,BS>::migrate(size_t tab, std::unique_ptr<Bucket_t[]>& target, size_t bitmask)
-{    
+{
     for (size_t i = 0; i <= llb[tab]; ++i) //Bucket_t* curr = &(llt[i][0]); curr <= &(llt[i][llb[i]]); ++curr)
     {
         Bucket_t* curr = &(llt[tab][i]);
@@ -325,23 +325,24 @@ void SpaceGrow<K,D,HF,DS,TL,BS>::migrate(size_t tab, std::unique_ptr<Bucket_t[]>
 template<class K, class D, class HF, template<class> class DS, size_t TL, size_t BS>
 void SpaceGrow<K,D,HF,DS,TL,BS>::printDist(std::ostream& out)
 {
-    size_t gHist[BS];
-    for (size_t i = 0; i < BS; ++i) gHist[i] = 0;
 
     print (out, "# tab", 5);
-    print (out, "full" , 6);
-    print (out, "1 sp" , 6);
-    print (out, "2 sp" , 6);
-    print (out, "empt" , 6);
+    size_t gHist[BS+1];
+    for (size_t i = 0; i <= BS; ++i)
+    {
+        gHist[i] = 0;
+        print (out, i, 6);
+    }
+
     print (out, "n"    , 8);
     print (out, "cap"  , 8);
     out << std::endl;
-    
+
     for (size_t tl = 0; tl < TL; ++tl)
     {
-        size_t lHist[BS];
-        for (size_t i = 0; i < BS; ++i) lHist[i] = 0;
-        
+        size_t lHist[BS+1];
+        for (size_t i = 0; i <= BS; ++i) lHist[i] = 0;
+
         for (size_t j = 0; j <= llb[tl]; ++j)
         {
             auto a = llt[tl][j].probe(0);
@@ -350,7 +351,7 @@ void SpaceGrow<K,D,HF,DS,TL,BS>::printDist(std::ostream& out)
 
         size_t n = 0;
         print (out, tl, 5);
-        for (size_t i = 0; i < BS; ++i)
+        for (size_t i = 0; i <= BS; ++i)
         {
             print (out, lHist[i], 6);
             n += lHist[i] * (BS - i);
@@ -363,14 +364,14 @@ void SpaceGrow<K,D,HF,DS,TL,BS>::printDist(std::ostream& out)
 
     size_t n = 0;
     print (out, "#all", 5);
-    for (size_t i = 0; i < BS; ++i)
+    for (size_t i = 0; i <= BS; ++i)
     {
         print (out, gHist[i], 6);
         n += gHist[i] * (BS - i);
     }
     print (out, n, 8);
     print (out, curGrowAmount * (TL+curGrowTable), 8);
-    out << std::endl;    
+    out << std::endl;
 }
 
 template<class K, class D, class HF, template<class> class DS, size_t TL, size_t BS>
@@ -379,7 +380,7 @@ void SpaceGrow<K,D,HF,DS,TL,BS>::printHist(std::ostream& out)
     print(out, "# steps", 7);
     print(out, "nFitted", 8);
     out << std::endl;
-    
+
     for (size_t i = 0; i < displacer.steps; ++i)
     {
         print(out, i, 7);
@@ -412,8 +413,8 @@ bool Bucket<K,D,BS>::insert(std::pair<Key,Data> t)
     for (size_t i = 0; i < BS; ++i)
     {
         if (elements[i].first) continue;
-        
-        elements[i]  = t;       
+
+        elements[i]  = t;
         return true;
     }
 
@@ -444,7 +445,7 @@ bool Bucket<K,D,BS>::remove(Key k)
                 else break;
             }
             elements[i] = std::make_pair(Key(), Data());
-            return true;                                    
+            return true;
         }
         else if (! elements[i].first)
         {
@@ -468,7 +469,7 @@ typename Bucket<K,D,BS>::FRet Bucket<K,D,BS>::pop(Key k)
                 else break;
             }
             elements[i] = std::make_pair(Key(), Data());
-            return std::make_pair(true, d);                                    
+            return std::make_pair(true, d);
         }
         else if (! elements[i].first)
         {
@@ -485,7 +486,7 @@ int Bucket<K,D,BS>::probe(Key k)
     {
         if (!elements[i].first)      return BS - i;
         if ( elements[i].first == k) return -1;
-        
+
     }
     return 0;
 }

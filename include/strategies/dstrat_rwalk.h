@@ -29,18 +29,18 @@ public:
         for (size_t i = 0; i < steps; ++i)
         {   hist[i] = 0;   }
     }
-    
+
     ~dstrat_rwalk() { delete[] hist; }
-    
+
     bool insert(std::pair<Key,Data> t, HashSplitter hash)
-    {        
+    {
         std::vector<std::pair<std::pair<Key, Data>, Bucket_t*> > queue;
         std::uniform_int_distribution<size_t> bin(0,1);
         std::uniform_int_distribution<size_t> bsd(0,tab.bs-1);
 
         auto      tp = t;
         Bucket_t* tb;
-        
+
         if (bin(re)) tb = tab.getBucket1(hash);
         else         tb = tab.getBucket2(hash);
 
@@ -65,18 +65,18 @@ public:
                     while (queue.size() > j+1) queue.pop_back();
                     break;
                 }
-            }            
+            }
         }
-        
+
         if (! tb->space()) { return false; }
 
         hist[queue.size() -1] += 1;
-        
+
         for (size_t i = queue.size()-1; i > 0; --i)
-        {            
+        {
             std::tie(tp,tb) = queue[i];
-            if (! queue[i-1].second->remove(tp.first)) { std::cout << "e2" << std::endl; return false; }
-            if (! tb->insert(tp.first, tp.second))      { std::cout << "e1" << std::endl; return false; }           
+            if (! queue[i-1].second->remove(tp.first))  { std::cout << "e2" << std::endl; return false; }
+            if (! tb->insert(tp.first, tp.second))      { std::cout << "e1" << std::endl; return false; }
         }
 
         if (! queue[0].second->insert(t)) { std::cout << "e3" << std::endl; return false; }
