@@ -10,87 +10,15 @@
 #include <iostream>
 #include <fstream>
 
-template <class T>
-inline void print(std::ostream& out, const T& t, size_t w)
-{
-    out.width(w);
-    out << t << " " << std::flush;
-}
-
 template<class Table>
-void print_hist(Table& table, std::string name)
+size_t catchup(Table& table, size_t* keys, size_t i)
 {
-    std::ofstream out(name, std::ofstream::out);
-
-    auto& disp = table.displacer;
-
-    print(out, "# steps", 7);
-    print(out, "nFitted", 8);
-    out << std::endl;
-
-    for (size_t i = 0; i < disp.steps; ++i)
+    for (size_t i = 0; i < n; ++i)
     {
-        print(out, i, 7);
-        print(out, disp.hist[i], 8);
-        out << std::endl;
+        table.insert(keys[i], i);
     }
-    out.close();
 }
 
-template<class Table>
-void print_dist(Table& table, std::string name)
-{
-    std::ofstream out(name, std::ofstream::out);
-
-    print (out, "# tab", 5);
-    size_t gHist[table.bs+1];
-    for (size_t i = 0; i <= table.bs; ++i)
-    {
-        gHist[i] = 0;
-        print (out, i, 6);
-    }
-
-    print (out, "n"    , 8);
-    print (out, "cap"  , 8);
-    out << std::endl;
-
-    for (size_t tl = 0; tl < table.tl; ++tl)
-    {
-        size_t lHist[table.bs+1];
-        for (size_t i = 0; i <= table.bs; ++i) lHist[i] = 0;
-
-        for (size_t j = 0; j <= table.llb[tl]; ++j)
-        {
-            auto a = table.llt[tl][j].probe(0);
-            if (a >= 0) ++lHist[a];
-        }
-
-        size_t n = 0;
-        print (out, tl, 5);
-        for (size_t i = 0; i <= table.bs; ++i)
-        {
-            print (out, lHist[i], 6);
-            n += lHist[i] * (table.bs - i);
-            gHist[i] += lHist[i];
-        }
-        print (out, n, 8);
-        print (out, (table.llb[tl]+1)*table.bs, 8);
-        out << std::endl;
-    }
-
-    size_t n = 0;
-    print (out, "#all", 5);
-    for (size_t i = 0; i <= table.bs; ++i)
-    {
-        print (out, gHist[i], 6);
-        n += gHist[i] * (table.bs - i);
-    }
-    print (out, n, 8);
-    print (out, table.curGrowAmount * (table.tl+table.curGrowTable), 8);
-    out << std::endl;
-
-    out.close();
-}
 
 template<template<class> class Displacer, size_t TL, size_t BS>
 int test(size_t n, size_t cap, size_t steps, double alpha, std::string name)
@@ -109,43 +37,41 @@ int test(size_t n, size_t cap, size_t steps, double alpha, std::string name)
 
     std::cout << "randomness generated" << std::endl;
 
-    auto errors = 0;
-    bool first  = true;
+    SpaceGrow<size_t, size_t, HASHFCT, Displacer, TL, BS> table_d(cap, alpha, steps);
+    SpaceGrow<size_t, size_t, HASHFCT, Displacer, TL, BS> table_s(table_d.capacity, 1.0, steps);
 
-    SpaceGrow<size_t, size_t, HASHFCT, Displacer, TL, BS> table(cap, alpha, steps);
+    auto curr_d_size = table_d.capacity;
+    auto errors_d = 0;
+    auto errors_s = 0;
 
-    std::cout << "table generated"      << std::endl;
+    std::cout << "tables generated"      << std::endl;
 
     for (size_t i = 0; i < n; ++i)
     {
-        if (!table.insert(keys[i], i))
+        if (!table_d.insert(keys[i], i)) { ++errors_d; }
+        if (!table_s.insert(keys[i], i)) { ++errors_s; }
+        if ( table_d.capacity != curr_d_size )
         {
-            ++errors;
+            print_stuff(table_d, table_s, );
+            table_s = std::move(table_s(table_d.capacity, 1.0, steps));
+            catchup(table_s, keys, i);
+            table_s.clearHist();
 
-            if (first)
-            {
-                first = false;
-                std::cout << "first error at i=" << i << std::endl;
-            }
         }
     }
 
     std::cout << "inserted elements encountered " << errors << " errors" << std::endl;
 
-    auto count = 0;
-    errors = 0;
-    for (size_t i = 0; i < n; ++i)
-    {
-        auto e = table.find(keys[i]);
-        if (e.first && (e.second == i)) count++;
-        else if (e.first) std::cout << "wat" << std::endl;
-        else errors++;
-    }
 
-    std::cout << "count: " << count << "  errors: " << errors << std::endl;
+    std::ofstream distOut(name + ".dist", std::ofstream::out);
+    table.printDist(distOut);
+    distOut.close();
 
-    print_dist(table, name + ".dist");
-    print_hist(table, name + ".hist");
+    std::ofstream histOut(name + ".hist", std::ofstream::out);
+    table.printHist(histOut);
+    histOut << steps+100 << "     " << errors << std::endl;
+    histOut.close();
+
 
     delete[] keys;
 

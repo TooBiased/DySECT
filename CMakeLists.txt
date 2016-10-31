@@ -5,7 +5,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/misc/cmake)
 
 project (space-grow-table)
 
-set (CMAKE_CXX_FLAGS "-std=c++14 -msse4.2 -Wall -Wextra -O3")
+set (CMAKE_CXX_FLAGS "-std=c++14 -msse4.2 -Wall -Wextra -O3 -g")
 
 
 set(GROWT_HASHFCT XXHASH CACHE STRING

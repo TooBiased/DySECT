@@ -11,15 +11,6 @@
 
 #define MIN_LLS 256
 
-template <class T>
-inline void print(std::ostream& out, const T& t, size_t w)
-{
-    out.width(w);
-    out << t << " " << std::flush;
-}
-
-
-
 template <class Parent>
 class dstrat_triv
 {
@@ -68,8 +59,7 @@ public:
     FRet find  (Key k);
     bool remove(Key k);
 
-    void printDist(std::ostream& out);
-    void printHist(std::ostream& out);
+    void clearHist();
 
 private:
     using  This_t     = SpaceGrow<K,D,H,DS,TL,BS>;
@@ -115,6 +105,7 @@ public: //temporary should be removed
     size_t       capacity;
     double       alpha;
     const size_t bs = BS;
+    const size_t tl = TL;
     HashFct_t    hasher;
     DisStrat_t   displacer;
 
@@ -323,69 +314,11 @@ void SpaceGrow<K,D,HF,DS,TL,BS>::migrate(size_t tab, std::unique_ptr<Bucket_t[]>
 }
 
 template<class K, class D, class HF, template<class> class DS, size_t TL, size_t BS>
-void SpaceGrow<K,D,HF,DS,TL,BS>::printDist(std::ostream& out)
+void SpaceGrow<K,D,HF,DS,TL,BS>::clearHist()
 {
-
-    print (out, "# tab", 5);
-    size_t gHist[BS+1];
-    for (size_t i = 0; i <= BS; ++i)
-    {
-        gHist[i] = 0;
-        print (out, i, 6);
-    }
-
-    print (out, "n"    , 8);
-    print (out, "cap"  , 8);
-    out << std::endl;
-
-    for (size_t tl = 0; tl < TL; ++tl)
-    {
-        size_t lHist[BS+1];
-        for (size_t i = 0; i <= BS; ++i) lHist[i] = 0;
-
-        for (size_t j = 0; j <= llb[tl]; ++j)
-        {
-            auto a = llt[tl][j].probe(0);
-            if (a >= 0) ++lHist[a];
-        }
-
-        size_t n = 0;
-        print (out, tl, 5);
-        for (size_t i = 0; i <= BS; ++i)
-        {
-            print (out, lHist[i], 6);
-            n += lHist[i] * (BS - i);
-            gHist[i] += lHist[i];
-        }
-        print (out, n, 8);
-        print (out, (llb[tl]+1)*BS, 8);
-        out << std::endl;
-    }
-
-    size_t n = 0;
-    print (out, "#all", 5);
-    for (size_t i = 0; i <= BS; ++i)
-    {
-        print (out, gHist[i], 6);
-        n += gHist[i] * (BS - i);
-    }
-    print (out, n, 8);
-    print (out, curGrowAmount * (TL+curGrowTable), 8);
-    out << std::endl;
-}
-
-template<class K, class D, class HF, template<class> class DS, size_t TL, size_t BS>
-void SpaceGrow<K,D,HF,DS,TL,BS>::printHist(std::ostream& out)
-{
-    print(out, "# steps", 7);
-    print(out, "nFitted", 8);
-    out << std::endl;
-
     for (size_t i = 0; i < displacer.steps; ++i)
     {
-        print(out, i, 7);
-        print(out, displacer.hist[i], 8);
-        out << std::endl;
+        displacer.hist[i] = 0;
     }
 }
 
