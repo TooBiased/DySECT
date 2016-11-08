@@ -20,17 +20,20 @@ public:
     Parent&      tab;
     std::mt19937 re;
     const size_t steps;
-    size_t*      hist;
+    std::unique_ptr<size_t[]> hist;
 
     dstrat_rwalk(Parent& parent, size_t steps=256, size_t seed=30982391937209388ull)
-        : tab(parent), re((seed) ? seed : 30982391937209388ull), steps((steps) ? steps : 256)
+        : tab(parent), re(seed), steps(steps), hist(new size_t[steps])
     {
-        hist = new size_t[steps];
+        //if (!hist) { std::badalloc(); }
+
         for (size_t i = 0; i < steps; ++i)
         {   hist[i] = 0;   }
     }
 
-    ~dstrat_rwalk() { delete[] hist; }
+    dstrat_rwalk(Parent& parent, dstrat_rwalk&& rhs)
+        : tab(parent), re(std::move(rhs.re)), steps(rhs.steps), hist(std::move(rhs.hist))
+    { }
 
     bool insert(std::pair<Key,Data> t, HashSplitter hash)
     {

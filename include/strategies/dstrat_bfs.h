@@ -19,31 +19,34 @@ public:
 
     Parent&      tab;
     const size_t steps;
-    size_t*      hist;
+    std::unique_ptr<size_t[]> hist;
 
     dstrat_bfs(Parent& parent, size_t steps = 256, size_t t = 0)
-        : tab(parent), steps((steps) ? steps : 256)
+        : tab(parent), steps(steps), hist(new size_t[steps])
     {
         (void)t; /* parameter t is for symmetry with "rwalk" therefore unused*/
-        hist = new size_t[steps];
+
+        //if (!hist) { std::badalloc(); }
         for (size_t i = 0; i < steps; ++i)
         {   hist[i] = 0;   }
     }
-    
-    ~dstrat_bfs() { delete[] hist; }
-    
+
+    dstrat_bfs(Parent& parent, dstrat_bfs&& rhs)
+        : tab(parent), steps(rhs.steps), hist(std::move(rhs.hist))
+    { }
+
     inline bool expand(BFSQueue& q, size_t index)
     {
         Bucket_t* b = std::get<2>(q[index]);
-        
+
         for (size_t i = 0; i < tab.bs && q.size() < steps; ++i)
         {
             Key k = b->get(i).first;
-            
+
             auto hash = tab.h(k);
             Bucket_t* b1 = tab.getBucket1(hash);
             Bucket_t* b2 = tab.getBucket2(hash);
-            
+
             if        (b == b1)
             {
                 q.emplace_back(k, index, b2);
@@ -65,7 +68,7 @@ public:
     inline bool rollBackDisplacements(std::pair<Key,Data> t, BFSQueue& bq)
     {
         hist[bq.size() -1] += 1;
-        
+
         Key       k1;
         int       prev1;
         Bucket_t* b1;
@@ -77,7 +80,7 @@ public:
         while (prev1 >= 0)
         {
             std::tie(k2,prev2,b2) = bq[prev1];
-            
+
             auto pop = b2->pop(k1);
             if (!pop.first)
             {
@@ -93,13 +96,13 @@ public:
 
             k1 = k2; prev1 = prev2; b1 = b2;
         }
-        
+
         if (! b1->insert(t) )
         {   std::cout << "failed final insert" << std::endl; return false; }
-        
+
         return true;
     }
-    
+
     inline bool insert(std::pair<Key,Data> t, HashSplitter hash)
     {
         BFSQueue  bq;
@@ -108,7 +111,7 @@ public:
 
         bq.push_back(std::tuple<Key, int, Bucket_t*>(t.first, -1, b1));
         bq.push_back(std::tuple<Key, int, Bucket_t*>(t.first, -1, b2));
-        
+
         for (size_t i = 0; i < steps; ++i)
         {
             if (expand(bq, i))
@@ -116,7 +119,7 @@ public:
                 return rollBackDisplacements(t, bq);
             }
         }
-        
+
         return false;
     }
 };

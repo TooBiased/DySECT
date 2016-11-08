@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <functional>
 #include <cmath>
 #include <memory>
@@ -9,29 +8,11 @@
 #include <tuple>
 #include <random>
 
+
+#include "bucket.h"
+#include "strategies/dstrat_triv.h"
+
 #define MIN_LLS 256
-
-template <class Parent>
-class dstrat_triv
-{
-public:
-    using Key          = typename Parent::Key;
-    using Data         = typename Parent::Data;
-    using HashSplitter = typename Parent::HashSplitter;
-
-    dstrat_triv(Parent&, size_t, size_t) {}
-
-    size_t  steps = 0;
-    size_t* hist  = nullptr;
-
-    bool insert(std::pair<Key, Data>, HashSplitter)
-    {   return false;   }
-};
-
-
-
-template<class, class, size_t>
-class Bucket;
 
 template<class K, class D, class H = std::hash<K>,
          template<class> class DS = dstrat_triv,
@@ -51,8 +32,37 @@ public:
     SpaceGrow(const SpaceGrow&) = delete;
     SpaceGrow& operator=(const SpaceGrow&) = delete;
 
-    SpaceGrow(SpaceGrow&& rhs) = default;
-    SpaceGrow& operator=(SpaceGrow&& rhs) = default;
+    SpaceGrow(SpaceGrow&& rhs) : nElements(rhs.nElements), curGrowAmount(rhs.curGrowAmount), curGrowTable(rhs.curGrowTable),
+                                 capacity(rhs.capacity), alpha(rhs.alpha), bs(BS), tl(TL), displacer(*this, std::move(rhs.displacer))
+    {
+        for (size_t i = 0; i < TL; ++i)
+        {
+            llb[i] = rhs.llb[i];
+            llt[i] = std::move(rhs.llt[i]);
+        }
+    }
+
+    SpaceGrow& operator=(SpaceGrow&& rhs)
+    {
+        //if (&rhs == this) return *this;
+
+        //delete this;
+        //new (this) SpaceGrow(std::move(rhs));
+        //return *this;
+
+        nElements     = rhs.nElements;
+        curGrowAmount = rhs.curGrowAmount;
+        curGrowTable  = rhs.curGrowTable;
+        capacity      = rhs.capacity;
+        alpha         = rhs.alpha;
+
+        for (size_t i = 0; i < TL; ++i)
+        {
+            llb[i] = rhs.llb[i];
+            llt[i] = std::move(rhs.llt[i]);
+        }
+        return *this;
+    }
 
     bool insert(Key k, Data d);
     bool insert(std::pair<Key, Data> t);
@@ -70,24 +80,24 @@ private:
 
     static constexpr size_t log(size_t k)
     {
-        return (k) ? 1+log(k>>1) : 0;
+        return (k-1) ? 1+log(k>>1) : 0;
     }
 
     union HashSplitter {
         std::uint64_t hash;
         struct
         {
-            uint64_t tab1 : log(TL)-1;
-            uint64_t tab2 : log(TL)-1;
-            uint64_t loc1 : 32-log(TL)+1;
-            uint64_t loc2 : 32-log(TL)+1;
+            uint64_t tab1 : log(TL);
+            uint64_t tab2 : log(TL);
+            uint64_t loc1 : 32-log(TL);
+            uint64_t loc2 : 32-log(TL);
         };
     };
 
     static_assert( sizeof(HashSplitter)==8,
                    "HashSplitter must be 64bit!" );
 
-    static_assert( TL == 1ull<<(log(TL) - 1),
+    static_assert( TL == 1ull<<(log(TL)),
                    "TL must be a power of two >0!");
 
     HashSplitter h(Key k)
@@ -112,6 +122,14 @@ public: //temporary should be removed
     alignas(64) size_t                      llb[TL];
     alignas(64) std::unique_ptr<Bucket_t[]> llt[TL];  // lower level tables
 
+    std::pair<size_t, Bucket_t*> getTable(size_t i)
+    {
+        if (i < TL)
+            return std::make_pair(llb[i]+1, llt[i].get());
+        else
+            return std::make_pair(0, nullptr);
+    }
+
     void incElements();
     void grow();
     void migrate(size_t i, std::unique_ptr<Bucket_t[]>& target, size_t tBitmask);
@@ -126,38 +144,8 @@ public: //temporary should be removed
 };
 
 
-template<class K, class D, size_t BS = 4>
-class Bucket
-{
-public:
-    using Key = K;
-    using Data = D;
-    using FRet = std::pair<bool, Data>;
-
-    Bucket() { for (size_t i = 0; i < BS; ++i) elements[i] = std::make_pair(Key(), Data());}
-    Bucket(const Bucket& rhs) = default;
-    Bucket& operator=(const Bucket& rhs) = default;
-
-    bool   insert(Key k, Data d);
-    bool   insert(std::pair<Key, Data> t);
-    FRet   find  (Key k);
-    bool   remove(Key k);
-    FRet   pop   (Key k);
-
-    int    probe (Key k);
-
-    bool   space ();
-    std::pair<Key, Data> get(size_t i);
-    std::pair<Key, Data> replace(size_t i, std::pair<Key, Data> t);
-
-    std::pair<Key, Data> elements[BS];
-};
-
-
-
-
 template<class K, class D, class HF, template<class> class DS, size_t TL, size_t BS>
-SpaceGrow<K,D,HF,DS,TL,BS>::SpaceGrow(size_t _capacity, double size_constraint,
+inline SpaceGrow<K,D,HF,DS,TL,BS>::SpaceGrow(size_t _capacity, double size_constraint,
                                       size_t dis_steps, size_t seed)
     : nElements(0), alpha(size_constraint), displacer(*this, dis_steps, seed)
 {
@@ -183,7 +171,7 @@ SpaceGrow<K,D,HF,DS,TL,BS>::SpaceGrow(size_t _capacity, double size_constraint,
         size_t iIni = MIN_LLS;
         while (dIni > (iIni << 1)) iIni <<= 1;
 
-        size_t gIni = std::floor(double(_capacity) * size_constraint / double(iIni))-TL;;
+        size_t gIni = std::floor(double(_capacity) * size_constraint / double(iIni))-TL;
 
         for (size_t i = gIni; i < TL; ++i)
         {
@@ -204,16 +192,18 @@ SpaceGrow<K,D,HF,DS,TL,BS>::SpaceGrow(size_t _capacity, double size_constraint,
         }
 
     }
+
+    std::cout << "capacity:   " << capacity << std::endl;
 }
 
 template<class K, class D, class HF, template<class> class DS, size_t TL, size_t BS>
-bool SpaceGrow<K,D,HF,DS,TL,BS>::insert(Key k, Data d)
+inline bool SpaceGrow<K,D,HF,DS,TL,BS>::insert(Key k, Data d)
 {
     return insert(std::make_pair(k,d));
 }
 
 template<class K, class D, class HF, template<class> class DS, size_t TL, size_t BS>
-bool SpaceGrow<K,D,HF,DS,TL,BS>::insert(std::pair<Key, Data> t)
+inline bool SpaceGrow<K,D,HF,DS,TL,BS>::insert(std::pair<Key, Data> t)
 {
     auto hash = h(t.first);
 
@@ -253,27 +243,29 @@ bool SpaceGrow<K,D,HF,DS,TL,BS>::insert(std::pair<Key, Data> t)
 }
 
 template<class K, class D, class HF, template<class> class DS, size_t TL, size_t BS>
-typename SpaceGrow<K,D,HF,DS,TL,BS>::FRet SpaceGrow<K,D,HF,DS,TL,BS>::find(Key k)
+inline typename SpaceGrow<K,D,HF,DS,TL,BS>::FRet SpaceGrow<K,D,HF,DS,TL,BS>::find(Key k)
 {
     auto hash = h(k);
     auto p1 = getBucket1(hash)->find(k);
+    auto p2 = getBucket2(hash)->find(k);
 
     if (p1.first) return p1;
-    else          return getBucket2(hash)->find(k);
+    else          return p2;
 }
 
 template<class K, class D, class HF, template<class> class DS, size_t TL, size_t BS>
-bool SpaceGrow<K,D,HF,DS,TL,BS>::remove(Key k)
+inline bool SpaceGrow<K,D,HF,DS,TL,BS>::remove(Key k)
 {
     auto hash = h(k);
     auto p1 = getBucket1(hash)->remove(k);
+    auto p2 = getBucket2(hash)->remove(k);
 
     if (p1) return true;
-    else    return getBucket2(hash)->remove(k);
+    else    return p2;
 }
 
 template<class K, class D, class HF, template<class> class DS, size_t TL, size_t BS>
-void SpaceGrow<K,D,HF,DS,TL,BS>::grow()
+inline void SpaceGrow<K,D,HF,DS,TL,BS>::grow()
 {
     size_t nsize = (curGrowAmount << 1)/BS; //double the previous size
     auto   ntab  = std::make_unique<Bucket_t[]>(nsize);
@@ -285,14 +277,14 @@ void SpaceGrow<K,D,HF,DS,TL,BS>::grow()
 }
 
 template<class K, class D, class HF, template<class> class DS, size_t TL, size_t BS>
-void SpaceGrow<K,D,HF,DS,TL,BS>::incElements()
+inline void SpaceGrow<K,D,HF,DS,TL,BS>::incElements()
 {
     ++nElements;
     if (capacity + curGrowAmount < nElements * alpha) grow();
 }
 
 template<class K, class D, class HF, template<class> class DS, size_t TL, size_t BS>
-void SpaceGrow<K,D,HF,DS,TL,BS>::migrate(size_t tab, std::unique_ptr<Bucket_t[]>& target, size_t bitmask)
+inline void SpaceGrow<K,D,HF,DS,TL,BS>::migrate(size_t tab, std::unique_ptr<Bucket_t[]>& target, size_t bitmask)
 {
     for (size_t i = 0; i <= llb[tab]; ++i) //Bucket_t* curr = &(llt[i][0]); curr <= &(llt[i][llb[i]]); ++curr)
     {
@@ -314,132 +306,10 @@ void SpaceGrow<K,D,HF,DS,TL,BS>::migrate(size_t tab, std::unique_ptr<Bucket_t[]>
 }
 
 template<class K, class D, class HF, template<class> class DS, size_t TL, size_t BS>
-void SpaceGrow<K,D,HF,DS,TL,BS>::clearHist()
+inline void SpaceGrow<K,D,HF,DS,TL,BS>::clearHist()
 {
     for (size_t i = 0; i < displacer.steps; ++i)
     {
         displacer.hist[i] = 0;
     }
-}
-
-
-
-
-template<class K, class D, size_t BS>
-bool Bucket<K,D,BS>::insert(Key k, Data d)
-{
-    for (size_t i = 0; i < BS; ++i)
-    {
-        if (elements[i].first) continue;
-        elements[i].first  = k;
-        elements[i].second = d;
-
-        return true;
-    }
-
-    return false;
-}
-
-template<class K, class D, size_t BS>
-bool Bucket<K,D,BS>::insert(std::pair<Key,Data> t)
-{
-    for (size_t i = 0; i < BS; ++i)
-    {
-        if (elements[i].first) continue;
-
-        elements[i]  = t;
-        return true;
-    }
-
-    return false;
-}
-
-template<class K, class D, size_t BS>
-typename Bucket<K,D,BS>::FRet Bucket<K,D,BS>::find(Key k)
-{
-    for (size_t i = 0; i < BS; ++i)
-    {
-        if (!elements[i].first )      return std::make_pair(false, Data());
-        if ( elements[i].first == k ) return std::make_pair(true, elements[i].second);
-    }
-    return std::make_pair(false, Data());
-}
-
-template<class K, class D, size_t BS>
-bool Bucket<K,D,BS>::remove(Key k)
-{
-    for (size_t i = 0; i < BS; ++i)
-    {
-        if (elements[i].first == k)
-        {
-            for (size_t j = i+1; j < BS; ++j)
-            {
-                if (elements[j].first) { elements[i] = elements[j]; i = j; }
-                else break;
-            }
-            elements[i] = std::make_pair(Key(), Data());
-            return true;
-        }
-        else if (! elements[i].first)
-        {
-            break;
-        }
-    }
-    return false;
-}
-
-template<class K, class D, size_t BS>
-typename Bucket<K,D,BS>::FRet Bucket<K,D,BS>::pop(Key k)
-{
-    for (size_t i = 0; i < BS; ++i)
-    {
-        if (elements[i].first == k)
-        {
-            Data d = elements[i].second;
-            for (size_t j = i+1; j < BS; ++j)
-            {
-                if (elements[j].first) { elements[i] = elements[j]; i = j; }
-                else break;
-            }
-            elements[i] = std::make_pair(Key(), Data());
-            return std::make_pair(true, d);
-        }
-        else if (! elements[i].first)
-        {
-            break;
-        }
-    }
-    return std::make_pair(false, Data());
-}
-
-template<class K, class D, size_t BS>
-int Bucket<K,D,BS>::probe(Key k)
-{
-    for (size_t i = 0; i < BS; ++i)
-    {
-        if (!elements[i].first)      return BS - i;
-        if ( elements[i].first == k) return -1;
-
-    }
-    return 0;
-}
-
-template<class K, class D, size_t BS>
-bool Bucket<K,D,BS>::space()
-{
-    return !elements[BS-1].first;
-}
-
-template<class K, class D, size_t BS>
-std::pair<K, D> Bucket<K,D,BS>::get(size_t i)
-{
-    return elements[i];
-}
-
-template<class K, class D, size_t BS>
-std::pair<K, D> Bucket<K,D,BS>::replace(size_t i, std::pair<K, D> newE)
-{
-    auto temp = elements[i];
-    elements[i] = newE;
-    return temp;
 }

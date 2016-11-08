@@ -1,4 +1,6 @@
-#include "include/spacegrow.h"
+//#include "include/spacegrow.h"
+#include "selection.h"
+
 #include "include/strategies/dstrat_bfs.h"
 #include "include/strategies/dstrat_rwalk.h"
 #include "include/strategies/dstrat_rwalk_cyclic.h"
@@ -37,6 +39,7 @@ void print_hist(Table& table, std::string name)
     out.close();
 }
 
+
 template<class Table>
 void print_dist(Table& table, std::string name)
 {
@@ -59,9 +62,11 @@ void print_dist(Table& table, std::string name)
         size_t lHist[table.bs+1];
         for (size_t i = 0; i <= table.bs; ++i) lHist[i] = 0;
 
-        for (size_t j = 0; j <= table.llb[tl]; ++j)
+        auto ltab = table.getTable(tl);
+
+        for (size_t j = 0; j < ltab.first; ++j)
         {
-            auto a = table.llt[tl][j].probe(0);
+            auto a = ltab.second[j].probe(0);
             if (a >= 0) ++lHist[a];
         }
 
@@ -74,7 +79,7 @@ void print_dist(Table& table, std::string name)
             gHist[i] += lHist[i];
         }
         print (out, n, 8);
-        print (out, (table.llb[tl]+1)*table.bs, 8);
+        print (out, ltab.first*table.bs, 8);
         out << std::endl;
     }
 
@@ -86,7 +91,7 @@ void print_dist(Table& table, std::string name)
         n += gHist[i] * (table.bs - i);
     }
     print (out, n, 8);
-    print (out, table.curGrowAmount * (table.tl+table.curGrowTable), 8);
+    //print (out, table.curGrowAmount * (table.tl+table.curGrowTable), 8);
     out << std::endl;
 
     out.close();
@@ -112,7 +117,7 @@ int test(size_t n, size_t cap, size_t steps, double alpha, std::string name)
     auto errors = 0;
     bool first  = true;
 
-    SpaceGrow<size_t, size_t, HASHFCT, Displacer, TL, BS> table(cap, alpha, steps);
+    HASHTYPE<size_t, size_t, HASHFCT, Displacer, TL, BS> table(cap, alpha, steps);
 
     std::cout << "table generated"      << std::endl;
 
@@ -157,14 +162,14 @@ int test (size_t n, size_t cap, size_t steps, double alpha, std::string name, si
 {
     switch (bs)
     {
-    case 4:
-        return test<Displacer, TL, 4 >(n,cap,steps,alpha,name);
+        //  case 4:
+        //return test<Displacer, TL, 4 >(n,cap,steps,alpha,name);
     //case 6:
         //return test<Displacer, TL, 6>(n,cap,steps,alpha,name);
     case 8:
         return test<Displacer, TL, 8 >(n,cap,steps,alpha,name);
-    case 16:
-        return test<Displacer, TL, 16>(n,cap,steps,alpha,name);
+        //case 16:
+        //return test<Displacer, TL, 16>(n,cap,steps,alpha,name);
     default:
         std::cout << "UNKNOWN BS " << bs << std::endl;
         return 32;
@@ -176,6 +181,9 @@ int test (size_t n, size_t cap, size_t steps, double alpha, std::string name, si
 {
     switch (tl)
     {
+    case 2:
+        return test<Displacer, 2>(n,cap,steps,alpha,name,bs);
+
         /*
     case 8:
         test<Displacer, 128>(n,cap,steps,alpha,name,bs);
@@ -187,18 +195,18 @@ int test (size_t n, size_t cap, size_t steps, double alpha, std::string name, si
         test<Displacer, 32 >(n,cap,steps,alpha,name,bs);
         break;
         */
-    case 64:
-        return test<Displacer, 64 >(n,cap,steps,alpha,name,bs);
+        //case 64:
+        //return test<Displacer, 64 >(n,cap,steps,alpha,name,bs);
     case 128:
         return test<Displacer, 128>(n,cap,steps,alpha,name,bs);
-    case 256:
-        return test<Displacer, 256>(n,cap,steps,alpha,name,bs);
+        //case 256:
+        //return test<Displacer, 256>(n,cap,steps,alpha,name,bs);
         /*
     case 512:
         test<Displacer, 128>(n,cap,steps,alpha,name,bs);
         break;*/
-    case 2048:
-        return test<Displacer, 2048>(n,cap,steps,alpha,name,bs);
+        //case 2048:
+        //  return test<Displacer, 2048>(n,cap,steps,alpha,name,bs);
 
     default:
         std::cout << "UNKNOWN TL " << tl << std::endl;

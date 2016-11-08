@@ -91,7 +91,7 @@ struct murmur2_hasher
         return MurmurHash64A(&local, 8, 12039890u);
     }
 };
-#endif // MURMUR
+#endif // MURMUR2
 
 
 #ifdef MURMUR3
