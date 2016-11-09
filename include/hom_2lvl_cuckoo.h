@@ -8,10 +8,10 @@ class CuckooTraits;
 
 template<class K, class D, class HF = std::hash<K>,
          class Config = CuckooConfig<> >
-class THom2LvlCuckoo : public CuckooTraits<THom2LvlCuckoo<K,D,HF,Config> >::Base_t
+class Hom2LvlCuckoo : public CuckooTraits<Hom2LvlCuckoo<K,D,HF,Config> >::Base_t
 {
 private:
-    using This_t         = THom2LvlCuckoo<K,D,HF,Config>;
+    using This_t         = Hom2LvlCuckoo<K,D,HF,Config>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
     using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
     using HashSplitter_t = typename CuckooTraits<This_t>::HashSplitter_t;
@@ -25,7 +25,7 @@ public:
     static constexpr size_t bs = CuckooTraits<This_t>::Config_t::bs;
     static constexpr size_t tl = CuckooTraits<This_t>::Config_t::tl;
 
-    THom2LvlCuckoo(size_t cap = 0      , double size_constraint = 1.1,
+    Hom2LvlCuckoo(size_t cap = 0      , double size_constraint = 1.1,
                   size_t dis_steps = 0, size_t seed = 0)
         : Base_t(0, size_constraint, dis_steps, seed)
     {
@@ -40,10 +40,10 @@ public:
         capacity    = tl * l2size;
     }
 
-    THom2LvlCuckoo(const THom2LvlCuckoo&) = delete;
-    THom2LvlCuckoo& operator=(const THom2LvlCuckoo&) = delete;
+    Hom2LvlCuckoo(const Hom2LvlCuckoo&) = delete;
+    Hom2LvlCuckoo& operator=(const Hom2LvlCuckoo&) = delete;
 
-    THom2LvlCuckoo(THom2LvlCuckoo&& rhs)
+    Hom2LvlCuckoo(Hom2LvlCuckoo&& rhs)
         : Base_t(std::move(rhs))
     {
         for (size_t i = 0; i < tl; ++i)
@@ -53,7 +53,7 @@ public:
         }
     }
 
-    THom2LvlCuckoo& operator=(THom2LvlCuckoo&& rhs)
+    Hom2LvlCuckoo& operator=(Hom2LvlCuckoo&& rhs)
     {
         Base_t::operator=(std::move(rhs));
 
@@ -87,10 +87,10 @@ private:
 
 template<class K, class D, class HF,
          class Config>
-class CuckooTraits<THom2LvlCuckoo<K,D,HF,Config> >
+class CuckooTraits<Hom2LvlCuckoo<K,D,HF,Config> >
 {
 public:
-    using Specialized_t  = THom2LvlCuckoo<K,D,HF,Config>;
+    using Specialized_t  = Hom2LvlCuckoo<K,D,HF,Config>;
     using Base_t         = CuckooBase<Specialized_t>;
     using Key            = K;
     using Data           = D;
@@ -120,13 +120,3 @@ public:
         };
     };
 };
-
-template<class K, class D, class HF = std::hash<K>,
-         template<class> class DS = dstrat_triv,
-         size_t TL = 256, size_t BS = 8>
-using Hom2LvlCuckoo = THom2LvlCuckoo<K,D,HF,CuckooConfig<BS,TL,DS,no_hist_count> >;
-
-template<class K, class D, class HF = std::hash<K>,
-         template<class> class DS = dstrat_triv,
-         size_t TL = 256, size_t BS = 8>
-using Hom2LvlCuckooHist = THom2LvlCuckoo<K,D,HF,CuckooConfig<BS,TL,DS,hist_count> >;

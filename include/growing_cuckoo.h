@@ -8,10 +8,10 @@ class CuckooTraits;
 
 template<class K, class D, class HF = std::hash<K>,
          class Config = CuckooConfig<> >
-class TGrowingCuckoo : public CuckooTraits<TGrowingCuckoo<K,D,HF,Config> >::Base_t
+class GrowingCuckoo : public CuckooTraits<GrowingCuckoo<K,D,HF,Config> >::Base_t
 {
 private:
-    using This_t         = TGrowingCuckoo<K,D,HF,Config>;
+    using This_t         = GrowingCuckoo<K,D,HF,Config>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
     using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
     using HashSplitter_t = typename CuckooTraits<This_t>::HashSplitter_t;
@@ -25,7 +25,7 @@ public:
     static constexpr size_t bs = CuckooTraits<This_t>::Config_t::bs;
     static constexpr size_t tl = CuckooTraits<This_t>::Config_t::tl;
 
-    TGrowingCuckoo(size_t cap = 0      , double size_constraint = 1.1,
+    GrowingCuckoo(size_t cap = 0      , double size_constraint = 1.1,
                   size_t dis_steps = 0, size_t seed = 0)
         : Base_t(0, size_constraint, dis_steps, seed)
     {
@@ -55,10 +55,10 @@ public:
         grow_thresh = std::ceil((capacity + grow_amount*bs)/alpha);
     }
 
-    TGrowingCuckoo(const TGrowingCuckoo&) = delete;
-    TGrowingCuckoo& operator=(const TGrowingCuckoo&) = delete;
+    GrowingCuckoo(const GrowingCuckoo&) = delete;
+    GrowingCuckoo& operator=(const GrowingCuckoo&) = delete;
 
-    TGrowingCuckoo(TGrowingCuckoo&& rhs)
+    GrowingCuckoo(GrowingCuckoo&& rhs)
         : Base_t(std::move(rhs)),
           grow_table(rhs.grow_table),
           grow_amount(rhs.grow_amount),
@@ -71,7 +71,7 @@ public:
         }
     }
 
-    TGrowingCuckoo& operator=(TGrowingCuckoo&& rhs)
+    GrowingCuckoo& operator=(GrowingCuckoo&& rhs)
     {
         Base_t::operator=(std::move(rhs));
 
@@ -157,10 +157,10 @@ private:
 
 template<class K, class D, class HF,
          class Config>
-class CuckooTraits<TGrowingCuckoo<K,D,HF,Config> >
+class CuckooTraits<GrowingCuckoo<K,D,HF,Config> >
 {
 public:
-    using Specialized_t  = TGrowingCuckoo<K,D,HF,Config>;
+    using Specialized_t  = GrowingCuckoo<K,D,HF,Config>;
     using Base_t         = CuckooBase<Specialized_t>;
     using Key            = K;
     using Data           = D;
@@ -190,14 +190,3 @@ public:
         };
     };
 };
-
-
-template<class K, class D, class HF = std::hash<K>,
-         template<class> class DS = dstrat_triv,
-         size_t TL = 256, size_t BS = 8>
-using GrowingCuckoo = TGrowingCuckoo<K,D,HF,CuckooConfig<BS,TL,DS,no_hist_count> >;
-
-template<class K, class D, class HF = std::hash<K>,
-         template<class> class DS = dstrat_triv,
-         size_t TL = 256, size_t BS = 8>
-using GrowingCuckooHist = TGrowingCuckoo<K,D,HF,CuckooConfig<BS,TL,DS,hist_count> >;

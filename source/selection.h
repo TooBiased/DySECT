@@ -7,15 +7,15 @@
 
 #ifdef GROWS
 #include "include/growing_cuckoo.h"
-#define HASHTYPE TGrowingCuckoo
+#define HASHTYPE GrowingCuckoo
 #endif // GROWS
 
 #ifdef CUCKOO
 #include "include/simple_cuckoo.h"
-#define HASHTYPE TSimpleCuckoo
+#define HASHTYPE SimpleCuckoo
 #endif // CUCKOO
 
 #ifdef HOM2LVL
 #include "include/hom_2lvl_cuckoo.h"
-#define HASHTYPE THom2LvlCuckoo
+#define HASHTYPE Hom2LvlCuckoo
 #endif // HOM2LVL
