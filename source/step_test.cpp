@@ -131,7 +131,7 @@ void catchup(Table& table, size_t* keys, size_t n)
 }
 
 
-template<template<class> class Displacer, size_t TL, size_t BS>
+template<class Config>
 int test(size_t n, size_t cap, size_t steps, double alpha, std::string name)
 {
     init_output_files(name);
@@ -150,8 +150,8 @@ int test(size_t n, size_t cap, size_t steps, double alpha, std::string name)
 
     std::cout << "randomness generated" << std::endl;
 
-    HASHTYPE<size_t, size_t, HASHFCT, Displacer, TL, BS> table_d(cap, alpha, steps);
-    HASHTYPE<size_t, size_t, HASHFCT, Displacer, TL, BS> table_s(table_d.capacity, 1.0, steps);
+    HASHTYPE<size_t, size_t, HASHFCT, Config> table_d(cap, alpha, steps);
+    HASHTYPE<size_t, size_t, HASHFCT, Config> table_s(table_d.capacity, 1.0, steps);
 
     auto curr_d_size = table_d.capacity;
     auto errors_d = 0;
@@ -171,7 +171,7 @@ int test(size_t n, size_t cap, size_t steps, double alpha, std::string name)
 
             std::cout << "NEW TABLE " << lvl << " size:" << curr_d_size << std::endl;
 
-            table_s = std::move(HASHTYPE<size_t, size_t, HASHFCT, Displacer, TL, BS>
+            table_s = std::move(HASHTYPE<size_t, size_t, HASHFCT, Config>
                                 (curr_d_size, 1.0, steps));
             catchup(table_s, keys, i);
             table_s.clearHist();
@@ -192,14 +192,9 @@ int test (size_t n, size_t cap, size_t steps, double alpha, std::string name, si
 {
     switch (bs)
     {
-        //case 4:
-        //return test<Displacer, TL, 4 >(n,cap,steps,alpha,name);
-    //case 6:
-        //return test<Displacer, TL, 6>(n,cap,steps,alpha,name);
     case 8:
-        return test<Displacer, TL, 8 >(n,cap,steps,alpha,name);
-        //case 16:
-        // return test<Displacer, TL, 16>(n,cap,steps,alpha,name);
+        return test<CuckooConfig<8,TL,Displacer,hist_count> > (n,cap,steps,alpha,name);
+
     default:
         std::cout << "UNKNOWN BS " << bs << std::endl;
         return 32;
@@ -211,29 +206,8 @@ int test (size_t n, size_t cap, size_t steps, double alpha, std::string name, si
 {
     switch (tl)
     {
-        /*
-    case 8:
-        test<Displacer, 128>(n,cap,steps,alpha,name,bs);
-        break;
-    case 16:
-        test<Displacer, 128>(n,cap,steps,alpha,name,bs);
-        break;
-    case 32:
-        test<Displacer, 32 >(n,cap,steps,alpha,name,bs);
-        break;
-        */
-        //case 64:
-        //   return test<Displacer, 64 >(n,cap,steps,alpha,name,bs);
-    case 128:
-        return test<Displacer, 128>(n,cap,steps,alpha,name,bs);
-        //case 256:
-        // return test<Displacer, 256>(n,cap,steps,alpha,name,bs);
-        /*
-    case 512:
-        test<Displacer, 128>(n,cap,steps,alpha,name,bs);
-        break;*/
-        //case 2048:
-        //return test<Displacer, 2048>(n,cap,steps,alpha,name,bs);
+    case 256:
+        return test<Displacer, 256>(n,cap,steps,alpha,name,bs);
 
     default:
         std::cout << "UNKNOWN TL " << tl << std::endl;
@@ -249,7 +223,7 @@ int main(int argn, char** argc)
     const size_t      steps = c.intArg("-steps", 512);
     const std::string name  = c.strArg("-out"  , "temp");
     const double      alpha = c.doubleArg("-alpha", 1.1);
-    const size_t      tl    = c.intArg("-tl"   , 128);
+    const size_t      tl    = c.intArg("-tl"   , 256);
     const size_t      bs    = c.intArg("-bs"   , 8);
 
     if      (c.boolArg("-bfs"))

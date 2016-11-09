@@ -1,33 +1,21 @@
 #pragma once
 
-#if (!CUCKOO && !GROWS)
+#if (!CUCKOO && !GROWS && !HOM2LVL)
 #define GROWS
 #endif // NO HASHTYPE DEFINED => GROWS
 
 
 #ifdef GROWS
 #include "include/growing_cuckoo.h"
-#define HASHTYPE GrowingCuckoo
+#define HASHTYPE TGrowingCuckoo
 #endif // GROWS
 
 #ifdef CUCKOO
 #include "include/simple_cuckoo.h"
-#define HASHTYPE SimpleCuckooWrap
+#define HASHTYPE TSimpleCuckoo
 #endif // CUCKOO
 
 #ifdef HOM2LVL
-#included "include/hom_2lvl_cuckoo.h"
-#define HASHTYPE Hom2LvlCuckoo
+#include "include/hom_2lvl_cuckoo.h"
+#define HASHTYPE THom2LvlCuckoo
 #endif // HOM2LVL
-
-
-
-#ifdef CUCKOO_OLD
-#include "include/cuckoo.h"
-#define HASHTYPE CuckooTable
-#endif // CUCKOO_OLD
-
-#ifdef GROWS_OLD
-#include "include/spacegrow.h"
-#define HASHTYPE SpaceGrow
-#endif // GROWS_OLD
