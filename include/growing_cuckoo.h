@@ -2,7 +2,6 @@
 
 #include <cmath>
 #include "cuckoo_base.h"
-#include "strategies/dstrat_triv.h"
 
 template<class T>
 class CuckooTraits;

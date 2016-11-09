@@ -4,12 +4,11 @@
 
 
 template<class K, class D, class HF = std::hash<K>,
-         template<class> class DS = dstrat_triv,
-         size_t BS = 8, class HC = no_hist_count>
-class TSimpleCuckoo : public CuckooTraits<TSimpleCuckoo<K,D,HF,DS,BS,HC> >::Base_t
+         class Config = CuckooConfig<> >
+class TSimpleCuckoo : public CuckooTraits<TSimpleCuckoo<K,D,HF,Config> >::Base_t
 {
 private:
-    using This_t         = TSimpleCuckoo<K,D,HF,DS,BS,HC>;
+    using This_t         = TSimpleCuckoo<K,D,HF,Config>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
     using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
     using HashSplitter_t = typename CuckooTraits<This_t>::HashSplitter_t;
@@ -20,11 +19,14 @@ public:
     using Key            = typename CuckooTraits<This_t>::Key;
     using Data           = typename CuckooTraits<This_t>::Data;
 
+    static constexpr size_t bs = CuckooTraits<This_t>::Config_t::bs;
+    static constexpr size_t tl = 1;
+
     TSimpleCuckoo(size_t cap = 0      , double size_constraint = 1.1,
                  size_t dis_steps = 0, size_t seed = 0)
-        : Base_t(std::max(size_t((cap*size_constraint)/BS)*BS, BS), size_constraint,
+        : Base_t(std::max(size_t((cap*size_constraint)/bs)*bs, bs), size_constraint,
                  dis_steps, seed),
-          n_buckets(std::max(size_t((cap*size_constraint)/BS), 1ul)),
+          n_buckets(std::max(size_t((cap*size_constraint)/bs), 1ul)),
           table(new Bucket_t[n_buckets])
     { }
 
@@ -53,22 +55,21 @@ private:
 
 
 template<class K, class D, class HF,
-         template<class> class DS,
-         size_t BS, class HC>
-class CuckooTraits<TSimpleCuckoo<K,D,HF,DS,BS,HC> >
+         class Config>
+class CuckooTraits<TSimpleCuckoo<K,D,HF,Config> >
 {
 public:
-    using Specialized_t  = TSimpleCuckoo<K,D,HF,DS,BS,HC>;
+    using Specialized_t  = TSimpleCuckoo<K,D,HF,Config>;
     using Base_t         = CuckooBase<Specialized_t>;
     using Key            = K;
     using Data           = D;
-    using Bucket_t       = Bucket<K,D,BS>;
     using HashFct_t      = HF;
-    using DisStrat_t     = DS<Base_t>;
-    using HistCount_t    = HC;
+    using Config_t       = Config;
 
     static constexpr size_t tl = 1;
-    static constexpr size_t bs = BS;
+    static constexpr size_t bs = Config::bs;
+
+    using Bucket_t       = Bucket<K,D,bs>;
 
     union HashSplitter_t
     {
@@ -84,19 +85,19 @@ public:
 template<class K, class D, class HF = std::hash<K>,
          template<class> class DS = dstrat_triv,
          size_t BS = 8>
-using SimpleCuckoo = TSimpleCuckoo<K,D,HF,DS,BS, no_hist_count>;
+using SimpleCuckoo = TSimpleCuckoo<K,D,HF,CuckooConfig<BS,1,DS,no_hist_count> >;
 
 template<class K, class D, class HF = std::hash<K>,
          template<class> class DS = dstrat_triv,
          size_t BS = 8>
-using SimpleCuckooHist = TSimpleCuckoo<K,D,HF,DS,BS, hist_count>;
+using SimpleCuckooHist = TSimpleCuckoo<K,D,HF,CuckooConfig<BS,1,DS,hist_count> >;
 
 template<class K, class D, class HF = std::hash<K>,
          template<class> class DS = dstrat_triv,
          size_t /* does nothing */ = 0, size_t BS = 8>
-using SimpleCuckooWrap = TSimpleCuckoo<K,D,HF,DS,BS, no_hist_count>;
+using SimpleCuckooWrap = TSimpleCuckoo<K,D,HF,CuckooConfig<BS,1,DS,no_hist_count> >;
 
 template<class K, class D, class HF = std::hash<K>,
          template<class> class DS = dstrat_triv,
          size_t /* does nothing */ = 0, size_t BS = 8>
-using SimpleCuckooWrapHist = TSimpleCuckoo<K,D,HF,DS,BS, hist_count>;
+using SimpleCuckooWrapHist = TSimpleCuckoo<K,D,HF,CuckooConfig<BS,1,DS,hist_count> >;

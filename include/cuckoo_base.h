@@ -23,6 +23,7 @@ public:
     std::unique_ptr<size_t[]> hist;
 };
 
+
 class no_hist_count
 {
 public:
@@ -31,6 +32,7 @@ public:
     static constexpr size_t  steps = 0;
     static constexpr size_t* hist  = nullptr;
 };
+
 
 template<size_t BS = 8, size_t TL = 256,
          template <class> class DisStrat = dstrat_triv,
@@ -80,9 +82,7 @@ private:
     using Specialized_t  = typename CuckooTraits<SCuckoo>::Specialized_t;
     using Bucket_t       = typename CuckooTraits<SCuckoo>::Bucket_t;
     using HashFct_t      = typename CuckooTraits<SCuckoo>::HashFct_t;
-
-    using DisStrat_t     = typename CuckooTraits<SCuckoo>::Config_t::typename DisStrat_temp<This_t>;
-
+    using DisStrat_t     = typename CuckooTraits<SCuckoo>::Config_t::template DisStrat_temp<This_t>;
     using HistCount_t    = typename CuckooTraits<SCuckoo>::Config_t::HistCount_t;
     using HashSplitter_t = typename CuckooTraits<SCuckoo>::HashSplitter_t;
 
