@@ -6,35 +6,101 @@
 #include <tuple>
 
 #include "bucket.h"
+#include "strategies/dstrat_triv.h"
 
 // CRTP base class for all cuckoo tables, this encapsulates
 // main cuckoo table functionality (insert, find, and remove)
-template<class K, class D,
-         class HF, template<class> class DS,
-         size_t BS, class SCuckoo, class HS>
+
+class hist_count
+{
+public:
+    hist_count(size_t s) : steps(s), hist(new size_t[s])
+    { for (size_t i = 0; i < s; ++i) { hist[i] = 0; } }
+
+    void add(size_t i) { ++hist[i];}
+
+    const size_t steps;
+    std::unique_ptr<size_t[]> hist;
+};
+
+class no_hist_count
+{
+public:
+    no_hist_count(size_t) { }
+    void add(size_t) { }
+    static constexpr size_t  steps = 0;
+    static constexpr size_t* hist  = nullptr;
+};
+
+template<size_t BS = 8, size_t TL = 256,
+         template <class> class DisStrat = dstrat_triv,
+         class HistCount = no_hist_count>
+struct CuckooConfig
+{
+    static constexpr size_t bs = BS;
+    static constexpr size_t tl = TL;
+
+    template <class T>
+    using DisStrat_temp = DisStrat<T>;
+
+    using HistCount_t = HistCount;
+};
+
+template<class T>
+class CuckooTraits;
+/* EXAMPLE IMPLEMENTATION
+{
+public:
+    using Specialized_t  = T;
+    using Base_t         = CuckooBase<T>;
+    using Key            = ... ;
+    using Data           = ... ;
+    using Bucket_t       = Bucket<Key,Data,bs>;
+    using HashFct_t      = ... ;
+
+    using Config_t       = CuckooConfig<...>;
+
+    union HashSplitter
+    {
+        uint64_t hash;
+        struct
+        {
+            ... //partial hash bits;
+        };
+    };
+};*/
+
+
+template<class SCuckoo>
 class CuckooBase
 {
 private:
-    using This_t = CuckooBase<K,D,HF,DS,BS,SCuckoo,HS>;
-    using Specialized_t  = SCuckoo;
-    using Bucket_t       = Bucket<K,D,BS>;
-    using HashFct_t      = HF;
-    using DisStrat_t     = DS<This_t>;
-    using HashSplitter = HS;
+
+    using This_t         = CuckooBase<SCuckoo>;
+    using Specialized_t  = typename CuckooTraits<SCuckoo>::Specialized_t;
+    using Bucket_t       = typename CuckooTraits<SCuckoo>::Bucket_t;
+    using HashFct_t      = typename CuckooTraits<SCuckoo>::HashFct_t;
+
+    using DisStrat_t     = typename CuckooTraits<SCuckoo>::Config_t::typename DisStrat_temp<This_t>;
+
+    using HistCount_t    = typename CuckooTraits<SCuckoo>::Config_t::HistCount_t;
+    using HashSplitter_t = typename CuckooTraits<SCuckoo>::HashSplitter_t;
+
     friend Specialized_t;
     friend DisStrat_t;
-    static_assert( sizeof(HashSplitter) == 8,
+
+    static_assert( sizeof(HashSplitter_t) == 8,
                    "HashSplitter must be 64bit!" );
 
 public:
-    using Key  = K;
-    using Data = D;
-    using FRet = std::pair<bool, Data>;
+    using Key      = typename CuckooTraits<SCuckoo>::Key;
+    using Data     = typename CuckooTraits<SCuckoo>::Data;
+    using FRet     = std::pair<bool, Data>;
 
     CuckooBase(size_t cap = 0, double size_constraint = 1.1,
                size_t dis_steps = 0, size_t seed = 0)
         : n(0), capacity(cap), alpha(size_constraint),
-          displacer(*this, dis_steps, seed)
+          displacer(*this, dis_steps, seed), hcounter(dis_steps)
     { }
 
     ~CuckooBase() = default;
@@ -50,7 +116,6 @@ public:
     CuckooBase& operator=(CuckooBase&& rhs)
     {
         n = rhs.n;   capacity = rhs.capacity;   alpha = rhs.alpha;
-        //displacer = DisStrat_t(*this, std::move(rhs.displacer));
         return *this;
     }
 
@@ -59,36 +124,38 @@ public:
     FRet find  (Key k) const;
     bool remove(Key k);
 
-/*** some functions for easier load visualization (not in final product) ******/
+    /*** some functions for easier load visualization (not in final product) **/
     std::pair<size_t, Bucket_t*> getTable(size_t i)
     { return static_cast<Specialized_t*>(this)->getTable(i); }
     void clearHist()
-    { for (size_t i = 0; i < displacer.steps; ++i) displacer.hist[i] = 0; }
+    { for (size_t i = 0; i < hcounter.steps; ++i) hcounter.hist[i] = 0; }
 
-/*** members that should become private at some point *************************/
+    /*** members that should become private at some point *********************/
     size_t     n;
     size_t     capacity;
     double     alpha;
     HashFct_t  hasher;
     DisStrat_t displacer;
-    static constexpr size_t bs = BS;
+    HistCount_t  hcounter;
+    static constexpr size_t bs = CuckooTraits<Specialized_t>::bs;
+    static constexpr size_t tl = CuckooTraits<Specialized_t>::tl;
 
 private:
-    inline HashSplitter h(Key k) const
+    inline HashSplitter_t h(Key k) const
     {
-        HashSplitter a;
+        HashSplitter_t a;
         a.hash = hasher(k);
         return a;
     }
 
-/*** static polymorph functions ***********************************************/
-    inline void inc_n()
-    {        static_cast<Specialized_t*>(this)->inc_n(); }
+    /*** static polymorph functions *******************************************/
+    inline void inc_n() { ++n; }
+    inline void dec_n() { --n; }
 
-    inline Bucket_t* getBucket1(HashSplitter h) const
+    inline Bucket_t* getBucket1(HashSplitter_t h) const
     { return static_cast<const Specialized_t*>(this)->getBucket1(h); }
 
-    inline Bucket_t* getBucket2(HashSplitter h) const
+    inline Bucket_t* getBucket2(HashSplitter_t h) const
     { return static_cast<const Specialized_t*>(this)->getBucket2(h); }
 };
 
@@ -96,18 +163,14 @@ private:
 
 /* IMPLEMENTATION *************************************************************/
 
-template<class K, class D,
-         class HF, template<class> class DS,
-         size_t BS, class SCuckoo, class HS>
-inline bool CuckooBase<K,D,HF,DS,BS,SCuckoo,HS>::insert(Key k, Data d)
+template<class SCuckoo>
+inline bool CuckooBase<SCuckoo>::insert(Key k, Data d)
 {
     return insert(std::make_pair(k,d));
 }
 
-template<class K, class D,
-         class HF, template<class> class DS,
-         size_t BS, class SCuckoo, class HS>
-inline bool CuckooBase<K,D,HF,DS,BS,SCuckoo,HS>::insert(std::pair<Key, Data> t)
+template<class SCuckoo>
+inline bool CuckooBase<SCuckoo>::insert(std::pair<Key, Data> t)
 {
     auto hash = h(t.first);
 
@@ -120,17 +183,18 @@ inline bool CuckooBase<K,D,HF,DS,BS,SCuckoo,HS>::insert(std::pair<Key, Data> t)
     if (p1 > p2)
     {
         // insert into p1
-        r = getBucket1(hash)->insert(t);
+        r = (getBucket1(hash)->insert(t)) ? 0 : -1;
+
     }
     else if (p2 > p1)
     {
         // insert into p2
-        r = getBucket2(hash)->insert(t);
+        r = (getBucket2(hash)->insert(t)) ? 0 : -1;
     }
     else if (p1)
     {
         // insert into p1
-        r = getBucket1(hash)->insert(t);
+        r = (getBucket1(hash)->insert(t)) ? 0 : -1;
     }
     else
     {
@@ -138,16 +202,18 @@ inline bool CuckooBase<K,D,HF,DS,BS,SCuckoo,HS>::insert(std::pair<Key, Data> t)
         r = displacer.insert(t, hash);
     }
 
-    if (r) inc_n();
-
-    return r;
+    if (r >= 0)
+    {
+        hcounter.add(r);
+        static_cast<Specialized_t*>(this)->inc_n();
+        return true;
+    }
+    else return false;
 }
 
-template<class K, class D,
-         class HF, template<class> class DS,
-         size_t BS, class SCuckoo, class HS>
-inline typename CuckooBase<K,D,HF,DS,BS,SCuckoo,HS>::FRet
-CuckooBase<K,D,HF,DS,BS,SCuckoo,HS>::find(Key k) const
+template<class SCuckoo>
+inline typename CuckooBase<SCuckoo>::FRet
+CuckooBase<SCuckoo>::find(Key k) const
 {
     auto hash = h(k);
     auto p1 = getBucket1(hash)->find(k);
@@ -157,15 +223,17 @@ CuckooBase<K,D,HF,DS,BS,SCuckoo,HS>::find(Key k) const
     else          return p2;
 }
 
-template<class K, class D,
-         class HF, template<class> class DS,
-         size_t BS, class SCuckoo, class HS>
-inline bool CuckooBase<K,D,HF,DS,BS,SCuckoo,HS>::remove(Key k)
+template<class SCuckoo>
+inline bool CuckooBase<SCuckoo>::remove(Key k)
 {
     auto hash = h(k);
     auto p1 = getBucket1(hash)->remove(k);
     auto p2 = getBucket2(hash)->remove(k);
 
-    if (p1) return true;
-    else    return p2;
+    if (p1 || p2)
+    {
+        static_cast<Specialized_t*>(this)->dec_n();
+        return true;
+    }
+    else return false;
 }

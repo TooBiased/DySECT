@@ -24,18 +24,18 @@ void print_hist(Table& table, size_t lvl, std::string name)
 {
     std::ofstream out(name, std::ofstream::app);
 
-    auto& disp = table.displacer;
+    auto& hcount = table.hcounter;
 
     print(out, "# lvl", 5);
     print(out, "steps", 7);
     print(out, "nFitted", 8);
     out << std::endl;
 
-    for (size_t i = 0; i < disp.steps; ++i)
+    for (size_t i = 0; i < hcount.steps; ++i)
     {
         print(out, lvl, 5);
         print(out, i, 7);
-        print(out, disp.hist[i], 8);
+        print(out, hcount.hist[i], 8);
         out << std::endl;
     }
     out.close();

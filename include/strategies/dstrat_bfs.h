@@ -9,30 +9,25 @@ template<class Parent>
 class dstrat_bfs
 {
 public:
-    using Key          = typename Parent::Key;
-    using Data         = typename Parent::Data;
-    using Parent_t     = typename Parent::This_t;
-    using HashSplitter = typename Parent::HashSplitter;
-    using Bucket_t     = typename Parent::Bucket_t;
+    using Key            = typename Parent::Key;
+    using Data           = typename Parent::Data;
+    using Parent_t       = typename Parent::This_t;
+    using HashSplitter_t = typename Parent::HashSplitter_t;
+    using Bucket_t       = typename Parent::Bucket_t;
 
-    using BFSQueue     = std::vector<std::tuple<Key, int, Bucket_t*> >;
+    using BFSQueue       = std::vector<std::tuple<Key, int, Bucket_t*> >;
 
     Parent&      tab;
     const size_t steps;
-    std::unique_ptr<size_t[]> hist;
 
     dstrat_bfs(Parent& parent, size_t steps = 256, size_t t = 0)
-        : tab(parent), steps(steps), hist(new size_t[steps])
+        : tab(parent), steps(steps)
     {
         (void)t; /* parameter t is for symmetry with "rwalk" therefore unused*/
-
-        //if (!hist) { std::badalloc(); }
-        for (size_t i = 0; i < steps; ++i)
-        {   hist[i] = 0;   }
     }
 
     dstrat_bfs(Parent& parent, dstrat_bfs&& rhs)
-        : tab(parent), steps(rhs.steps), hist(std::move(rhs.hist))
+        : tab(parent), steps(rhs.steps)
     { }
 
     inline bool expand(BFSQueue& q, size_t index)
@@ -67,8 +62,6 @@ public:
 
     inline bool rollBackDisplacements(std::pair<Key,Data> t, BFSQueue& bq)
     {
-        hist[bq.size() -1] += 1;
-
         Key       k1;
         int       prev1;
         Bucket_t* b1;
@@ -103,7 +96,7 @@ public:
         return true;
     }
 
-    inline bool insert(std::pair<Key,Data> t, HashSplitter hash)
+    inline int insert(std::pair<Key,Data> t, HashSplitter_t hash)
     {
         BFSQueue  bq;
         Bucket_t* b1 = tab.getBucket1(hash);
@@ -116,10 +109,10 @@ public:
         {
             if (expand(bq, i))
             {
-                return rollBackDisplacements(t, bq);
+                return (rollBackDisplacements(t, bq)) ? bq.size()-1 : -1;
             }
         }
 
-        return false;
+        return -1;
     }
 };
