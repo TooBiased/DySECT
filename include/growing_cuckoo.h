@@ -4,61 +4,43 @@
 #include "cuckoo_base.h"
 #include "strategies/dstrat_triv.h"
 
-template<size_t FL>
-union TwoLvlHashSplitter
-{
-    static constexpr size_t log(size_t k)
-    {
-        return (k-1) ? 1+log(k>>1) : 0;
-    }
-    static_assert( FL == 1ull<<log(FL),
-                   "FL must be a power of two >0!");
-
-    uint64_t hash;
-    struct
-    {
-        uint64_t tab1 : log(FL);
-        uint64_t tab2 : log(FL);
-        uint64_t loc1 : 32-log(FL);
-        uint64_t loc2 : 32-log(FL);
-    };
-};
+template<class T>
+class CuckooTraits;
 
 template<class K, class D, class HF = std::hash<K>,
-         template<class> class DS = dstrat_triv,
-         size_t TL = 256, size_t BS = 8>
-class GrowingCuckoo : public CuckooBase<K, D, HF, DS, BS,
-                                        GrowingCuckoo<K,D,HF,DS,TL,BS>,
-                                        TwoLvlHashSplitter<TL> >
+         class Config = CuckooConfig<> >
+class TGrowingCuckoo : public CuckooTraits<TGrowingCuckoo<K,D,HF,Config> >::Base_t
 {
 private:
-    using This_t       = GrowingCuckoo<K,D,HF,DS,TL,BS>;
-    using Base_t       = CuckooBase<K,D,HF,DS,BS,This_t,TwoLvlHashSplitter<TL> >;
+    using This_t         = TGrowingCuckoo<K,D,HF,Config>;
+    using Base_t         = typename CuckooTraits<This_t>::Base_t;
+    using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
+    using HashSplitter_t = typename CuckooTraits<This_t>::HashSplitter_t;
+
     friend Base_t;
-    using Bucket_t     = typename Base_t::Bucket_t;
-    using HashSplitter = typename Base_t::HashSplitter;
 
 public:
-    GrowingCuckoo(size_t cap = 0      , double size_constraint = 1.1,
+    using Key            = typename CuckooTraits<This_t>::Key;
+    using Data           = typename CuckooTraits<This_t>::Data;
+
+    static constexpr size_t bs = CuckooTraits<This_t>::Config_t::bs;
+    static constexpr size_t tl = CuckooTraits<This_t>::Config_t::tl;
+
+    TGrowingCuckoo(size_t cap = 0      , double size_constraint = 1.1,
                   size_t dis_steps = 0, size_t seed = 0)
         : Base_t(0, size_constraint, dis_steps, seed)
     {
-        std::cout << cap << std::endl;
-
-        double avg_size_f = double(cap) * size_constraint / double(TL*BS);
-        std::cout << avg_size_f << std::endl;
+        double avg_size_f = double(cap) * size_constraint / double(tl*bs);
 
         grow_amount    = 1;
         while(avg_size_f > (grow_amount << 1))
             grow_amount <<= 1;
 
-        std::cout << grow_amount << std::endl;
+        grow_table = (grow_amount < avg_size_f)
+            ? std::floor(double(cap) * alpha / double(grow_amount * bs))-tl
+            : 0;
 
-        grow_table = (grow_amount < avg_size_f) ? std::floor(double(cap) * alpha / double(grow_amount * BS))-TL : 0;
-
-        std::cout << grow_table << std::endl;
-
-        for (size_t i = grow_table; i < TL; ++i)
+        for (size_t i = grow_table; i < tl; ++i)
         {
             llb[i] = grow_amount - 1;
             llt[i] = std::make_unique<Bucket_t[]>(grow_amount);
@@ -70,27 +52,27 @@ public:
             llt[i] = std::make_unique<Bucket_t[]>(grow_amount << 1);
         }
 
-        capacity    = (grow_table+TL) * grow_amount;
-        grow_thresh = std::ceil((capacity + grow_amount*BS)/alpha);
+        capacity    = (grow_table+tl) * grow_amount;
+        grow_thresh = std::ceil((capacity + grow_amount*bs)/alpha);
     }
 
-    GrowingCuckoo(const GrowingCuckoo&) = delete;
-    GrowingCuckoo& operator=(const GrowingCuckoo&) = delete;
+    TGrowingCuckoo(const TGrowingCuckoo&) = delete;
+    TGrowingCuckoo& operator=(const TGrowingCuckoo&) = delete;
 
-    GrowingCuckoo(GrowingCuckoo&& rhs)
+    TGrowingCuckoo(TGrowingCuckoo&& rhs)
         : Base_t(std::move(rhs)),
           grow_table(rhs.grow_table),
           grow_amount(rhs.grow_amount),
           grow_thresh(rhs.grow_thresh)
     {
-        for (size_t i = 0; i < TL; ++i)
+        for (size_t i = 0; i < tl; ++i)
         {
             llb[i] = rhs.llb[i];
             llt[i] = std::move(rhs.llt[i]);
         }
     }
 
-    GrowingCuckoo& operator=(GrowingCuckoo&& rhs)
+    TGrowingCuckoo& operator=(TGrowingCuckoo&& rhs)
     {
         Base_t::operator=(std::move(rhs));
 
@@ -98,7 +80,7 @@ public:
         std::swap(grow_amount, rhs.grow_amount);
         std::swap(grow_thresh, rhs.grow_thresh);
 
-        for (size_t i = 0; i < TL; ++i)
+        for (size_t i = 0; i < tl; ++i)
         {
             std::swap(llb[i], rhs.llb[i]);
             std::swap(llt[i], rhs.llt[i]);
@@ -108,11 +90,9 @@ public:
 
     std::pair<size_t, Bucket_t*> getTable(size_t i)
     {
-        return (i < TL) ? std::make_pair(llb[i]+1, llt[i].get())
+        return (i < tl) ? std::make_pair(llb[i]+1, llt[i].get())
                         : std::make_pair(0,nullptr);
     }
-
-    static constexpr size_t tl = TL;
 
     using Base_t::n;
     using Base_t::alpha;
@@ -121,17 +101,17 @@ public:
     using Base_t::h;
 
 private:
-    size_t                      llb[TL];
-    std::unique_ptr<Bucket_t[]> llt[TL];
+    size_t                      llb[tl];
+    std::unique_ptr<Bucket_t[]> llt[tl];
 
     size_t grow_table;
     size_t grow_amount;
     size_t grow_thresh;
 
-    inline Bucket_t* getBucket1(HashSplitter h) const
+    inline Bucket_t* getBucket1(HashSplitter_t h) const
     { return &(llt[h.tab1][h.loc1 & llb[h.tab1]]); }
 
-    inline Bucket_t* getBucket2(HashSplitter h) const
+    inline Bucket_t* getBucket2(HashSplitter_t h) const
     { return &(llt[h.tab2][h.loc2 & llb[h.tab2]]); }
 
     inline void inc_n()
@@ -149,9 +129,9 @@ private:
         llb[grow_table] = nsize-1;
         llt[grow_table] = std::move(ntab);
 
-        capacity += grow_amount * BS;
-        if (++grow_table == TL) { grow_table = 0; grow_amount <<= 1; }
-        grow_thresh = std::ceil((capacity + grow_amount*BS)/alpha);
+        capacity += grow_amount * bs;
+        if (++grow_table == tl) { grow_table = 0; grow_amount <<= 1; }
+        grow_thresh = std::ceil((capacity + grow_amount*bs)/alpha);
     }
 
     inline void migrate(size_t tab, std::unique_ptr<Bucket_t[]>& target, size_t bitmask)
@@ -159,7 +139,7 @@ private:
         for (size_t i = 0; i <= llb[tab]; ++i)
         {
             Bucket_t* curr = &(llt[tab][i]);
-            for (size_t j = 0; j < BS; ++j)
+            for (size_t j = 0; j < bs; ++j)
             {
                 auto e    = curr->elements[j];
                 if (! e.first) break;
@@ -175,3 +155,50 @@ private:
         }
     }
 };
+
+template<class K, class D, class HF,
+         class Config>
+class CuckooTraits<TGrowingCuckoo<K,D,HF,Config> >
+{
+public:
+    using Specialized_t  = TGrowingCuckoo<K,D,HF,Config>;
+    using Base_t         = CuckooBase<Specialized_t>;
+    using Key            = K;
+    using Data           = D;
+    using HashFct_t      = HF;
+    using Config_t       = Config;
+
+    static constexpr size_t tl = Config::tl;
+    static constexpr size_t bs = Config::bs;
+
+    using Bucket_t       = Bucket<K,D,bs>;
+
+    union HashSplitter_t
+    {
+        static constexpr size_t log(size_t k)
+        { return (k-1) ? 1+log(k>>1) : 0; }
+
+        static_assert( tl == 1ull<<log(tl),
+                       "TL must be a power of two >0!");
+
+        uint64_t hash;
+        struct
+        {
+            uint64_t tab1 : log(tl);
+            uint64_t tab2 : log(tl);
+            uint64_t loc1 : 32-log(tl);
+            uint64_t loc2 : 32-log(tl);
+        };
+    };
+};
+
+
+template<class K, class D, class HF = std::hash<K>,
+         template<class> class DS = dstrat_triv,
+         size_t TL = 256, size_t BS = 8>
+using GrowingCuckoo = TGrowingCuckoo<K,D,HF,CuckooConfig<BS,TL,DS,no_hist_count> >;
+
+template<class K, class D, class HF = std::hash<K>,
+         template<class> class DS = dstrat_triv,
+         size_t TL = 256, size_t BS = 8>
+using GrowingCuckooHist = TGrowingCuckoo<K,D,HF,CuckooConfig<BS,TL,DS,hist_count> >;

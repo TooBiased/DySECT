@@ -12,8 +12,15 @@
 
 #ifdef CUCKOO
 #include "include/simple_cuckoo.h"
-#define HASHTYPE SimpleCuckoo
+#define HASHTYPE SimpleCuckooWrap
 #endif // CUCKOO
+
+#ifdef HOM2LVL
+#included "include/hom_2lvl_cuckoo.h"
+#define HASHTYPE Hom2LvlCuckoo
+#endif // HOM2LVL
+
+
 
 #ifdef CUCKOO_OLD
 #include "include/cuckoo.h"

@@ -11,31 +11,25 @@ template<class Parent>
 class dstrat_rwalk
 {
 public:
-    using Key          = typename Parent::Key;
-    using Data         = typename Parent::Data;
-    using Parent_t     = typename Parent::This_t;
-    using HashSplitter = typename Parent::HashSplitter;
-    using Bucket_t     = typename Parent::Bucket_t;
+    using Key            = typename Parent::Key;
+    using Data           = typename Parent::Data;
+    using Parent_t       = Parent;
+    using HashSplitter_t = typename Parent::HashSplitter_t;
+    using Bucket_t       = typename Parent::Bucket_t;
 
     Parent&      tab;
     std::mt19937 re;
     const size_t steps;
-    std::unique_ptr<size_t[]> hist;
 
-    dstrat_rwalk(Parent& parent, size_t steps=256, size_t seed=30982391937209388ull)
-        : tab(parent), re(seed), steps(steps), hist(new size_t[steps])
-    {
-        //if (!hist) { std::badalloc(); }
-
-        for (size_t i = 0; i < steps; ++i)
-        {   hist[i] = 0;   }
-    }
-
-    dstrat_rwalk(Parent& parent, dstrat_rwalk&& rhs)
-        : tab(parent), re(std::move(rhs.re)), steps(rhs.steps), hist(std::move(rhs.hist))
+    dstrat_rwalk(Parent_t& parent, size_t steps=256, size_t seed=30982391937209388ull)
+        : tab(parent), re(seed), steps(steps)
     { }
 
-    bool insert(std::pair<Key,Data> t, HashSplitter hash)
+    dstrat_rwalk(Parent_t& parent, dstrat_rwalk&& rhs)
+        : tab(parent), re(std::move(rhs.re)), steps(rhs.steps)
+    { }
+
+    inline int insert(std::pair<Key,Data> t, HashSplitter_t hash)
     {
         std::vector<std::pair<std::pair<Key, Data>, Bucket_t*> > queue;
         std::uniform_int_distribution<size_t> bin(0,1);
@@ -49,7 +43,8 @@ public:
 
         queue.emplace_back(tp,tb);
 
-        for (size_t i = 0; !(tb->space()) && i<steps; ++i)
+        size_t i = 0;
+        for ( ; !(tb->space()) && i<steps; ++i)
         {
             auto r = bsd(re);
             tp = tb->get(r);
@@ -71,18 +66,19 @@ public:
             }
         }
 
-        if (! tb->space()) { return false; }
+        if (! tb->space()) { return -1; }
 
-        hist[queue.size() -1] += 1;
+        //hist[queue.size() - 1] += 1;
 
         for (size_t i = queue.size()-1; i > 0; --i)
         {
             std::tie(tp,tb) = queue[i];
-            if (! queue[i-1].second->remove(tp.first))  { std::cout << "e2" << std::endl; return false; }
-            if (! tb->insert(tp.first, tp.second))      { std::cout << "e1" << std::endl; return false; }
+            if (! queue[i-1].second->remove(tp.first))  { std::cout << "e2" << std::endl; return -1; }
+            if (! tb->insert(tp.first, tp.second))      { std::cout << "e1" << std::endl; return -1; }
         }
 
-        if (! queue[0].second->insert(t)) { std::cout << "e3" << std::endl; return false; }
-        return true;
+        if (! queue[0].second->insert(t)) { std::cout << "e3" << std::endl; return -1; }
+
+        return i;
     }
 };
