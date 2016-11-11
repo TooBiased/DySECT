@@ -189,12 +189,12 @@ int main(int argn, char** argc)
 {
     CommandLine c(argn, argc);
     const size_t      n     = c.intArg("-n"    , 1000000);
-    const size_t      cap   = c.intArg("-cap"  , 0);
+    const size_t      cap   = c.intArg("-cap"  , 1000000);
     const size_t      steps = c.intArg("-steps", 512);
     const std::string name  = c.strArg("-out"  , "temp");
     const double      alpha = c.doubleArg("-alpha", 1.1);
     const size_t      tl    = c.intArg("-tl"   , 256);
-    const size_t      bs    = c.intArg("-bs"   , 4);
+    const size_t      bs    = c.intArg("-bs"   , 8);
 
     if      (c.boolArg("-bfs"))
     {

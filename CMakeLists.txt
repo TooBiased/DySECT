@@ -37,21 +37,11 @@ if (GROWS_HASHFCT STREQUAL MURMUR3)
 endif()
 
 
-
-add_executable(in_grows   source/in_test.cpp)
-target_compile_definitions(in_grows PRIVATE    -D GROWS -D ${GROWS_HASHFCT})
-
-add_executable(step_grows source/step_test.cpp)
-target_compile_definitions(step_grows PRIVATE  -D GROWS -D ${GROWS_HASHFCT})
-
-add_executable(in_sim     source/in_test.cpp)
-target_compile_definitions(in_sim PRIVATE   -D CUCKOO -D ${GROWS_HASHFCT})
-
-add_executable(step_sim   source/step_test.cpp)
-target_compile_definitions(step_sim PRIVATE -D CUCKOO -D ${GROWS_HASHFCT})
-
-add_executable(in_hom     source/in_test.cpp)
-target_compile_definitions(in_hom PRIVATE   -D HOM2LVL -D ${GROWS_HASHFCT})
-
-add_executable(step_hom   source/step_test.cpp)
-target_compile_definitions(step_hom PRIVATE -D HOM2LVL -D ${GROWS_HASHFCT})
+foreach(t in step time)
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${t})
+  foreach(h grows cuckoo hom2lvl triv_grow linprob)
+    string(TOUPPER ${h} h_uc)
+    add_executable(${t}_${h} source/${t}_test.cpp)
+    target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${GROWS_HASHFCT})
+  endforeach()
+endforeach()

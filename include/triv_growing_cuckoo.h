@@ -2,18 +2,17 @@
 
 #include <cmath>
 #include "cuckoo_base.h"
-#include "strategies/dstrat_triv.h"
 
 template<class T>
 class CuckooTraits;
 
 template<class K, class D, class HF = std::hash<K>,
-         template<class> class DS = dstrat_triv,
-         size_t TL = 256, size_t BS = 8, class HC = no_hist_count>
-class TTrivGrowingCuckoo : public CuckooTraits<TTrivGrowingCuckoo<K,D,HF,DS,TL,BS,HC> >::Base_t
+         class Config = CuckooConfig<> >
+class TrivGrowingCuckoo
+    : public CuckooTraits<TrivGrowingCuckoo<K,D,HF,Config> >::Base_t
 {
 private:
-    using This_t         = TTrivGrowingCuckoo<K,D,HF,DS,TL,BS,HC>;
+    using This_t         = TrivGrowingCuckoo<K,D,HF,Config>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
     using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
     using HashSplitter_t = typename CuckooTraits<This_t>::HashSplitter_t;
@@ -24,42 +23,47 @@ public:
     using Key            = typename CuckooTraits<This_t>::Key;
     using Data           = typename CuckooTraits<This_t>::Data;
 
-    TTrivGrowingCuckoo(size_t cap = 0      , double size_constraint = 1.1,
-                  size_t dis_steps = 0, size_t seed = 0)
-        : Base_t(0, size_constraint, dis_steps, seed), beta(2.0/(1.0+size_constraint))
-    {
-        size_t l2size = std::max(std::floor(cap * size_constraint / double(TL*BS)), 1);
+    static constexpr size_t bs = CuckooTraits<This_t>::bs;
+    static constexpr size_t tl = CuckooTraits<This_t>::tl;
 
-        for (size_t i = 0; i < TL; ++i)
+    TrivGrowingCuckoo(size_t cap = 0      , double size_constraint = 1.1,
+                  size_t dis_steps = 0, size_t seed = 0)
+        : Base_t(0, size_constraint, dis_steps, seed), beta((1.0+size_constraint)/2.0)
+    {
+        lsize = std::floor(cap * size_constraint / double(tl*bs));
+        lsize = std::max(lsize, 1ul);
+
+        for (size_t i = 0; i < tl; ++i)
         {
-            llb[i] = l2size;
-            llt[i] = std::make_unique<Bucket_t[]>(l2size);
+            llt[i] = std::make_unique<Bucket_t[]>(lsize);
         }
 
-        capacity    = TL * l2size;
-        grow_thresh = capacity*beta;
+        capacity    = bs * tl * lsize;
+        grow_thresh = capacity / beta;
     }
 
-    TTrivGrowingCuckoo(const TTrivGrowingCuckoo&) = delete;
-    TTrivGrowingCuckoo& operator=(const TTrivGrowingCuckoo&) = delete;
+    TrivGrowingCuckoo(const TrivGrowingCuckoo&) = delete;
+    TrivGrowingCuckoo& operator=(const TrivGrowingCuckoo&) = delete;
 
-    TTrivGrowingCuckoo(TTrivGrowingCuckoo&& rhs)
-        : Base_t(std::move(rhs))
+    TrivGrowingCuckoo(TrivGrowingCuckoo&& rhs)
+        : Base_t(std::move(rhs)), beta(rhs.beta),
+          grow_thresh(rhs.grow_thresh), lsize(rhs.lsize)
     {
-        for (size_t i = 0; i < TL; ++i)
+        for (size_t i = 0; i < tl; ++i)
         {
-            llb[i] = rhs.llb[i];
             llt[i] = std::move(rhs.llt[i]);
         }
     }
 
-    TTrivGrowingCuckoo& operator=(TTrivGrowingCuckoo&& rhs)
+    TrivGrowingCuckoo& operator=(TrivGrowingCuckoo&& rhs)
     {
         Base_t::operator=(std::move(rhs));
+        beta        = rhs.beta;
+        grow_thresh = rhs.grow_thresh;
+        lsize       = rhs.lsize;
 
-        for (size_t i = 0; i < TL; ++i)
+        for (size_t i = 0; i < tl; ++i)
         {
-            std::swap(llb[i], rhs.llb[i]);
             std::swap(llt[i], rhs.llt[i]);
         }
         return *this;
@@ -67,7 +71,7 @@ public:
 
     std::pair<size_t, Bucket_t*> getTable(size_t i)
     {
-        return (i < TL) ? std::make_pair(llb[i]+1, llt[i].get())
+        return (i < tl) ? std::make_pair(lsize, llt[i].get())
                         : std::make_pair(0,nullptr);
     }
 
@@ -77,49 +81,52 @@ public:
 private:
     using Base_t::alpha;
     double beta;
+    size_t grow_thresh;
     using Base_t::h;
 
-    size_t                      llb[TL];
-    std::unique_ptr<Bucket_t[]> llt[TL];
+    size_t lsize;
+    std::unique_ptr<Bucket_t[]> llt[tl];
 
     inline Bucket_t* getBucket1(HashSplitter_t h) const
-    { return &(llt[h.tab][h.loc1 & llb[h.tab]]); }
+    { return &(llt[h.tab][h.loc1 % lsize]); }
 
     inline Bucket_t* getBucket2(HashSplitter_t h) const
-    { return &(llt[h.tab][h.loc2 & llb[h.tab]]); }
+    { return &(llt[h.tab][h.loc2 % lsize]); }
 
     inline void inc_n()
     {
-        ++n;
-        if (n > grow_thresh) grow();
+        if ( ++n > grow_thresh ) grow();
     }
 
     inline void grow()
     {
-        size_t nsize = grow_amount << 1;
-        auto   ntab  = std::make_unique<Bucket_t[]>(nsize);
-        migrate(grow_table, ntab, nsize-1);
+        size_t nsize = lsize*beta;
+        nsize = std::max(nsize, lsize+1);
 
-        llb[grow_table] = nsize-1;
-        llt[grow_table] = std::move(ntab);
+        for (size_t i = 0; i < tl; ++i)
+        {
+            auto ntable = std::make_unique<Bucket_t[]>(nsize);
+            migrate(i, ntable, nsize);
+            llt[i] = std::move(ntable);
+        }
 
-        capacity += grow_amount * BS;
-        if (++grow_table == TL) { grow_table = 0; grow_amount <<= 1; }
-        grow_thresh = std::ceil((capacity + grow_amount*BS)/alpha);
+        lsize       = nsize;
+        capacity    = bs * tl * lsize;
+        grow_thresh = capacity / beta;
     }
 
-    inline void migrate(size_t tab, std::unique_ptr<Bucket_t[]>& target, size_t bitmask)
+    inline void migrate(size_t tab, std::unique_ptr<Bucket_t[]>& target, size_t tsize)
     {
-        for (size_t i = 0; i <= llb[tab]; ++i)
+        for (size_t i = 0; i < lsize; ++i)
         {
             Bucket_t* curr = &(llt[tab][i]);
-            for (size_t j = 0; j < BS; ++j)
+            for (size_t j = 0; j < bs; ++j)
             {
                 auto e    = curr->elements[j];
                 if (! e.first) break;
                 auto hash = h(e.first);
-                if      (getBucket1(hash) == curr) target[bitmask & hash.loc1].insert(e.first, e.second);
-                else if (getBucket2(hash) == curr) target[bitmask & hash.loc2].insert(e.first, e.second);
+                if      (getBucket1(hash) == curr) target[hash.loc1 % tsize].insert(e.first, e.second);
+                else if (getBucket2(hash) == curr) target[hash.loc2 % tsize].insert(e.first, e.second);
                 else
                 {
                     std::cout << "something is wrong neither in first, nor second bucket." << std::endl;
@@ -130,23 +137,21 @@ private:
     }
 };
 
-template<class K, class D, class HF,
-         template<class> class DS,
-         size_t TL, size_t BS, class HC>
-class CuckooTraits<TTrivGrowingCuckoo<K,D,HF,DS,TL,BS,HC> >
+template<class K, class D, class HF, class Config>
+class CuckooTraits<TrivGrowingCuckoo<K,D,HF,Config> >
 {
 public:
-    using Specialized_t  = TTrivGrowingCuckoo<K,D,HF,DS,TL,BS,HC>;
+    using Specialized_t  = TrivGrowingCuckoo<K,D,HF,Config>;
     using Base_t         = CuckooBase<Specialized_t>;
     using Key            = K;
     using Data           = D;
-    using Bucket_t       = Bucket<K,D,BS>;
     using HashFct_t      = HF;
-    using DisStrat_t     = DS<Base_t>;
-    using HistCount_t    = HC
+    using Config_t       = Config;
 
-    static constexpr size_t bs = BS;
-    static constexpr size_t tl = TL;
+    static constexpr size_t bs = Config::bs;
+    static constexpr size_t tl = Config::tl;
+
+    using Bucket_t       = Bucket<K,D,bs>;
 
     union HashSplitter_t
     {
@@ -159,26 +164,16 @@ public:
         static constexpr size_t loc_size(size_t k)
         { return 32 - ((log(k)+uneven(k)) >> 1);}
 
-        static_assert( TL == 1ull<<log(TL),
+        static_assert( tl == 1ull<<log(tl),
                        "TL must be a power of two >0!");
 
         uint64_t hash;
         struct
         {
-            uint64_t tab  : log(TL);
-            //uint64_t tab2 : log(TL);
-            uint64_t loc1 : loc_size(TL);
-            uint64_t loc2 : loc_size(TL);
+            uint64_t tab  : log(tl);
+            //uint64_t tab2 : log(tl);
+            uint64_t loc1 : loc_size(tl);
+            uint64_t loc2 : loc_size(tl);
         };
     };
 };
-
-template<class K, class D, class HF = std::hash<K>,
-         template<class> class DS = dstrat_triv,
-         size_t TL = 256, size_t BS = 8>
-using TrivGrowingCuckoo = TTrivGrowingCuckoo<K,D,HF,DS,TL,BS,no_hist_count>
-
-template<class K, class D, class HF = std::hash<K>,
-         template<class> class DS = dstrat_triv,
-         size_t TL = 256, size_t BS = 8>
-using TrivGrowingCuckooHist = TTrivGrowingCuckoo<K,D,HF,DS,TL,BS,hist_count>
