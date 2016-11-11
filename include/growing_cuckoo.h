@@ -51,7 +51,7 @@ public:
             llt[i] = std::make_unique<Bucket_t[]>(grow_amount << 1);
         }
 
-        capacity    = (grow_table+tl) * grow_amount;
+        capacity    = (grow_table+tl) * grow_amount * bs;
         grow_thresh = std::ceil((capacity + grow_amount*bs)/alpha);
     }
 

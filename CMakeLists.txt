@@ -36,8 +36,10 @@ if (GROWS_HASHFCT STREQUAL MURMUR3)
   endif()
 endif()
 
+add_executable(step_all source/step_test.cpp)
+target_compile_definitions(step_all PRIVATE -D GROWS -D ${GROWS_HASHFCT})
 
-foreach(t in step time)
+foreach(t in time)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${t})
   foreach(h grows cuckoo hom2lvl triv_grow linprob)
     string(TOUPPER ${h} h_uc)

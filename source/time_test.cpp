@@ -20,133 +20,109 @@ inline void print(std::ostream& out, const T& t, size_t w)
     out << t << " " << std::flush;
 }
 
-inline void print_headline(std::ostream& out)
-{
-    print(out, "it"    , 3);
-    print(out, "alpha" , 5);
-    print(out, "bsize" , 5);
-    print(out, "ntabl" , 5);
-    print(out, "cap"   , 8);
-    print(out, "n_pre" , 8);
-    print(out, "n_main", 8);
-    print(out, "t_pre" , 8);
-    print(out, "t_in"  , 8);
-    print(out, "t_find", 8);
-    print(out, "unsucc", 6);
-    print(out, "lost"  , 6);
-    out << std::endl;
-}
-
-inline void print_timing(std::ostream& out, size_t i,
-                         double alpha, size_t bs  , size_t tl,
-                         size_t cap  , size_t pre , size_t n ,
-                         double d_pre, double d_in, double d_fn,
-                         size_t unsucc, size_t lost_elem)
-{
-    print(out, i        , 3);
-    print(out, alpha    , 5);
-    print(out, bs       , 5);
-    print(out, tl       , 5);
-    print(out, cap      , 8);
-    print(out, pre      , 8);
-    print(out, n        , 8);
-    print(out, d_pre    , 8);
-    print(out, d_in     , 8);
-    print(out, d_fn     , 8);
-    print(out, unsucc   , 6);
-    print(out, lost_elem, 6);
-    out << std::endl;
-}
-
-
 template<class Config>
-int test(size_t it, size_t n, size_t pre,  size_t cap, size_t steps, double alpha, std::string name)
+struct Test
 {
-    constexpr size_t range = (1ull<<63) -1;
+    using Table = HASHTYPE<size_t, size_t, HASHFCT, Config>;
 
-    size_t* keys = new size_t[n+pre];
-
-    std::uniform_int_distribution<uint64_t> dis(1,range);
-    std::mt19937_64 re;
-
-    for (size_t i = 0; i < n+pre; ++i)
+    inline void print_headline(std::ostream& out)
     {
-        keys[i] = dis(re);
+        print(out, "it"    , 3);
+        print(out, "alpha" , 5);
+        print(out, "bsize" , 5);
+        print(out, "ntabl" , 5);
+        print(out, "cap"   , 8);
+        print(out, "n_pre" , 8);
+        print(out, "n_main", 8);
+        print(out, "t_pre" , 8);
+        print(out, "t_in"  , 8);
+        print(out, "t_find", 8);
+        print(out, "unsucc", 6);
+        print(out, "lost"  , 6);
+        out << std::endl;
     }
 
-    std::ofstream file(name + ".time", std::ofstream::out | std::ofstream::app);
-    print_headline(file);
-
-    for (size_t i = 0; i < it; ++i)
+    inline void print_timing(std::ostream& out, size_t i,
+                             double alpha, size_t bs  , size_t tl,
+                             size_t cap  , size_t pre , size_t n ,
+                             double d_pre, double d_in, double d_fn,
+                             size_t unsucc, size_t lost_elem)
     {
-        auto errors = 0;
+        print(out, i        , 3);
+        print(out, alpha    , 5);
+        print(out, bs       , 5);
+        print(out, tl       , 5);
+        print(out, cap      , 8);
+        print(out, pre      , 8);
+        print(out, n        , 8);
+        print(out, d_pre    , 8);
+        print(out, d_in     , 8);
+        print(out, d_fn     , 8);
+        print(out, unsucc   , 6);
+        print(out, lost_elem, 6);
+        out << std::endl;
+    }
 
-        HASHTYPE<size_t, size_t, HASHFCT, Config> table(cap, alpha, steps);
+    int operator()(size_t it, size_t n, size_t pre,  size_t cap, size_t steps, double alpha, std::string name)
+    {
+        constexpr size_t range = (1ull<<63) -1;
 
-        auto t0 = std::chrono::high_resolution_clock::now();
-        for (size_t i = 0; i < pre; ++i)
+        size_t* keys = new size_t[n+pre];
+
+        std::uniform_int_distribution<uint64_t> dis(1,range);
+        std::mt19937_64 re;
+
+        for (size_t i = 0; i < n+pre; ++i)
         {
-            table.insert(keys[i], i);
+            keys[i] = dis(re);
         }
 
-        auto t1 = std::chrono::high_resolution_clock::now();
-        for (size_t i = pre; i < pre + n; ++i)
+        std::ofstream file(name + ".time", std::ofstream::out | std::ofstream::app);
+        print_headline(file);
+
+        for (size_t i = 0; i < it; ++i)
         {
-            if (!table.insert(keys[i], i))
+            auto errors = 0;
+
+            Table table(cap, alpha, steps);
+
+            auto t0 = std::chrono::high_resolution_clock::now();
+            for (size_t i = 0; i < pre; ++i)
             {
-                ++errors;
+                table.insert(keys[i], i);
             }
+
+            auto t1 = std::chrono::high_resolution_clock::now();
+            for (size_t i = pre; i < pre + n; ++i)
+            {
+                if (!table.insert(keys[i], i))
+                {
+                    ++errors;
+                }
+            }
+
+            auto t2 = std::chrono::high_resolution_clock::now();
+            auto count = 0;
+            for (size_t i = pre; i < pre + n; ++i)
+            {
+                auto e = table.find(keys[i]);
+                if (e.first && (e.second == i)) count++;
+            }
+            auto t3 = std::chrono::high_resolution_clock::now();
+
+            double d_pre = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count()/1000.;
+            double d_in  = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()/1000.;
+            double d_fn  = std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count()/1000.;
+
+            print_timing(file, it, alpha, Config::bs, Config::tl, cap, pre, n,
+                         d_pre, d_in, d_fn, errors, n - errors -count);
         }
 
-        auto t2 = std::chrono::high_resolution_clock::now();
-        auto count = 0;
-        for (size_t i = pre; i < pre + n; ++i)
-        {
-            auto e = table.find(keys[i]);
-            if (e.first && (e.second == i)) count++;
-        }
-        auto t3 = std::chrono::high_resolution_clock::now();
+        delete[] keys;
 
-        double d_pre = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count()/1000.;
-        double d_in  = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()/1000.;
-        double d_fn  = std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count()/1000.;
-
-        print_timing(file, it, alpha, Config::bs, Config::tl, cap, pre, n,
-                           d_pre, d_in, d_fn, errors, n - errors -count);
+        return 0;
     }
-
-    delete[] keys;
-
-    return 0;
-}
-
-template<template<class> class Displacer, size_t TL>
-int test (size_t it, size_t n, size_t pre,  size_t cap, size_t steps, double alpha, std::string name, size_t bs)
-{
-    switch (bs)
-    {
-    case 8:
-        return test<CuckooConfig<8,TL,Displacer,no_hist_count> > (it,n,pre,cap,steps,alpha,name);
-
-    default:
-        std::cout << "UNKNOWN BS " << bs << std::endl;
-        return 32;
-    }
-}
-
-template<template<class> class Displacer>
-int test (size_t it, size_t n, size_t pre,  size_t cap, size_t steps, double alpha, std::string name, size_t tl, size_t bs)
-{
-    switch (tl)
-    {
-    case 256:
-        return test<Displacer, 256>(it,n,pre,cap,steps,alpha,name,bs);
-
-    default:
-        std::cout << "UNKNOWN TL " << tl << std::endl;
-        return 16;
-    }
-}
+};
 
 int main(int argn, char** argc)
 {
@@ -158,23 +134,6 @@ int main(int argn, char** argc)
     const size_t      steps = c.intArg("-steps", 512);
     const std::string name  = c.strArg("-out"  , "temp");
     const double      alpha = c.doubleArg("-alpha", 1.1);
-    const size_t      tl    = c.intArg("-tl"   , 256);
-    const size_t      bs    = c.intArg("-bs"   , 8);
 
-    if      (c.boolArg("-bfs"))
-    {
-        return test<dstrat_bfs>         (it, n, pre, cap, steps, alpha, name, tl, bs);
-    }
-    else if (c.boolArg("-rwalk"))
-    {
-        return test<dstrat_rwalk>       (it, n, pre, cap, steps, alpha, name, tl, bs);
-    }
-    else if (c.boolArg("-rwalkcyc"))
-    {
-        return test<dstrat_rwalk_cyclic>(it, n, pre, cap, steps, alpha, name, tl, bs);
-    }
-
-    std::cout << "ERROR: choose Displacement Strategy" << std::endl;
-
-    return 1;
+    return Chooser::execute<Test,no_hist_count> (c, it, n, pre, cap, steps, alpha, name);
 }

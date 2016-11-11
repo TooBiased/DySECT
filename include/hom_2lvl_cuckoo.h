@@ -29,7 +29,7 @@ public:
                   size_t dis_steps = 0, size_t seed = 0)
         : Base_t(0, size_constraint, dis_steps, seed)
     {
-        size_t l2size = std::floor(cap * size_constraint / double(tl*bs));
+        size_t l2size = std::floor(double(cap) * size_constraint / double(tl*bs));
 
         for (size_t i = 0; i < tl; ++i)
         {
@@ -37,7 +37,7 @@ public:
             llt[i] = std::make_unique<Bucket_t[]>(l2size);
         }
 
-        capacity    = tl * l2size;
+        capacity    = tl * l2size * bs;
     }
 
     Hom2LvlCuckoo(const Hom2LvlCuckoo&) = delete;

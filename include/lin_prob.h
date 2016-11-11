@@ -86,13 +86,14 @@ public:
 
     FastLinProbTable(size_t cap = 0, double size_constraint = 1.1,
                      size_t dis_steps = 0, size_t /*unneeded*/ = 0)
-        : n(0), bitmask(1), alpha(size_constraint), steps(dis_steps), hcounter(dis_steps)
+        : n(0), alpha(size_constraint), steps(dis_steps), hcounter(dis_steps)
     {
-        while( bitmask < alpha*cap ) bitmask <<= 1;
-        bitmask <<= 1;
-        table = std::make_unique<Cell_t[]>(bitmask);
-        grow_thresh = bitmask * 0.6;
-        --bitmask;
+        capacity = Config::tl;
+        while( capacity < cap ) capacity <<= 1;
+        capacity <<= 1;
+        table = std::make_unique<Cell_t[]>(capacity);
+        grow_thresh = capacity * 0.6;
+        bitmask = capacity - 1;
     }
 
     ~FastLinProbTable() = default;
@@ -101,15 +102,15 @@ public:
     FastLinProbTable& operator=(const FastLinProbTable&) = delete;
 
     FastLinProbTable(FastLinProbTable&& rhs)
-        : n(rhs.n), bitmask(rhs.bitmask), alpha(rhs.alpha),
+        : n(rhs.n), capacity(rhs.capacity), bitmask(rhs.bitmask), alpha(rhs.alpha),
           steps(rhs.steps), grow_thresh(rhs.grow_thresh),
           hcounter(rhs.steps), table(std::move(rhs.table))
     { }
 
     FastLinProbTable& operator=(FastLinProbTable&& rhs)
     {
-        n = rhs.n;   bitmask = rhs.bitmask;   alpha = rhs.alpha;
-        grow_thresh = rhs.grow_thresh;
+        n = rhs.n;   capacity = rhs.capacity;   bitmask = rhs.bitmask;
+        alpha = rhs.alpha;  grow_thresh = rhs.grow_thresh;
         table = std::move(rhs.table);
         return *this;
     }
@@ -127,6 +128,7 @@ public:
 
     /*** members that should become private at some point *********************/
     size_t     n;
+    size_t     capacity;
     size_t     bitmask;
     double     alpha;
     size_t     steps;
@@ -153,7 +155,7 @@ private:
     }
 
     FastLinProbTable(size_t cap, size_t steps)
-        : n(0), bitmask(cap-1), alpha(0), steps(steps),
+        : n(0), capacity(cap), bitmask(cap-1), alpha(0), steps(steps),
           grow_thresh(cap), hcounter(steps), table(new Cell_t[cap])
     { }
 

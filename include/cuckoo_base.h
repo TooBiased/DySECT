@@ -179,7 +179,8 @@ inline bool CuckooBase<SCuckoo>::insert(std::pair<Key, Data> t)
 
     if ((p1 < 0) || (p2 < 0)) return false;
 
-    auto r = false;
+    auto r = -1;
+
     if (p1 > p2)
     {
         // insert into p1

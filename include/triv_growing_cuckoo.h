@@ -100,7 +100,7 @@ private:
 
     inline void grow()
     {
-        size_t nsize = lsize*beta;
+        size_t nsize = std::floor(double(n) * alpha / double(tl*bs));
         nsize = std::max(nsize, lsize+1);
 
         for (size_t i = 0; i < tl; ++i)
@@ -170,10 +170,10 @@ public:
         uint64_t hash;
         struct
         {
-            uint64_t tab  : log(tl);
-            //uint64_t tab2 : log(tl);
-            uint64_t loc1 : loc_size(tl);
-            uint64_t loc2 : loc_size(tl);
+            uint64_t unused : log(tl);
+            uint64_t tab    : log(tl);
+            uint64_t loc1   : 32 - log(tl);
+            uint64_t loc2   : 32 - log(tl);
         };
     };
 };

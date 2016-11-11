@@ -21,7 +21,7 @@ public:
     const size_t steps;
 
     dstrat_bfs(Parent& parent, size_t steps = 256, size_t t = 0)
-        : tab(parent), steps(steps)
+        : tab(parent), steps(steps+1)
     {
         (void)t; /* parameter t is for symmetry with "rwalk" therefore unused*/
     }
@@ -109,7 +109,7 @@ public:
         {
             if (expand(bq, i))
             {
-                return (rollBackDisplacements(t, bq)) ? bq.size()-1 : -1;
+                return (rollBackDisplacements(t, bq)) ? bq.size()-2 : -1;
             }
         }
 
