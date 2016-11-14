@@ -1,0 +1,69 @@
+#+TITLE:  First Try on Analyzing Measurements using ORG mode
+#+AUTHOR: Tobias Maier
+#+EMAIL:  t.maier@kit.edu
+
+* Load an Input File
+#+BEGIN_SRC python  :session :results output
+import pandas as pd
+def load(file, col) :
+    return pd.read_csv(rile, sep = '\\s+', names = col, skiprows = 1, comment = '#', skip_blank_lines = True)
+print 100
+columns = ["it", "alpha", "bsize", "ntabl", "cap", "n_pre", "t_in", "t_find", "unsucc", "lost"]
+name = "../grows_rwalk_TL256_BS4_al1.15_n100000000_cap"
+suffix = ".time"
+dynamic_data  = load(name+"1"+suffix        , columns)
+static_data   = load(name+"100000000"+suffix, columns)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+
+... ...   File "<stdin>", line 3
+    print 100
+        ^
+SyntaxError: invalid syntax
+>>> >>> >>> Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "<stdin>", line 2, in load
+NameError: global name 'rile' is not defined
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "<stdin>", line 2, in load
+NameError: global name 'rile' is not defined
+#+end_example
+
+* TEST
+#+begin_src python :session :results both
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+fig=plt.figure(figsize=(3,2))
+plt.plot([1,3,2])
+fig.tight_layout()
+plt.savefig('myfig.pdf')
+# 'myfig.pdf' # return this to org-mode
+#+end_src
+
+#+RESULTS:
+[[file:
+>>> Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "/usr/lib/python2.7/dist-packages/matplotlib/pyplot.py", line 114, in <module>
+    _backend_mod, new_figure_manager, draw_if_interactive, _show = pylab_setup()
+  File "/usr/lib/python2.7/dist-packages/matplotlib/backends/__init__.py", line 32, in pylab_setup
+    globals(),locals(),[backend_name],0)
+  File "/usr/lib/python2.7/dist-packages/matplotlib/backends/backend_agg.py", line 42, in <module>
+    from matplotlib.backends._backend_agg import RendererAgg as _RendererAgg
+ImportError: cannot import name RendererAgg
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+NameError: name 'plt' is not defined
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+NameError: name 'plt' is not defined
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+NameError: name 'fig' is not defined
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+NameError: name 'plt' is not defined]]
