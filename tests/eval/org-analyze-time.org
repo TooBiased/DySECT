@@ -2,35 +2,174 @@
 #+AUTHOR: Tobias Maier
 #+EMAIL:  t.maier@kit.edu
 
-* Load an Input File
+#+BEGIN_SRC python :results output
+import sys
+print(sys.executable)
+#+END_SRC
+
+#+RESULTS:
+: In [1]: In [2]: /home/maier/RANDOM/anaconda2/bin/python
+: In [3]:
+
+* Load an Input Files
 #+BEGIN_SRC python  :session :results output
-import pandas as pd
-def load(file, col) :
-    return pd.read_csv(rile, sep = '\\s+', names = col, skiprows = 1, comment = '#', skip_blank_lines = True)
-print 100
-columns = ["it", "alpha", "bsize", "ntabl", "cap", "n_pre", "t_in", "t_find", "unsucc", "lost"]
-name = "../grows_rwalk_TL256_BS4_al1.15_n100000000_cap"
-suffix = ".time"
-dynamic_data  = load(name+"1"+suffix        , columns)
-static_data   = load(name+"100000000"+suffix, columns)
+  import pandas as pd
+  def load(file, col_r, col_g) :
+      temp  = pd.read_csv(file, sep = '\\s+', names = col_r, skiprows = 1, comment = 'i', skip_blank_lines = True) #CHANGE FOR FUTURE TESTS
+      return temp.groupby(col_g)['t_pre', 't_in', 't_find', 'unsucc', 'lost'].mean()
+
+  col_read  = ["it", "alpha", "bsize", "ntabl", "cap", "n_pre", "n_main", "t_pre", "t_in", "t_find", "unsucc", "lost"]
+  col_group = ["bsize", "ntabl", "alpha", "cap"]
+  prefix  = "../11_11-C/"
+  grows_bfs      = load( prefix+"grows_bfs_T"     , col_read, col_group)
+  grows_rwalk    = load( prefix+"grows_rwalk_T"   , col_read, col_group)
+  grows_rwalkcyc = load( prefix+"grows_rwalkcyc_T", col_read, col_group)
+  hom2lvl_bfs    = load( prefix+"hom2lvl_T"       , col_read, col_group)
+  cuckoo_bfs     = load( prefix+"cuckoo_T"        , col_read, col_group)
+  linprob        = load( prefix+"linprob_T"       , col_read, col_group)
+  print "no errors"
 #+END_SRC
 
 #+RESULTS:
 #+begin_example
 
-... ...   File "<stdin>", line 3
-    print 100
-        ^
-SyntaxError: invalid syntax
->>> >>> >>> Traceback (most recent call last):
-  File "<stdin>", line 1, in <module>
-  File "<stdin>", line 2, in load
-NameError: global name 'rile' is not defined
+RuntimeError: module compiled against API version a but this version of numpy is 9
+
+Error in sys.excepthook:
 Traceback (most recent call last):
-  File "<stdin>", line 1, in <module>
-  File "<stdin>", line 2, in load
-NameError: global name 'rile' is not defined
+  File "/usr/local/lib/python2.7/dist-packages/IPython/core/interactiveshell.py", line 1761, in excepthook
+    self.showtraceback((etype, value, tb), tb_offset=0)
+  File "/usr/local/lib/python2.7/dist-packages/IPython/core/interactiveshell.py", line 1856, in showtraceback
+    self.debugger(force=True)
+  File "/usr/local/lib/python2.7/dist-packages/IPython/core/interactiveshell.py", line 1022, in debugger
+    pm()
+  File "/usr/local/lib/python2.7/dist-packages/IPython/core/interactiveshell.py", line 1019, in <lambda>
+    pm = lambda : self.InteractiveTB.debugger(force=True)
+  File "/usr/local/lib/python2.7/dist-packages/IPython/core/ultratb.py", line 1074, in debugger
+    self.pdb.botframe = etb.tb_frame
+AttributeError: 'NoneType' object has no attribute 'tb_frame'
+
+Original exception was:
+RuntimeError: module compiled against API version a but this version of numpy is 9
+RuntimeError: module compiled against API version 0xa but this version of numpy is 0x9
+
+Error in sys.excepthook:
+Traceback (most recent call last):
+  File "/usr/local/lib/python2.7/dist-packages/IPython/core/interactiveshell.py", line 1761, in excepthook
+    self.showtraceback((etype, value, tb), tb_offset=0)
+  File "/usr/local/lib/python2.7/dist-packages/IPython/core/interactiveshell.py", line 1856, in showtraceback
+    self.debugger(force=True)
+  File "/usr/local/lib/python2.7/dist-packages/IPython/core/interactiveshell.py", line 1022, in debugger
+    pm()
+  File "/usr/local/lib/python2.7/dist-packages/IPython/core/interactiveshell.py", line 1019, in <lambda>
+    pm = lambda : self.InteractiveTB.debugger(force=True)
+  File "/usr/local/lib/python2.7/dist-packages/IPython/core/ultratb.py", line 1074, in debugger
+    self.pdb.botframe = etb.tb_frame
+AttributeError: 'NoneType' object has no attribute 'tb_frame'
+
+Original exception was:
+RuntimeError: module compiled against API version 0xa but this version of numpy is 0x9
+... ... ... >>> >>> >>> >>> >>> >>> >>> >>> >>> >>> no errors
 #+end_example
+
+
+
+#+BEGIN_SRC python :session :results output
+print linprob
+#+END_SRC
+
+#+RESULTS:
+: t_pre     t_in   t_find  unsucc  lost
+: bsize ntabl alpha cap
+: 8     256   1.1   100000000      0  4153.42  4083.68       0     0
+
+
+* Compare Displacement strategies
+Available sets:
+=grows_bfs=, =grows_rwalk=, =grows_rwalkcyc=, =hom2lvl_bfs=, =cuckoo_bfs=, =linprob=
+Example Dataset:
+|       |       |       |           | t_pre |    t_in |  t_find | unsucc | lost |
+| bsize | ntabl | alpha |       cap |       |         |         |        |      |
+|     8 |   256 |   1.1 | 100000000 |     0 | 4153.42 | 4083.68 |      0 |    0 |
+
+#+BEGIN_SRC python :session :results output
+  import matplotlib
+  import numpy as np
+  import matplotlib.pyplot as plt
+  import math
+
+  fig = plt.figure  (figsize=(5,5))
+  ax  = fig.add_axes([0.1,0.15,0.8,0.8])
+
+  metric = 't_in'
+  bs     = 8
+  tl     = 256
+  alpha  = 1.1
+  cap    = 1
+
+  ax.plot(0, grows_bfs['t_in'][bs][tl][alpha][cap])
+
+  plt.savefig('plot.pdf')
+  'plot.pdf'
+
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+
+>>> RuntimeError: module compiled against API version 0xa but this version of numpy is 0x9
+
+Error in sys.excepthook:
+Traceback (most recent call last):
+  File "/usr/local/lib/python2.7/dist-packages/IPython/core/interactiveshell.py", line 1761, in excepthook
+    self.showtraceback((etype, value, tb), tb_offset=0)
+  File "/usr/local/lib/python2.7/dist-packages/IPython/core/interactiveshell.py", line 1856, in showtraceback
+    self.debugger(force=True)
+  File "/usr/local/lib/python2.7/dist-packages/IPython/core/interactiveshell.py", line 1022, in debugger
+    pm()
+  File "/usr/local/lib/python2.7/dist-packages/IPython/core/interactiveshell.py", line 1019, in <lambda>
+    pm = lambda : self.InteractiveTB.debugger(force=True)
+  File "/usr/local/lib/python2.7/dist-packages/IPython/core/ultratb.py", line 1074, in debugger
+    self.pdb.botframe = etb.tb_frame
+AttributeError: 'NoneType' object has no attribute 'tb_frame'
+
+Original exception was:
+RuntimeError: module compiled against API version 0xa but this version of numpy is 0x9
+Traceback (most recent call last):
+  File "<ipython-input-34-eff513f636fd>", line 1, in <module>
+    import matplotlib.pyplot as plt
+  File "/usr/lib/python2.7/dist-packages/matplotlib/pyplot.py", line 29, in <module>
+    import matplotlib.colorbar
+  File "/usr/lib/python2.7/dist-packages/matplotlib/colorbar.py", line 34, in <module>
+    import matplotlib.collections as collections
+  File "/usr/lib/python2.7/dist-packages/matplotlib/collections.py", line 27, in <module>
+    import matplotlib.backend_bases as backend_bases
+  File "/usr/lib/python2.7/dist-packages/matplotlib/backend_bases.py", line 62, in <module>
+    import matplotlib.textpath as textpath
+  File "/usr/lib/python2.7/dist-packages/matplotlib/textpath.py", line 15, in <module>
+    import matplotlib.font_manager as font_manager
+  File "/usr/lib/python2.7/dist-packages/matplotlib/font_manager.py", line 58, in <module>
+    from matplotlib import ft2font
+ImportError: numpy.core.multiarray failed to import
+
+> /usr/lib/python2.7/dist-packages/matplotlib/font_manager.py(58)<module>()
+     57 from matplotlib import afm
+---> 58 from matplotlib import ft2font
+     59 from matplotlib import rcParams, get_cachedir
+ipdb> ipdb> *** NameError: name 'plt' is not defined
+*** NameError: name 'fig' is not defined
+*** NameError: name 'fig' is not defined
+ipdb> ipdb> ipdb> ipdb> ipdb> ipdb> *** NameError: name 'ax' is not defined
+*** NameError: name 'ax' is not defined
+*** NameError: name 'plt' is not defined
+'plot.pdf'
+'plot.pdf'
+'plot.pdf'
+'plot.pdf'
+'plot.pdf'
+#+end_example
+
+
 
 * TEST
 #+begin_src python :session :results both
@@ -45,7 +184,6 @@ plt.savefig('myfig.pdf')
 #+end_src
 
 #+RESULTS:
-[[file:
 >>> Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
   File "/usr/lib/python2.7/dist-packages/matplotlib/pyplot.py", line 114, in <module>

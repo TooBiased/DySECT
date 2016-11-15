@@ -1,0 +1,67 @@
+#+TITLE:  ORG-R-TEST
+#+AUTHOR: Tobias Maier
+#+EMAIL:  t.maier@kit.edu
+
+
+* Plotting example
+#+begin_src R :results output graphics :file mygraph.png :bg "white"
+# Creating a Graph
+attach(mtcars)
+plot(wt, mpg)
+abline(lm(mpg~wt))
+title("Regression of MPG on Weight")
+#+end_src
+
+#+RESULTS:
+[[file:mygraph.png]]
+
+
+* Clear Data
+#+BEGIN_SRC R :session
+rm(list=ls())
+getwd()
+#+END_SRC
+
+#+RESULTS:
+: /home/maier/PHD/SpaceEfficientHashing/Implementation/tests/eval
+
+* Reading Data
+#+begin_src R :session :results output
+#graphics :file mygraph.png
+cols <- c('it', 'al', 'bs', 'tl', 'cap', 'pre', 'n', 'tp', 'tin', 'tfi', 'unsucc', 'lost')
+grows_bfs_raw      <- read.table("../11_11-C/grows_bfs_T"     , comment.char = "i", col.names = cols)
+grows_rwalk_raw    <- read.table("../11_11-C/grows_rwalk_T"   , comment.char = "i", col.names = cols)
+grows_rwalkcyc_raw <- read.table("../11_11-C/grows_rwalkcyc_T", comment.char = "i", col.names = cols)
+hom2lvl_raw        <- read.table("../11_11-C/hom2lvl_T"       , comment.char = "i", col.names = cols)
+cuckoo_raw         <- read.table("../11_11-C/cuckoo_T"        , comment.char = "i", col.names = cols)
+linprob_raw        <- read.table("../11_11-C/linprob_T"       , comment.char = "i", col.names = cols)
+#plot(rep(1,5), grows_bfs_raw['tin'])
+
+loc_groupby <- function(d)
+{
+  return( aggregate(d, by=list(d$bs, d$tl, d$cap, d$al), FUN=mean) )
+}
+
+grows_bfs      = loc_groupby(grows_bfs_raw)
+grows_rwalk    = loc_groupby(grows_rwalk_raw)
+grows_rwalkcyc = loc_groupby(grows_rwalkcyc_raw)
+hom2lvl        = loc_groupby(hom2lvl_raw)
+cuckoo         = loc_groupby(cuckoo_raw)
+linprob        = loc_groupby(linprob_raw)
+#+end_src
+
+#+RESULTS:
+
+#+BEGIN_SRC R :session :results output
+cuckoo
+#+END_SRC
+
+#+RESULTS:
+:   Group.1 Group.2   Group.3 Group.4 it   al bs  tl   cap pre     n tp      tin
+: 1       8     256 100000000    1.10  5 1.10  8 256 1e+08   0 1e+08  0 13062.86
+: 2       8     256 100000000    1.15  5 1.15  8 256 1e+08   0 1e+08  0 12758.84
+: 3       8     256 100000000    1.20  5 1.20  8 256 1e+08   0 1e+08  0 12617.88
+:        tfi unsucc lost
+: 1 12632.98      0    0
+: 2 12642.94      0    0
+: 3 12577.36      0    0

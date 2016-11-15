@@ -27,13 +27,13 @@ struct Test
 
     inline void print_headline(std::ostream& out)
     {
-        print(out, "it"    , 3);
+        print(out, "# it"  , 4);
         print(out, "alpha" , 5);
         print(out, "bsize" , 5);
         print(out, "ntabl" , 5);
-        print(out, "cap"   , 8);
-        print(out, "n_pre" , 8);
-        print(out, "n_main", 8);
+        print(out, "cap"   , 9);
+        print(out, "n_pre" , 9);
+        print(out, "n_main", 9);
         print(out, "t_pre" , 8);
         print(out, "t_in"  , 8);
         print(out, "t_find", 8);
@@ -48,13 +48,13 @@ struct Test
                              double d_pre, double d_in, double d_fn,
                              size_t unsucc, size_t lost_elem)
     {
-        print(out, i        , 3);
+        print(out, i        , 4);
         print(out, alpha    , 5);
         print(out, bs       , 5);
         print(out, tl       , 5);
-        print(out, cap      , 8);
-        print(out, pre      , 8);
-        print(out, n        , 8);
+        print(out, cap      , 9);
+        print(out, pre      , 9);
+        print(out, n        , 9);
         print(out, d_pre    , 8);
         print(out, d_in     , 8);
         print(out, d_fn     , 8);
@@ -114,7 +114,7 @@ struct Test
             double d_in  = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()/1000.;
             double d_fn  = std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count()/1000.;
 
-            print_timing(file, it, alpha, Config::bs, Config::tl, cap, pre, n,
+            print_timing(file, i, alpha, Config::bs, Config::tl, cap, pre, n,
                          d_pre, d_in, d_fn, errors, n - errors -count);
         }
 
