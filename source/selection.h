@@ -27,7 +27,7 @@
 
 #ifdef LINPROB
 #include "include/lin_prob.h"
-#define HASHTYPE FastLinProbTable
+#define HASHTYPE FastLinProb
 #endif // LINPROB
 
 

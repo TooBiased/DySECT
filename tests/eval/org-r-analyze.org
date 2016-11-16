@@ -18,51 +18,73 @@ title("Regression of MPG on Weight")
 
 * Clear Data
 #+BEGIN_SRC R :session
-rm(list=ls())
-getwd()
+  rm(list=ls())
+  getwd()
 #+END_SRC
 
 #+RESULTS:
-: /data/HashTables/Space-Grow-Table/tests/eval
+: /home/maier/PHD/SpaceEfficientHashing/Implementation/tests/eval
 
 * Reading Data
 #+begin_src R :session :results output
-#graphics :file mygraph.png
-cols <- c('it', 'al', 'bs', 'tl', 'cap', 'pre', 'n', 'tp', 'tin', 'tfi', 'unsucc', 'lost')
-grows_bfs_raw      <- read.table("../11_11-C/grows_bfs_T"     , comment.char = "i", col.names = cols)
-grows_rwalk_raw    <- read.table("../11_11-C/grows_rwalk_T"   , comment.char = "i", col.names = cols)
-grows_rwalkcyc_raw <- read.table("../11_11-C/grows_rwalkcyc_T", comment.char = "i", col.names = cols)
-hom2lvl_raw        <- read.table("../11_11-C/hom2lvl_T"       , comment.char = "i", col.names = cols)
-cuckoo_raw         <- read.table("../11_11-C/cuckoo_T"        , comment.char = "i", col.names = cols)
-linprob_raw        <- read.table("../11_11-C/linprob_T"       , comment.char = "i", col.names = cols)
-#plot(rep(1,5), grows_bfs_raw['tin'])
+  cols <- c('it', 'al', 'bs', 'tl', 'cap', 'pre', 'n', 'tp', 'tin', 'tfi', 'unsucc', 'lost')
+  grows_bfs_raw      <- read.table("../11_11-C/grows_bfs_T"     , comment.char = "i", col.names = cols)
+  grows_rwalk_raw    <- read.table("../11_11-C/grows_rwalk_T"   , comment.char = "i", col.names = cols)
+  grows_rwalkcyc_raw <- read.table("../11_11-C/grows_rwalkcyc_T", comment.char = "i", col.names = cols)
+  hom2lvl_raw        <- read.table("../11_11-C/hom2lvl_T"       , comment.char = "i", col.names = cols)
+  cuckoo_raw         <- read.table("../11_11-C/cuckoo_T"        , comment.char = "i", col.names = cols)
+  linprob_raw        <- read.table("../11_11-C/linprob_T"       , comment.char = "i", col.names = cols)
+                                          #plot(rep(1,5), grows_bfs_raw['tin'])
 
-loc_groupby <- function(d)
-{
-  return( aggregate(d, by=list(d$bs, d$tl, d$cap, d$al), FUN=mean) )
-}
+  loc_groupby <- function(d)
+  {
+      return( aggregate(d, by=list(d$bs, d$tl, d$cap, d$al), FUN=mean) )
+  }
 
-grows_bfs      = loc_groupby(grows_bfs_raw)
-grows_rwalk    = loc_groupby(grows_rwalk_raw)
-grows_rwalkcyc = loc_groupby(grows_rwalkcyc_raw)
-hom2lvl        = loc_groupby(hom2lvl_raw)
-cuckoo         = loc_groupby(cuckoo_raw)
-linprob        = loc_groupby(linprob_raw)
+  grows_bfs      = loc_groupby(grows_bfs_raw)
+  grows_rwalk    = loc_groupby(grows_rwalk_raw)
+  grows_rwalkcyc = loc_groupby(grows_rwalkcyc_raw)
+  hom2lvl        = loc_groupby(hom2lvl_raw)
+  cuckoo         = loc_groupby(cuckoo_raw)
+  linprob        = loc_groupby(linprob_raw)
 #+end_src
 
 #+RESULTS:
 
-* Try some Plots
+* Some grows Plots
 
-#+BEGIN_SRC R :session :results graphics :file plot.png
-choseNPlot <- function (d)
-{
-  CHOSE = d$cap == 1 & d$tl == 256 & d$al == 1.1
-  plot (d[CHOSE, c('bs','tfi')])
-}
-choseNPlot(grows_bfs)
-#choseNPlot(grows_rwalk)
+#+BEGIN_SRC R :session :results output
+  #graphics :file plot.png
+  t <- function (d)
+  {
+      CHOSE = d$tl == 256 & d$bs == 8 & d$cap == 1
+      return (d[CHOSE, c('al', 'tin')])
+  }
+
+  range_t = range(0, t(grows_bfs)['tin'], t(grows_rwalk)['tin'], t(grows_rwalkcyc)['tin'])
+
+  plot  (t(grows_bfs)     , col="red", ylim=range_t)
+  points(t(grows_rwalk)   , col="blue")
+  points(t(grows_rwalkcyc), col="green")
 #+END_SRC
 
 #+RESULTS:
-[[file:plot.png]]
+
+* Overall Plots
+
+#+BEGIN_SRC R :session :results output
+  t_all <- function (d)
+  {
+      CHOSE = d$tl == 256 & d$bs == 8
+      #& d$cap == 100000000
+      return (d[CHOSE, c('al', 'tin')])
+  }
+  plot   (t_all(grows_bfs)    , col="red", ylim=c(0,80000))
+  points(t_all(grows_rwalk)   , col="blue")
+  points(t_all(grows_rwalkcyc), col="green")
+  points(t_all(hom2lvl)       , col="orange")
+  points(t_all(cuckoo)        , col="violet")
+  points(t_all(linprob)       , col="black")
+#+END_SRC
+
+#+RESULTS:

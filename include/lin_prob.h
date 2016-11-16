@@ -6,113 +6,57 @@
 #include <tuple>
 
 #include "cuckoo_base.h"
-/*
-class hist_count
-{
-public:
-    hist_count(size_t s) : steps(s), hist(new size_t[s])
-    { for (size_t i = 0; i < s; ++i) { hist[i] = 0; } }
 
-    void add(size_t i) { ++hist[i];}
-
-    const size_t steps;
-    std::unique_ptr<size_t[]> hist;
-};
-
-class no_hist_count
-{
-public:
-    no_hist_count(size_t) { }
-    void add(size_t) { }
-    static constexpr size_t  steps = 0;
-    static constexpr size_t* hist  = nullptr;
-};
-
-
-template<size_t BS = 8, size_t TL = 256,
-         template <class> class DisStrat = dstrat_triv,
-         class HistCount = no_hist_count>
-struct CuckooConfig
-{
-    static constexpr size_t bs = BS;
-    static constexpr size_t tl = TL;
-
-    template <class T>
-    using DisStrat_temp = DisStrat<T>;
-
-    using HistCount_t = HistCount;
-};
-
-template<class T>
+template <class T>
 class CuckooTraits;
- EXAMPLE IMPLEMENTATION
+
+template<class SpLinProb>
+class LinProbBase
 {
 public:
-    using Specialized_t  = T;
-    using Base_t         = CuckooBase<T>;
-    using Key            = ... ;
-    using Data           = ... ;
-    using Bucket_t       = Bucket<Key,Data,bs>;
-    using HashFct_t      = ... ;
-
-    using Config_t       = CuckooConfig<...>;
-
-    union HashSplitter
-    {
-        uint64_t hash;
-        struct
-        {
-            ... //partial hash bits;
-        };
-    };
-};*/
-
-
-template<class K, class D, class HF = std::hash<K>, class Config = CuckooConfig<> >
-class FastLinProbTable
-{
-private:
-
-    using This_t         = FastLinProbTable<K,D,HF,Config>;
-    using HashFct_t      = HF;
-    using HistCount_t    = typename Config::HistCount_t;
-    using Bucket_t       = Bucket<K,D,1>;
-    using Cell_t         = std::pair<K,D>;
-
-public:
-    using Key      = K;
-    using Data     = D;
+    using Key      = typename CuckooTraits<SpLinProb>::Key;
+    using Data     = typename CuckooTraits<SpLinProb>::Data;
     using FRet     = std::pair<bool, Data>;
 
-    FastLinProbTable(size_t cap = 0, double size_constraint = 1.1,
-                     size_t dis_steps = 0, size_t /*unneeded*/ = 0)
-        : n(0), alpha(size_constraint), steps(dis_steps), hcounter(dis_steps)
+private:
+    using This_t         = LinProbBase<SpLinProb>;
+    using Specialized_t  = typename CuckooTraits<SpLinProb>::Specialized_t;
+    using Bucket_t       = Bucket<Key,Data,1>;
+    using Cell_t   = std::pair<Key,Data>;
+    using HashFct_t      = typename CuckooTraits<SpLinProb>::HashFct_t;
+    using HistCount_t    = typename CuckooTraits<SpLinProb>::Config_t::HistCount_t;
+
+    friend Specialized_t;
+
+public:
+    LinProbBase(size_t cap, size_t dis_steps)
+        : n(0), capacity(cap), steps(dis_steps), hcounter(dis_steps)
     {
-        capacity = Config::tl;
-        while( capacity < cap ) capacity <<= 1;
-        capacity <<= 1;
-        table = std::make_unique<Cell_t[]>(capacity);
-        grow_thresh = capacity * 0.6;
-        bitmask = capacity - 1;
+        if (cap) table = std::make_unique<Cell_t[]>(cap);
     }
 
-    ~FastLinProbTable() = default;
+    ~LinProbBase() = default;
 
-    FastLinProbTable(const FastLinProbTable&) = delete;
-    FastLinProbTable& operator=(const FastLinProbTable&) = delete;
+    LinProbBase(const LinProbBase&) = delete;
+    LinProbBase& operator=(const LinProbBase&) = delete;
 
-    FastLinProbTable(FastLinProbTable&& rhs)
-        : n(rhs.n), capacity(rhs.capacity), bitmask(rhs.bitmask), alpha(rhs.alpha),
-          steps(rhs.steps), grow_thresh(rhs.grow_thresh),
+    LinProbBase(LinProbBase&& rhs)
+        : n(rhs.n), capacity(rhs.capacity), steps(rhs.steps),
           hcounter(rhs.steps), table(std::move(rhs.table))
     { }
 
-    FastLinProbTable& operator=(FastLinProbTable&& rhs)
+    LinProbBase& operator=(LinProbBase&& rhs)
     {
-        n = rhs.n;   capacity = rhs.capacity;   bitmask = rhs.bitmask;
-        alpha = rhs.alpha;  grow_thresh = rhs.grow_thresh;
+        n = rhs.n;
+        capacity = rhs.capacity;
         table = std::move(rhs.table);
         return *this;
+    }
+
+    void init(size_t cap)
+    {
+        capacity = cap;
+        table = std::make_unique<Cell_t[]>(cap);
     }
 
     bool insert(Key k, Data d);
@@ -129,10 +73,7 @@ public:
     /*** members that should become private at some point *********************/
     size_t     n;
     size_t     capacity;
-    size_t     bitmask;
-    double     alpha;
     size_t     steps;
-    size_t     grow_thresh;
     HashFct_t  hasher;
     HistCount_t  hcounter;
     std::unique_ptr<Cell_t[]> table;
@@ -142,81 +83,49 @@ public:
 
 private:
     /*** static polymorph functions *******************************************/
-    inline void inc_n() { ++n; if (n > grow_thresh) grow(); }
+    inline void inc_n() { ++n; }
     inline void dec_n() { --n; }
-
-    inline size_t hash(Key k) const
-    { return hasher(k) & bitmask; }
-
-    inline bool before(size_t i0, size_t i1)
-    {
-        if (i1 < i0) return false;
-        if (i0 < i1 && i1 < bitmask) return true;
-    }
-
-    FastLinProbTable(size_t cap, size_t steps)
-        : n(0), capacity(cap), bitmask(cap-1), alpha(0), steps(steps),
-          grow_thresh(cap), hcounter(steps), table(new Cell_t[cap])
-    { }
-
-    inline void grow()
-    {
-        auto nsize  = (bitmask+1) << 1;
-        auto ntable = This_t(nsize, steps);
-
-        for (size_t i = 0; i <= bitmask; ++i)
-        {
-            auto temp = table[i];
-            if (temp.first)
-            {
-                ntable.insert(temp);
-            }
-        }
-
-        std::swap(bitmask, ntable.bitmask);
-        std::swap(table  , ntable.table);
-        grow_thresh = (bitmask+1) * 0.6;
-    }
-
 };
 
 
 
 /* IMPLEMENTATION *************************************************************/
-template<class K, class D, class HF, class Config>
-inline bool FastLinProbTable<K,D,HF,Config>::insert(Key k, Data d)
+template<class SpLinProb>
+inline bool LinProbBase<SpLinProb>::insert(Key k, Data d)
 {
     return insert(std::make_pair(k,d));
 }
 
-template<class K, class D, class HF, class Config>
-inline bool FastLinProbTable<K,D,HF,Config>::insert(std::pair<Key, Data> t)
+template<class SpLinProb>
+inline bool LinProbBase<SpLinProb>::insert(std::pair<Key, Data> t)
 {
-    auto ind = hash(t.first);
+    auto ind = static_cast<const Specialized_t*>(this)->index(hasher(t.first));
 
-    for (size_t i = ind; i < ind+steps; ++i)
+    for (size_t i = ind; ; ++i)
     {
-        auto temp = table[i&bitmask];
+        size_t ti = static_cast<const SpLinProb*>(this)->mod(i);
+        auto temp = table[ti];
         if ( temp.first == 0 )
         {
-            table[i&bitmask] = t;
+            table[ti] = t;
             hcounter.add(i - ind);
-            inc_n();
+            static_cast<SpLinProb*>(this)->inc_n();
             return true;
         }
     }
     return false;
 }
 
-template<class K, class D, class HF, class Config>
-inline typename FastLinProbTable<K,D,HF,Config>::FRet
-FastLinProbTable<K,D,HF,Config>::find(Key k) const
+template<class SpLinProb>
+inline typename LinProbBase<SpLinProb>::FRet
+LinProbBase<SpLinProb>::find(Key k) const
 {
-    auto ind = hash(k);
+    auto ind = static_cast<const Specialized_t*>(this)->index(hasher(k));
 
-    for (size_t i = ind; i < ind+steps; ++i)
+    for (size_t i = ind; ; ++i)
     {
-        auto temp = table[i & bitmask];
+        size_t ti = static_cast<const SpLinProb*>(this)->mod(i);
+        auto temp = table[ti];
 
         if ( temp.first == 0 )
         {
@@ -230,9 +139,10 @@ FastLinProbTable<K,D,HF,Config>::find(Key k) const
     return std::make_pair(false, 0);
 }
 
-template<class K, class D, class HF, class Config>
-inline bool FastLinProbTable<K,D,HF,Config>::remove(Key k)
+template<class SpLinProb>
+inline bool LinProbBase<SpLinProb>::remove(Key k)
 {
+    /*
     auto ind = hash(k);
     size_t i = ind;
     while (true)
@@ -247,7 +157,7 @@ inline bool FastLinProbTable<K,D,HF,Config>::remove(Key k)
             auto i2 = i+1;
             while (true)
             {
-                auto temp2 = table[i2 & bitmask];
+                auto temp2 = table[static_cast<SpLinProb*>(this)->mod(i2)];
                 if (temp2.first == 0)
                     break;
                 else if (before(hash(temp2.first), i))
@@ -262,4 +172,145 @@ inline bool FastLinProbTable<K,D,HF,Config>::remove(Key k)
 
         ++i;
     }
+    */
+    return false;
 }
+
+
+template <class K, class D, class HF = std::hash<K>,
+          class Config = CuckooConfig<> >
+class FastLinProb : public CuckooTraits<FastLinProb<K,D,HF,Config> >::Base_t
+{
+private:
+    using This_t = FastLinProb<K,D,HF,Config>;
+    using Base_t = typename CuckooTraits<This_t>::Base_t;
+
+    friend Base_t;
+
+public:
+    using Key    = typename CuckooTraits<This_t>::Key;
+    using Data   = typename CuckooTraits<This_t>::Data;
+
+    static constexpr size_t bs = 1;
+    static constexpr size_t tl = 1;
+
+    FastLinProb(size_t cap = 0      , double /*size_constraint*/ = 1.1,
+                size_t dis_steps = 0, size_t /*seed*/ = 0)
+        : Base_t(0, dis_steps)
+    {
+        size_t c = 2048;
+        while (c < cap) c <<= 1;
+        c <<= 1;
+
+        init(c);
+        bitmask = c - 1;
+        grow_thresh = c * 0.6;
+    }
+
+    FastLinProb(const FastLinProb&) = delete;
+    FastLinProb& operator=(const FastLinProb&) = delete;
+
+    FastLinProb(FastLinProb&& rhs)  = default;
+    FastLinProb& operator=(FastLinProb&& ) = default;
+
+    inline size_t index(size_t i) const { return i & bitmask; }
+    inline size_t mod(size_t i)   const { return i & bitmask; }
+
+private:
+    using Base_t::capacity;
+    using Base_t::init;
+    using Base_t::steps;
+    using Base_t::table;
+    using Base_t::n;
+
+    FastLinProb(size_t cap, size_t steps)
+        : Base_t(cap, steps), bitmask(cap-1), grow_thresh(cap)
+    { }
+
+    inline void grow()
+    {
+        auto nsize  = capacity << 1;
+        auto ntable = This_t(nsize, steps);
+
+        for (size_t i = 0; i <= bitmask; ++i)
+        {
+            auto temp = table[i];
+            if (temp.first)
+            {
+                ntable.insert(temp);
+            }
+        }
+
+        std::swap(capacity, ntable.capacity);
+        std::swap(bitmask , ntable.bitmask);
+        std::swap(table   , ntable.table);
+        grow_thresh = (capacity) * 0.6;
+    }
+
+    inline void inc_n() { ++n; if (n > grow_thresh) grow(); }
+
+    size_t bitmask;
+    size_t grow_thresh;
+};
+
+
+template<class K, class D, class HF, class Config>
+class CuckooTraits<FastLinProb<K,D,HF,Config> >
+{
+public:
+    using Specialized_t = FastLinProb<K,D,HF,Config>;
+    using Base_t        = LinProbBase<Specialized_t>;
+    using Key           = K;
+    using Data          = D;
+    using HashFct_t     = HF;
+    using Config_t      = Config;
+};
+
+
+template <class K, class D, class HF = std::hash<K>,
+          class Config = CuckooConfig<> >
+class SpaceLinProb : public CuckooTraits<SpaceLinProb<K,D,HF,Config> >::Base_t
+{
+private:
+    using This_t = SpaceLinProb<K,D,HF,Config>;
+    using Base_t = typename CuckooTraits<This_t>::Base_t;
+
+    friend Base_t;
+
+public:
+    using Key    = typename CuckooTraits<This_t>::Key;
+    using Data   = typename CuckooTraits<This_t>::Data;
+
+    static constexpr size_t bs = 1;
+    static constexpr size_t tl = 1;
+
+    SpaceLinProb(size_t cap = 0      , double size_constraint = 1.1,
+                 size_t dis_steps = 0, size_t /*seed*/ = 0)
+        : Base_t(cap*size_constraint, dis_steps)
+    { }
+
+    SpaceLinProb(const SpaceLinProb&) = delete;
+    SpaceLinProb& operator=(const SpaceLinProb&) = delete;
+
+    SpaceLinProb(SpaceLinProb&& rhs)  = default;
+    SpaceLinProb& operator=(SpaceLinProb&& ) = default;
+
+    inline size_t index(size_t i) const { return i % capacity; }
+    inline size_t mod(size_t i)   const { return i % capacity; }
+
+private:
+    using Base_t::capacity;
+};
+
+
+template<class K, class D, class HF, class Config>
+class CuckooTraits<SpaceLinProb<K,D,HF,Config> >
+{
+public:
+    using Specialized_t = SpaceLinProb<K,D,HF,Config>;
+    using Base_t        = LinProbBase<Specialized_t>;
+    using Key           = K;
+    using Data          = D;
+    using HashFct_t     = HF;
+    using Config_t      = Config;
+};

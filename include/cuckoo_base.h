@@ -17,7 +17,7 @@ public:
     hist_count(size_t s) : steps(s), hist(new size_t[s])
     { for (size_t i = 0; i < s; ++i) { hist[i] = 0; } }
 
-    void add(size_t i) { ++hist[i];}
+    void add(size_t i) { auto ind = (i<steps) ? i:steps-1; ++hist[ind];}
 
     const size_t steps;
     std::unique_ptr<size_t[]> hist;
