@@ -23,7 +23,7 @@ getwd()
 #+END_SRC
 
 #+RESULTS:
-: /home/maier/PHD/SpaceEfficientHashing/Implementation/tests/eval
+: /data/HashTables/Space-Grow-Table/tests/eval
 
 * Reading Data
 #+begin_src R :session :results output
@@ -52,16 +52,17 @@ linprob        = loc_groupby(linprob_raw)
 
 #+RESULTS:
 
-#+BEGIN_SRC R :session :results output
-cuckoo
+* Try some Plots
+
+#+BEGIN_SRC R :session :results graphics :file plot.png
+choseNPlot <- function (d)
+{
+  CHOSE = d$cap == 1 & d$tl == 256 & d$al == 1.1
+  plot (d[CHOSE, c('bs','tfi')])
+}
+choseNPlot(grows_bfs)
+#choseNPlot(grows_rwalk)
 #+END_SRC
 
 #+RESULTS:
-:   Group.1 Group.2   Group.3 Group.4 it   al bs  tl   cap pre     n tp      tin
-: 1       8     256 100000000    1.10  5 1.10  8 256 1e+08   0 1e+08  0 13062.86
-: 2       8     256 100000000    1.15  5 1.15  8 256 1e+08   0 1e+08  0 12758.84
-: 3       8     256 100000000    1.20  5 1.20  8 256 1e+08   0 1e+08  0 12617.88
-:        tfi unsucc lost
-: 1 12632.98      0    0
-: 2 12642.94      0    0
-: 3 12577.36      0    0
+[[file:plot.png]]
