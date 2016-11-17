@@ -5,16 +5,19 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/misc/cmake)
 
 project (space-grow-table)
 
-set (CMAKE_CXX_FLAGS "-std=c++14 -msse4.2 -Wall -Wextra -O3 -g")
-
+#### USER DEFINED ##############################################################
 
 set(GROWS_HASHFCT XXHASH CACHE STRING
   "Changes the used hash function if XXHASH is not available, MURMUR2 is used as backoff!")
 set_property(CACHE GROWS_HASHFCT PROPERTY STRINGS XXHASH MURMUR2 MURMUR3 CRC)
 
+#### BASIC SETTINGS ############################################################
 
 include_directories(.)
 
+set (CMAKE_CXX_FLAGS "-std=c++14 -msse4.2 -Wall -Wextra -O3 -g")
+
+#### HASH FUNCTIONS ############################################################
 
 if (GROWS_HASHFCT STREQUAL XXHASH)
   find_package(XXHash)
@@ -36,12 +39,27 @@ if (GROWS_HASHFCT STREQUAL MURMUR3)
   endif()
 endif()
 
+#### HASH TABLES ###############################################################
+
+set(HASH_TABLES_LIST "grows;cuckoo;hom2lvl;trivgrow;linprob;spaceprob")
+
+find_package(tslHopscotch)
+if (TSLHOPSCOTCH_FOUND)
+  include_directories(${TSLHOPSCOTCH_INCLUDE_DIRS})
+  set(HASH_TABLES_LIST "${HASH_TABLES_LIST};hopscotch")
+endif()
+
+#### THE ONE STEP GROW EXECUTABLE ##############################################
+
 add_executable(step_all source/step_test.cpp)
 target_compile_definitions(step_all PRIVATE -D GROWS -D ${GROWS_HASHFCT})
 
+
+#### CONSTRUCT EXECUTABLE ######################################################
+
 foreach(t in time)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${t})
-  foreach(h grows cuckoo hom2lvl triv_grow linprob)
+  foreach(h ${HASH_TABLES_LIST})  #grows cuckoo hom2lvl triv_grow linprob)
     string(TOUPPER ${h} h_uc)
     add_executable(${t}_${h} source/${t}_test.cpp)
     target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${GROWS_HASHFCT})

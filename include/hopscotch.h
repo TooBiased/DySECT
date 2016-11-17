@@ -1,7 +1,7 @@
 #pragma once
 
-//#include "hopscotch_map.h"
-#include "extern/hopscotch-map/src/hopscotch_map.h"
+#include "hopscotch_map.h"
+//#include "extern/hopscotch-map/src/hopscotch_map.h"
 #include "cuckoo_base.h"
 
 
@@ -26,7 +26,7 @@ public:
 
     Hopscotch(size_t cap = 0, double size_constraint = 1.1,
               size_t /*dis_steps*/ = 0, size_t /*seed*/ = 0)
-        : table(cap*size_constraint)
+        : table(cap*size_constraint), hcounter(0)
     { }
 
     Hopscotch(const Hopscotch&) = delete;
@@ -52,4 +52,16 @@ public:
 
 private:
     Table_t table;
+
+public:
+    /*** for symmetry with my implementation **********************************/
+    using HistCount_t = typename Config::HistCount_t;
+    using Bucket_t    = Bucket<K,D,1>;
+    HistCount_t hcounter;
+
+    static constexpr size_t bs = 0;
+    static constexpr size_t tl = 0;
+
+    std::pair<size_t, Bucket_t*> getTable(size_t) { return std::make_pair(0ul, nullptr); }
+    void clearHist() { }
 };

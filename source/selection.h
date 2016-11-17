@@ -1,36 +1,44 @@
 #pragma once
 
-#if (!CUCKOO && !GROWS && !HOM2LVL && !TRIV_GROW && !LINPROB)
+#if (!CUCKOO && !GROWS && !HOM2LVL && !TRIVGROW && !LINPROB && !SPACEPROB && !HOPSCOTCH)
 #define GROWS
 #endif // NO HASHTYPE DEFINED => GROWS
 
 
 #ifdef GROWS
 #include "include/growing_cuckoo.h"
-#define HASHTYPE GrowingCuckoo
+#define  HASHTYPE GrowingCuckoo
 #endif // GROWS
 
 #ifdef CUCKOO
 #include "include/simple_cuckoo.h"
-#define HASHTYPE SimpleCuckoo
+#define  HASHTYPE SimpleCuckoo
 #endif // CUCKOO
 
 #ifdef HOM2LVL
 #include "include/hom_2lvl_cuckoo.h"
-#define HASHTYPE Hom2LvlCuckoo
+#define  HASHTYPE Hom2LvlCuckoo
 #endif // HOM2LVL
 
-#ifdef TRIV_GROW
+#ifdef TRIVGROW
 #include "include/triv_growing_cuckoo.h"
-#define HASHTYPE TrivGrowingCuckoo
+#define  HASHTYPE TrivGrowingCuckoo
 #endif // TRIV_GROW
 
 #ifdef LINPROB
-//#include "include/hopscotch.h"
-//#define  HASHTYPE Hopscotch
 #include "include/lin_prob.h"
-#define HASHTYPE FastLinProb
+#define  HASHTYPE FastLinProb
 #endif // LINPROB
+
+#ifdef SPACEPROB
+#include "include/lin_prob.h"
+#define  HASHTYPE SpaceLinProb
+#endif
+
+#ifdef HOPSCOTCH
+#include "include/hopscotch.h"
+#define  HASHTYPE Hopscotch
+#endif
 
 
 #include "include/strategies/dstrat_bfs.h"
@@ -39,8 +47,21 @@
 
 #include "utils/commandline.h"
 
+#define NORMAL
+
 struct Chooser
 {
+#ifndef NORMAL
+    template<template<class> class Functor, class Hist,
+             class ... Types>
+    inline static typename std::result_of<Functor<CuckooConfig<> >(Types&& ...)>::type
+    execute(CommandLine&, Types&& ... param)
+    {
+        Functor<CuckooConfig<> > f;
+        return f(std::forward<Types>(param)...);
+    }
+#else
+
     template<template<class> class Functor, class Hist,
              class ... Types>
     inline static typename std::result_of<Functor<CuckooConfig<> >(Types&& ...)>::type
@@ -65,9 +86,15 @@ struct Chooser
         switch (tl)
         {
         case 64:
-            return executeDT<Functor, Hist, Displacer, 64> (c, std::forward<Types>(param)...);
+            return executeDT<Functor, Hist, Displacer,   64> (c, std::forward<Types>(param)...);
+        case 128:
+            return executeDT<Functor, Hist, Displacer,  128> (c, std::forward<Types>(param)...);
         case 256:
-            return executeDT<Functor, Hist, Displacer, 256>  (c, std::forward<Types>(param)...);
+            return executeDT<Functor, Hist, Displacer,  256> (c, std::forward<Types>(param)...);
+        case 512:
+            return executeDT<Functor, Hist, Displacer,  512> (c, std::forward<Types>(param)...);
+        case 1024:
+            return executeDT<Functor, Hist, Displacer, 1024> (c, std::forward<Types>(param)...);
         case 2048:
             return executeDT<Functor, Hist, Displacer, 2048> (c, std::forward<Types>(param)...);
         default:
@@ -86,11 +113,13 @@ struct Chooser
         switch (bs)
         {
         case 4:
-            return executeDTB<Functor, Hist, Displacer, TL, 4>  (c, std::forward<Types>(param)...);
+            return executeDTB<Functor, Hist, Displacer, TL,  4> (c, std::forward<Types>(param)...);
         case 6:
-            return executeDTB<Functor, Hist, Displacer, TL, 6>  (c, std::forward<Types>(param)...);
+            return executeDTB<Functor, Hist, Displacer, TL,  6> (c, std::forward<Types>(param)...);
         case 8:
-            return executeDTB<Functor, Hist, Displacer, TL, 8>  (c, std::forward<Types>(param)...);
+            return executeDTB<Functor, Hist, Displacer, TL,  8> (c, std::forward<Types>(param)...);
+        case 12:
+            return executeDTB<Functor, Hist, Displacer, TL, 12> (c, std::forward<Types>(param)...);
         case 16:
             return executeDTB<Functor, Hist, Displacer, TL, 16> (c, std::forward<Types>(param)...);
         default:
@@ -110,4 +139,5 @@ struct Chooser
         Functor<CuckooConfig<BS,TL,Displacer,Hist> > f;
         return f(std::forward<Types>(param)...);
     }
+#endif
 };

@@ -191,8 +191,8 @@ public:
     using Key    = typename CuckooTraits<This_t>::Key;
     using Data   = typename CuckooTraits<This_t>::Data;
 
-    static constexpr size_t bs = 1;
-    static constexpr size_t tl = 1;
+    static constexpr size_t bs = 0;
+    static constexpr size_t tl = 0;
 
     FastLinProb(size_t cap = 0      , double /*size_constraint*/ = 1.1,
                 size_t dis_steps = 0, size_t /*seed*/ = 0)
@@ -281,8 +281,8 @@ public:
     using Key    = typename CuckooTraits<This_t>::Key;
     using Data   = typename CuckooTraits<This_t>::Data;
 
-    static constexpr size_t bs = 1;
-    static constexpr size_t tl = 1;
+    static constexpr size_t bs = 0;
+    static constexpr size_t tl = 0;
 
     SpaceLinProb(size_t cap = 0      , double size_constraint = 1.1,
                  size_t dis_steps = 0, size_t /*seed*/ = 0)
