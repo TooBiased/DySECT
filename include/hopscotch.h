@@ -1,8 +1,11 @@
 #pragma once
 
-#include "hopscotch_map.h"
+//#include "hopscotch_map.h"
+#include "extern/hopscotch-map/src/hopscotch_map.h"
+#include "cuckoo_base.h"
 
-template<class K, class D, class HF = std::hash<K>, class Config = size_t>
+
+template<class K, class D, class HF = std::hash<K>, class Config = CuckooConfig<> >
 class Hopscotch
 {
 private:
@@ -22,7 +25,7 @@ public:
     using FRet = std::pair<bool, Data>;
 
     Hopscotch(size_t cap = 0, double size_constraint = 1.1,
-              size_t /*dis_steps*/, size_t /*seed*/ = 0)
+              size_t /*dis_steps*/ = 0, size_t /*seed*/ = 0)
         : table(cap*size_constraint)
     { }
 
@@ -32,10 +35,20 @@ public:
     Hopscotch(Hopscotch&&) = default;
     Hopscotch& operator=(Hopscotch&&) = default;
 
-    bool insert(Key k, Data d) { table[k] = d; return true; } //make bool
-    bool insert(std::pair<Key,Data> t) { table.insert(t); return true; };
-    FRet find  (Key k) const   { std::make_pair(true, table[k]); } //correct
-    bool remove(Key k);
+    bool insert(Key k, Data d) { return insert(std::make_pair(k,d)); } //make bool
+    bool insert(std::pair<Key,Data> t)
+    {
+        return table.insert(t).second;
+    }
+    FRet find  (Key k) const
+    {
+        auto it = table.find(k);
+        return std::make_pair((it!=end(table)), it->second);
+    } //correct
+    bool remove(Key k)
+    {
+        return false;
+    }
 
 private:
     Table_t table;

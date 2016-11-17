@@ -26,6 +26,8 @@
 #endif // TRIV_GROW
 
 #ifdef LINPROB
+//#include "include/hopscotch.h"
+//#define  HASHTYPE Hopscotch
 #include "include/lin_prob.h"
 #define HASHTYPE FastLinProb
 #endif // LINPROB
