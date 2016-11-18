@@ -28,13 +28,12 @@ title("Regression of MPG on Weight")
 * Reading Data
 #+begin_src R :session :results output
   cols <- c('it', 'al', 'bs', 'tl', 'cap', 'pre', 'n', 'tp', 'tin', 'tfi', 'unsucc', 'lost')
-  grows_bfs_raw      <- read.table("../11_11-C/grows_bfs_T"     , comment.char = "i", col.names = cols)
-  grows_rwalk_raw    <- read.table("../11_11-C/grows_rwalk_T"   , comment.char = "i", col.names = cols)
-  grows_rwalkcyc_raw <- read.table("../11_11-C/grows_rwalkcyc_T", comment.char = "i", col.names = cols)
-  hom2lvl_raw        <- read.table("../11_11-C/hom2lvl_T"       , comment.char = "i", col.names = cols)
-  cuckoo_raw         <- read.table("../11_11-C/cuckoo_T"        , comment.char = "i", col.names = cols)
-  linprob_raw        <- read.table("../11_11-C/linprob_T"       , comment.char = "i", col.names = cols)
-                                          #plot(rep(1,5), grows_bfs_raw['tin'])
+  grows_bfs_raw      <- read.table("../17_11/grows_bfs.time"     , comment.char = "#", col.names = cols)
+  grows_rwalk_raw    <- read.table("../17_11/grows_rwalk.time"   , comment.char = "#", col.names = cols)
+  #grows_rwalkcyc_raw <- read.table("../11_11-C/grows_rwalkcyc_T", comment.char = "i", col.names = cols)
+  #hom2lvl_raw        <- read.table("../11_11-C/hom2lvl_T"       , comment.char = "i", col.names = cols)
+  #cuckoo_raw         <- read.table("../11_11-C/cuckoo_T"        , comment.char = "i", col.names = cols)
+  #linprob_raw        <- read.table("../11_11-C/linprob_T"       , comment.char = "i", col.names = cols)
 
   loc_groupby <- function(d)
   {
@@ -43,10 +42,10 @@ title("Regression of MPG on Weight")
 
   grows_bfs      = loc_groupby(grows_bfs_raw)
   grows_rwalk    = loc_groupby(grows_rwalk_raw)
-  grows_rwalkcyc = loc_groupby(grows_rwalkcyc_raw)
-  hom2lvl        = loc_groupby(hom2lvl_raw)
-  cuckoo         = loc_groupby(cuckoo_raw)
-  linprob        = loc_groupby(linprob_raw)
+  #grows_rwalkcyc = loc_groupby(grows_rwalkcyc_raw)
+  #hom2lvl        = loc_groupby(hom2lvl_raw)
+  #cuckoo         = loc_groupby(cuckoo_raw)
+  #linprob        = loc_groupby(linprob_raw)
 #+end_src
 
 #+RESULTS:
@@ -55,20 +54,49 @@ title("Regression of MPG on Weight")
 
 #+BEGIN_SRC R :session :results output
   #graphics :file plot.png
-  t <- function (d)
+  t <- function (d,x,y, tbs=0,ttl=0,tal=0,tcap=0)
   {
-      CHOSE = d$tl == 256 & d$bs == 8 & d$cap == 1
-      return (d[CHOSE, c('al', 'tin')])
+      choseBS = !tbs  || d$bs  == tbs
+      choseTL = !ttl  || d$tl  == ttl
+      choseAL = !tal  || d$al  == tal
+      choseTC = !tcap || d$cap == tcap
+      CHOSE   = choseBS & choseTL & choseAL & choseTC
+      return (d[CHOSE, c(x, y)])
   }
 
-  range_t = range(0, t(grows_bfs)['tin'], t(grows_rwalk)['tin'], t(grows_rwalkcyc)['tin'])
+  y='tin'
+  x='tl'
 
-  plot  (t(grows_bfs)     , col="red", ylim=range_t)
-  points(t(grows_rwalk)   , col="blue")
-  points(t(grows_rwalkcyc), col="green")
+  range_t = range(0, t(grows_bfs,x,y)[y], t(grows_rwalk,x,y)[y]) #, t(grows_rwalkcyc,x,y)[y])
+
+  plot  (t(grows_bfs,x,y)     , col="red", ylim=c(0,10000))
+  points(t(grows_rwalk,x,y)   , col="blue")
+  lines  (c(-999, 999),c(0,0), col="black")
+  #points(t(grows_rwalkcyc), col="green")
 #+END_SRC
 
 #+RESULTS:
+
+#+BEGIN_SRC R :session :results output
+  library(rgl)
+
+  h <- function (d, _col = 'red')
+  {
+    chose = d$cap == 1
+    plot3d ( d[chose, c('bs','al','tin')], col=_col, zlim = c(0,10000))
+  }
+
+  h(grows_bfs)
+
+#+END_SRC
+
+#+RESULTS:
+: Fehler: unerwartete Eingabe in "h <- function (d, _"
+:  Fehler: unerwartete Eingabe in:
+: "  chose = d$cap == 1
+:   plot3d ( d[chose, c('bs','al','tin')], col=_"
+: Fehler: Unerwartete(s) '}' in "}"
+: Fehler: konnte Funktion "h" nicht finden
 
 * Overall Plots
 
