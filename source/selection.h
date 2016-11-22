@@ -1,6 +1,6 @@
 #pragma once
 
-#if (!CUCKOO && !GROWS && !HOM2LVL && !TRIVGROW && !LINPROB && !SPACEPROB && !HOPSCOTCH)
+#if (!CUCKOO && !GROWS && !HOM2LVL && !TRIVGROW && !LINPROB && !SPACEPROB && !HOPSCOTCH && !SPACEHOPSCOTCH)
 #define GROWS
 #endif // NO HASHTYPE DEFINED => GROWS
 
@@ -38,6 +38,11 @@
 #ifdef HOPSCOTCH
 #include "include/hopscotch.h"
 #define  HASHTYPE Hopscotch
+#endif
+
+#ifdef SPACEHOPSCOTCH
+#include "include/hopscotch.h"
+#define  HASHTYPE SpaceHopscotch
 #endif
 
 

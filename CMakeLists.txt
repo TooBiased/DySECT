@@ -46,7 +46,7 @@ set(HASH_TABLES_LIST "grows;cuckoo;hom2lvl;trivgrow;linprob;spaceprob")
 find_package(tslHopscotch)
 if (TSLHOPSCOTCH_FOUND)
   include_directories(${TSLHOPSCOTCH_INCLUDE_DIRS})
-  set(HASH_TABLES_LIST "${HASH_TABLES_LIST};hopscotch")
+  set(HASH_TABLES_LIST "${HASH_TABLES_LIST};hopscotch;spacehopscotch")
 endif()
 
 #### THE ONE STEP GROW EXECUTABLE ##############################################
