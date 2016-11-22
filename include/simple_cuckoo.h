@@ -26,7 +26,7 @@ public:
                  size_t dis_steps = 0, size_t seed = 0)
         : Base_t(std::max(size_t((cap*size_constraint)/bs)*bs, bs), size_constraint,
                  dis_steps, seed),
-          n_buckets(std::max(size_t((cap*size_constraint)/bs), 1ul)),
+          n_buckets(std::max(size_t((cap*size_constraint)/bs), 1ul)), factor(double(n_buckets)/double(1ull<<32)),
           table(new Bucket_t[n_buckets])
     { }
 
@@ -44,13 +44,14 @@ public:
 
 private:
     size_t n_buckets;
+    double factor;
     std::unique_ptr<Bucket_t[]> table;
 
     inline Bucket_t* getBucket1(HashSplitter_t h) const
-    { return &(table[h.loc1 % n_buckets]); }
+    { return &(table[h.loc1 * factor]); } //% n_buckets]); }
 
     inline Bucket_t* getBucket2(HashSplitter_t h) const
-    { return &(table[h.loc2 % n_buckets]); }
+    { return &(table[h.loc2 * factor]); } //% n_buckets]); }
 };
 
 

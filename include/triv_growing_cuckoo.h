@@ -25,13 +25,15 @@ public:
 
     static constexpr size_t bs = CuckooTraits<This_t>::bs;
     static constexpr size_t tl = CuckooTraits<This_t>::tl;
+    static constexpr double fac_div = double (1ull << HashSplitter_t::sign_loc);
 
     TrivGrowingCuckoo(size_t cap = 0      , double size_constraint = 1.1,
                   size_t dis_steps = 0, size_t seed = 0)
         : Base_t(0, size_constraint, dis_steps, seed), beta((1.0+size_constraint)/2.0)
     {
-        lsize = std::floor(cap * size_constraint / double(tl*bs));
-        lsize = std::max(lsize, 1ul);
+        lsize  = std::floor(cap * size_constraint / double(tl*bs));
+        lsize  = std::max(lsize, 1ul);
+        factor = double(lsize)/fac_div;
 
         for (size_t i = 0; i < tl; ++i)
         {
@@ -47,7 +49,7 @@ public:
 
     TrivGrowingCuckoo(TrivGrowingCuckoo&& rhs)
         : Base_t(std::move(rhs)), beta(rhs.beta),
-          grow_thresh(rhs.grow_thresh), lsize(rhs.lsize)
+          grow_thresh(rhs.grow_thresh), lsize(rhs.lsize), factor(rhs.factor)
     {
         for (size_t i = 0; i < tl; ++i)
         {
@@ -61,6 +63,7 @@ public:
         beta        = rhs.beta;
         grow_thresh = rhs.grow_thresh;
         lsize       = rhs.lsize;
+        factor      = rhs.factor;
 
         for (size_t i = 0; i < tl; ++i)
         {
@@ -85,13 +88,14 @@ private:
     using Base_t::h;
 
     size_t lsize;
+    size_t factor;
     std::unique_ptr<Bucket_t[]> llt[tl];
 
     inline Bucket_t* getBucket1(HashSplitter_t h) const
-    { return &(llt[h.tab][h.loc1 % lsize]); }
+    { return &(llt[h.tab][h.loc1 * factor]); } // % lsize]); }
 
     inline Bucket_t* getBucket2(HashSplitter_t h) const
-    { return &(llt[h.tab][h.loc2 % lsize]); }
+    { return &(llt[h.tab][h.loc2 * factor]); } // % lsize]); }
 
     inline void inc_n()
     {
@@ -100,22 +104,24 @@ private:
 
     inline void grow()
     {
-        size_t nsize = std::floor(double(n) * alpha / double(tl*bs));
+        size_t nsize   = std::floor(double(n) * alpha / double(tl*bs));
         nsize = std::max(nsize, lsize+1);
+        double nfactor = double(nsize)/fac_div;
 
         for (size_t i = 0; i < tl; ++i)
         {
             auto ntable = std::make_unique<Bucket_t[]>(nsize);
-            migrate(i, ntable, nsize);
+            migrate(i, ntable, nfactor);
             llt[i] = std::move(ntable);
         }
 
         lsize       = nsize;
+        factor      = nfactor;
         capacity    = bs * tl * lsize;
         grow_thresh = capacity / beta;
     }
 
-    inline void migrate(size_t tab, std::unique_ptr<Bucket_t[]>& target, size_t tsize)
+    inline void migrate(size_t tab, std::unique_ptr<Bucket_t[]>& target, double factor)
     {
         for (size_t i = 0; i < lsize; ++i)
         {
@@ -125,8 +131,8 @@ private:
                 auto e    = curr->elements[j];
                 if (! e.first) break;
                 auto hash = h(e.first);
-                if      (getBucket1(hash) == curr) target[hash.loc1 % tsize].insert(e.first, e.second);
-                else if (getBucket2(hash) == curr) target[hash.loc2 % tsize].insert(e.first, e.second);
+                if      (getBucket1(hash) == curr) target[hash.loc1 * factor].insert(e.first, e.second);
+                else if (getBucket2(hash) == curr) target[hash.loc2 * factor].insert(e.first, e.second);
                 else
                 {
                     std::cout << "something is wrong neither in first, nor second bucket." << std::endl;
@@ -158,11 +164,7 @@ public:
         static constexpr size_t log(size_t k)
         { return (k-1) ? 1+log(k>>1) : 0; }
 
-        static constexpr size_t uneven(size_t k)
-        { return k & 1ull; }
-
-        static constexpr size_t loc_size(size_t k)
-        { return 32 - ((log(k)+uneven(k)) >> 1);}
+        static constexpr size_t sign_loc = 32 - log(tl);
 
         static_assert( tl == 1ull<<log(tl),
                        "TL must be a power of two >0!");
