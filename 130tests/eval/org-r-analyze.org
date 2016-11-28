@@ -35,6 +35,8 @@ title("Regression of MPG on Weight")
   cuckoo_raw         <- read.table("../18_11/cuckoo_bfs.time"    , comment.char = "#", col.names = cols)
   linprob_raw        <- read.table("../18_11/linprob.time"       , comment.char = "#", col.names = cols)
   hopscotch_raw      <- read.table("../18_11/hopscotch.time"     , comment.char = "#", col.names = cols)
+  spacehopscotch_raw <- read.table("../22_11/spacehopscotch.time", comment.char = "#", col.names = cols)
+  ncuckoo_raw        <- read.table("../22_11/cuckoo_bfs.time"        , comment.char = "#", col.names = cols)
 
   loc_groupby <- function(d)
   {
@@ -48,6 +50,8 @@ title("Regression of MPG on Weight")
   cuckoo         = loc_groupby(cuckoo_raw)
   linprob        = loc_groupby(linprob_raw)
   hopscotch      = loc_groupby(hopscotch_raw)
+  spacehopscotch = loc_groupby(spacehopscotch_raw)
+  ncuckoo        = loc_groupby(ncuckoo_raw)
 #+end_src
 
 #+RESULTS:
@@ -75,7 +79,7 @@ title("Regression of MPG on Weight")
 #+RESULTS:
 
 * Some grows Plots
-** Alpha VS TIN
+** Alpha VS TIN Details for grows
 #+BEGIN_SRC R :session :results output
   #graphics :file plot.png
   t <- function (d, x,y, bla)
@@ -86,29 +90,88 @@ title("Regression of MPG on Weight")
   y='tfi'
   x='al'
 
-  range_t = range(0, t(grows_bfs,x,y)[y], t(grows_rwalk,x,y)[y]) #, t(grows_rwalkcyc,x,y)[y])
+  par(mfrow=c(1,2))  #two plots next to each other
 
-  plot  (t(grows_bfs, x, y, 8 ) , col="black", ylim=c(0,16000))
-  points(t(grows_bfs, x, y, 4 ) , col="blue")
-  points(t(grows_bfs, x, y, 6 ) , col="green")
-  points(t(grows_bfs, x, y, 12) , col="violet")
-  points(t(grows_bfs, x, y, 16) , col="orange")
-  #par(new=2)
+  header = "Find Microbenchmark"
+  xrange <- range(grows_bfs$al)
+  yrange <- range(0,grows_bfs$tfi)
+  plot  (xrange, yrange, col="black", type="n", main=header)
+  lines(t(grows_bfs, x, y, 8 ) , col="black" , type="o")
+  lines(t(grows_bfs, x, y, 4 ) , col="blue"  , type="o")
+  lines(t(grows_bfs, x, y, 6 ) , col="green" , type="o")
+  lines(t(grows_bfs, x, y, 12) , col="violet", type="o")
+  lines(t(grows_bfs, x, y, 16) , col="orange", type="o")
+  lines(t(grows_bfs, x, y, 16) , col="orange", type="o")
+
+  lines(t(hopscotch ,x, y, 8 ) , col="red"   , type="o")
+  lines(t(spacehopscotch, x, y, 8) , col="darkred", type="o")
+
   y='tin'
-  plot  (t(grows_bfs, x, y, 8 ) , col="black", ylim=c(0,50000))
-  points(t(grows_bfs, x, y, 4 ) , col="blue")
-  points(t(grows_bfs, x, y, 6 ) , col="green")
-  points(t(grows_bfs, x, y, 12) , col="violet")
-  points(t(grows_bfs, x, y, 16) , col="orange")
+  header = "Insert Microbenchmark"
+  yrange <- range(0,grows_bfs[grows_bfs$bs == 8, 'tin'])
+plot  (xrange, yrange, type="n", main=header)
+  #plot (t(grows_bfs, x, y, 8 ) , type="n",  ylim=c(0,500000), main=header)
+  lines(t(grows_bfs, x, y, 8 ) , col="black" , type="o")
+  lines(t(grows_bfs, x, y, 4 ) , col="blue"  , type="o")
+  lines(t(grows_bfs, x, y, 6 ) , col="green" , type="o")
+  lines(t(grows_bfs, x, y, 12) , col="violet", type="o")
+  lines(t(grows_bfs, x, y, 16) , col="orange", type="o")
 
-  points(t(hopscotch ,x, y, 8 ) , col="red"  )
+  lines(t(hopscotch ,x, y, 8 ) , col="red"   , type="o")
+  lines(t(spacehopscotch, x, y, 8) , col="darkred", type="o")
 
   lines  (c(-999, 999),c(0,0), col="black" )
-  #points(t(grows_rwalkcyc), col="green")
+  #lines(t(grows_rwalkcyc), col="green")
 #+END_SRC
 
 #+RESULTS:
-: Fehler in maskBS(d, bla) (von unknown!2822KMP#3) : Argument "bla" fehlt (ohne Standardwert)
+
+** Alpha VS TIN comparison non growing
+#+BEGIN_SRC R :session :results output
+  #graphics :file plot.png
+  t <- function (d, x,y, bla)
+  {
+      return (d[maskTL(d,256) & maskCAP(d,100000000) & maskBS(d,bla),c(x,y)]) #(maskTL(maskCAP(maskBS(d,bla),1), 256))
+  }
+
+  par(mfrow=c(1,2))  #two plots next to each other
+  alpha     <- range(grows_bfs$al)
+  insert_time <- range(0, t(grows_bfs,'al','tin',8)$tin, 20000)
+  find_time <- range(0,grows_bfs$tfi)
+
+  y='tin'
+  x='al'
+
+  header = "Insert Microbenchmark"
+  plot  (alpha, insert_time, col="black", type="n", main=header)
+  lines(t(grows_bfs, x, y, 8 ) , col="black" , type="o")
+  lines(t(grows_bfs, x, y, 4 ) , col="blue"  , type="o")
+  lines(t(grows_bfs, x, y, 16) , col="orange", type="o")
+
+  lines(t(ncuckoo  , x, y, 8)  , col="green" , type="o")
+  lines(t(cuckoo   , x, y, 8)  , col="darkgreen" , type="o")
+
+  lines(t(hopscotch ,x, y, 8 ) , col="red"   , type="o")
+  lines(t(spacehopscotch, x, y, 8) , col="darkred", type="o")
+
+  y='tfi'
+  header = "Find Microbenchmark"
+  plot  (alpha, find_time, type="n", main=header)
+  lines(t(grows_bfs, x, y, 8 ) , col="black" , type="o")
+  lines(t(grows_bfs, x, y, 4 ) , col="blue"  , type="o")
+  lines(t(grows_bfs, x, y, 16) , col="orange", type="o")
+
+  lines(t(ncuckoo  , x, y, 8)  , col="green" , type="o")
+  lines(t(cuckoo   , x, y, 8)  , col="darkgreen" , type="o")
+
+  lines(t(hopscotch ,x, y, 8 ) , col="red"   , type="o")
+  lines(t(spacehopscotch, x, y, 8) , col="darkred", type="o")
+
+  lines  (c(-999, 999),c(0,0), col="black" )
+  #lines(t(grows_rwalkcyc), col="green")
+#+END_SRC
+
+#+RESULTS:
 
 
 ** COOL 3D Overview
@@ -138,11 +201,11 @@ title("Regression of MPG on Weight")
       return (d[CHOSE, c('al', 'tin')])
   }
   plot   (t_all(grows_bfs)    , col="red", ylim=c(0,80000))
-  points(t_all(grows_rwalk)   , col="blue")
-  points(t_all(grows_rwalkcyc), col="green")
-  points(t_all(hom2lvl)       , col="orange")
-  points(t_all(cuckoo)        , col="violet")
-  points(t_all(linprob)       , col="black")
+  lines(t_all(grows_rwalk)   , col="blue")
+  lines(t_all(grows_rwalkcyc), col="green")
+  lines(t_all(hom2lvl)       , col="orange")
+  lines(t_all(cuckoo)        , col="violet")
+  lines(t_all(linprob)       , col="black")
 #+END_SRC
 
 #+RESULTS:

@@ -1,0 +1,95 @@
+#+TITLE:    Space-Efficiently Dynamic: How to Grow Hash Tables without Doubling their Size
+#+AUTHOR:   Tobias Maier
+#+EMAIL:    t.maier@kit.edu
+
+** Abstract
+A lot of research has been done to optimize the speed and space
+efficiency of hash tables.  And many practical implementations exist.
+Modern displacement strategies can easily fill a given table to more
+than 95% before the performance begins to decrease significantly.  But
+once the threshold is met, copying and migrating the table seems to
+still be the most efficient answer.
+
+During the migration the old and the new table coexist causing a
+massive space overhead. Even if this was not the case and memory was
+not an issue during the migration doubling the hash table size would
+still lead to a bad space efficiency. Because, the newly grown table
+is filled to at most 50%.
+
+Therefore, we propose the following two level hash table that allows
+dynamic growing and keeps a strict size constraint ((1+\varepsilon)
+\cdot n) throughout its lifetime.
+
+* Introduction
+Hash tables are some of the most frequently used data-structures. They
+belong into every programmers basic toolbox.  As such having
+implementations which perform well under different conditions is
+important, to allow programmers to worry about different problems.
+
+One aspect which a lot of research focuses on is space efficiency.
+Modern space efficient hash tables can easily be filled to 90\% and
+more. But for this to matter, programmers have to know very tight
+bounds to the absolute number of elements inserted into the table.
+This is often not the case, one of the most typical use cases for hash
+tables is to unify data connected to keys.  To guarantee good
+performance, we have to overestimate the necessary capacity whenever
+the exact number of different keys is not known a priori.  To
+alleviate this problem, we now present a dynamically growing space
+efficient hash table.
+
+Many libraries even ones that implement space efficient hash tables
+already offer dynamic growing.  The problem with these implementations
+is that they either lose their space efficiency or their overall
+performance, once the table grows above its original capacity.
+Usually growing is implemented by either creating additional hash
+tables -- decreasing the performance especially for look ups, or by
+migrating all elements to a new table -- losing the space efficiency.
+
+To avoid both of these pitfalls we propose the following variation of
+a normal bucket cuckoo hash table.  We separate the global hash table
+into a collection of smaller subtables.  There is a first level table,
+which stores pointers to the second level subtables.  The second level
+tables consist of Buckets which actually store the elements.  While
+the table is not growing, operations proceed similar to normal cuckoo
+hashing.  Each element correlates to two buckets within two of the
+second level tables.  These buckets are found using a standard hash
+function, first we use the most significant bits to choose the
+appropriate hash table, then the lesser significant bits are used to
+find a location within that subtable.  When an element is inserted it
+will be stored in one of its correlating buckets, using common cuckoo
+hashing displacement techniques.
+
+When the table needs to grow, one can double the size of one subtable,
+increasing the overall capacity only by a small factor.  Growing only
+one subtable does of course introduce some imbalance, where elements
+that are correlated to one bucket within that subtable can be inserted
+more easily than others.  In the following we will show, that using
+the standard displacement techniques, this table can still be filled
+to a similar degree as the homogeneous table.
+
+* Related Work
+- Some other engineering papers
+
+- Some Space efficient Stuff  (theoretical)
+
+- Some Space efficient Stuff  (practical)
+
+* Preliminaries
+** \varepsilon-Constraint Hash Tables
+*** \varepsilon-Constraint for dynamic Tables
+
+** Some Simple Cuckoo Hashing Bounds
+
+* Proposed Data Structure
+** Two Level Approach
+
+** Growing in small steps fixes problems
+*** Doubling small tables
+*** Grow Thresholds
+* Implementation
+* Experiments
+** Comparison Implementations
+** Hardware
+** Tests
+*** Incremental Construction
+*** Mixed Benchmarks

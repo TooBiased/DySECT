@@ -34,14 +34,14 @@ echo "Step_all"
 
 
 
-for tab in cuckoo trivgrow # hom2lvl
+for tab in cuckoo #trivgrow # hom2lvl
 do
     echo "type: $tab"
     for dis in bfs
     do
         for tl in 256
         do
-            for bs in 8
+            for bs in 4 6 # 8
            do
                 for cap in $n
                 do
@@ -72,39 +72,39 @@ done
 #                    -out 18_11/spaceprob
 # done
 
-echo "Hopscotch"
-for cap in 1 $nh $n
-do
-    for alpha in 1.1 1.15 1.2 1.25
-    do
-        # ./time_hopscotch -n $n  -pre 0  -cap $cap  -alpha $alpha  -steps $steps -bfs \
-        #                  -out 18_11/hopscotch
-        ./time_spacehopscotch -n $n  -pre 0  -cap $cap  -alpha $alpha  -steps $steps -bfs \
-                   -out 22_11/hopscotch
-    done
-done
+# echo "Hopscotch"
+# for cap in 1 $nh $n
+# do
+#     for alpha in 1.1 1.15 1.2 1.25
+#     do
+#         # ./time_hopscotch -n $n  -pre 0  -cap $cap  -alpha $alpha  -steps $steps -bfs \
+#         #                  -out 18_11/hopscotch
+#         ./time_spacehopscotch -n $n  -pre 0  -cap $cap  -alpha $alpha  -steps $steps -bfs \
+#                    -out 22_11/spacehopscotch
+#     done
+# done
 
 
 
-# ### VARIABLE NR. OF ELEMENTS ############################################
+# # ### VARIABLE NR. OF ELEMENTS ############################################
 
-echo "Variable Nr"
-for t in 10000000 25000000 50000000 75000000 100000000 1250000000 150000000
-do
-    for alpha in 1.1 1.15 1.2 1.25
-    do
-        # ./time_grows     -bfs -n $t -pre 0 -cap 1 -steps $steps -alpha $alpha \
-        #                  -out 18_11/grows_incr_bfs
-        # ./time_hopscotch -bfs -n $t -pre 0 -cap 1 -steps $steps -alpha $alpha \
-        #                  -out 18_11/hopscotch_incr
-        ./time_spacehopscotch -bfs -n $t -pre 0 -cap 1 -steps $steps -alpha $alpha \
-                              -out 22_11/hopscotch_incr
-        ./time_trivgrow    -bfs -n $t -pre 0 -cap 1 -steps $steps -alpha $alpha \
-                           -out 22_11/grows_incr_bfs
-    done
-    # ./time_linprob -bfs -n $t -pre 0 -cap 1 -steps $steps \
-    #                -out 18_11/linprob_incr
-done
+# echo "Variable Nr"
+# for t in 10000000 25000000 50000000 75000000 100000000 1250000000 150000000
+# do
+#     for alpha in 1.1 1.15 1.2 1.25
+#     do
+#         # ./time_grows     -bfs -n $t -pre 0 -cap 1 -steps $steps -alpha $alpha \
+#         #                  -out 18_11/grows_incr_bfs
+#         # ./time_hopscotch -bfs -n $t -pre 0 -cap 1 -steps $steps -alpha $alpha \
+#         #                  -out 18_11/hopscotch_incr
+#         ./time_spacehopscotch -bfs -n $t -pre 0 -cap 1 -steps $steps -alpha $alpha \
+#                               -out 22_11/hopscotch_incr
+#         ./time_trivgrow    -bfs -n $t -pre 0 -cap 1 -steps $steps -alpha $alpha \
+#                            -out 22_11/trivgrow_incr_bfs
+#     done
+#     # ./time_linprob -bfs -n $t -pre 0 -cap 1 -steps $steps \
+#     #                -out 18_11/linprob_incr
+# done
 
 # ### DISPLACEMENT MEASUREMENTS ##################################################
 
