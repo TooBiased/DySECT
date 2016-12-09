@@ -27,23 +27,24 @@ implementations which perform well under different conditions is
 important, to allow programmers to worry about different problems.
 
 One aspect which a lot of research focuses on is space efficiency.
-Modern space efficient hash tables can easily be filled to 90\% and
-more. But for this to matter, programmers have to know very tight
+Modern space efficient hash tables work well up to loads of 90\% and
+more. But for this to matter, programmers have to know similarly tight
 bounds to the absolute number of elements inserted into the table.
 This is often not the case, one of the most typical use cases for hash
 tables is to unify data connected to keys.  To guarantee good
 performance, we have to overestimate the necessary capacity whenever
-the exact number of different keys is not known a priori.  To
+the exact number of unique keys is not known a priori.  To
 alleviate this problem, we now present a dynamically growing space
 efficient hash table.
 
-Many libraries even ones that implement space efficient hash tables
-already offer dynamic growing.  The problem with these implementations
-is that they either lose their space efficiency or their overall
-performance, once the table grows above its original capacity.
-Usually growing is implemented by either creating additional hash
-tables -- decreasing the performance especially for look ups, or by
-migrating all elements to a new table -- losing the space efficiency.
+Many libraries -- even ones that implement space efficient hash tables
+-- already offer dynamic growing.  The problem with these
+implementations is that they either lose their space efficiency or
+their overall performance, once the table grows above its original
+capacity.  Usually growing is implemented by either creating
+additional hash tables -- decreasing the performance especially for
+look ups, or by migrating all elements to a new table -- losing the
+space efficiency by multiplying the original size.
 
 To avoid both of these pitfalls we propose the following variation of
 a normal bucket cuckoo hash table.  We separate the global hash table
@@ -51,21 +52,32 @@ into a collection of smaller subtables.  There is a first level table,
 which stores pointers to the second level subtables.  The second level
 tables consist of Buckets which actually store the elements.  While
 the table is not growing, operations proceed similar to normal cuckoo
-hashing.  Each element correlates to two buckets within two of the
-second level tables.  These buckets are found using a standard hash
-function, first we use the most significant bits to choose the
-appropriate hash table, then the lesser significant bits are used to
-find a location within that subtable.  When an element is inserted it
-will be stored in one of its correlating buckets, using common cuckoo
-hashing displacement techniques.
+hashing.  Each element correlates to two buckets (each within one
+subtable).  These buckets depend on the hash function in the following
+way: first we use the most significant bits of the hash value to
+choose the appropriate subtable, then we use the lesser significant
+bits to find a location within that subtable.  When inserting an
+element we will store it in one of its correlating buckets.  If there
+is no space in the connected buckets, then we use common cuckoo
+displacement techniques to make room.
 
-When the table needs to grow, one can double the size of one subtable,
-increasing the overall capacity only by a small factor.  Growing only
-one subtable does of course introduce some imbalance, where elements
-that are correlated to one bucket within that subtable can be inserted
-more easily than others.  In the following we will show, that using
-the standard displacement techniques, this table can still be filled
-to a similar degree as the homogeneous table.
+When the table needs to grow, one can double the size of a subtable,
+increasing the overall capacity only by a small factor.  Only the
+elements within the grown subtable are migrated. Therefore the
+additional space is linear in the number of migrated elements which is
+important for the amortization. The so grown subtable now
+contains twice the number of buckets, as before. This introduces some
+imbalance, because the percentage of elements that hash to one
+subtable does not depend on the subtable size.  But we will show that
+using a breadth-first-search displacement technique will in practice
+find short displacement paths that lead to a successful insertion.
+
+Therefore, our dynamic space efficient tables work efficiently even
+when filled to similar degrees as homogeneous tables using the same
+displacement strategy. They also work up to ... times better than
+other space efficient approaches.
+
+* Motivation
 
 * Related Work
 - Some other engineering papers
@@ -75,17 +87,211 @@ to a similar degree as the homogeneous table.
 - Some Space efficient Stuff  (practical)
 
 * Preliminaries
-** \varepsilon-Constraint Hash Tables
-*** \varepsilon-Constraint for dynamic Tables
 
-** Some Simple Cuckoo Hashing Bounds
+
+A hash table is a data-structure, which stores key-value-pairs
+(\(\langle key, data \rangle\)) and offers the following functions:
+~insert~ stores a given key-value pair, ~find~ given a key returns the
+stored value or false if the key is not stored, and ~remove~ which
+deletes a previously inserted element (if present).
+
+An alternative model which is sometimes used in literature considers
+arbitrary elements instead of key value pairs.  In that model, the key
+is extracted using an extractor function.  All techniques presented in
+this paper also work in the extractor model without any adaptation.
+
+** Some Nomenclature
+Let $n$ be the number of elements in a hash table which has $m$ cells.
+Sometimes we combine multiple cells into buckets, then $b$ will denote
+the bucket size (number of cells in one bucket).  When allocating the
+table, we allocate it with approximately $n\cdot \alpha$ cells.
+Therefore, an appropriately filled table has \(m=n\cdot\alpha\).
+
+We call /se/ the size of one element.  For most hash tables this is
+also the size of a hash table cell.  Therefore, the size of the hash
+table is usually \(/sc/\cdot m\).
+
+We call a hash table architecture *Open Addressing*, when it stores its
+elements directly in the table.  This is the opposite of indirect hash
+table techniques like hashing with chaining. Where the hash table
+usually contains pointers to elements that are stored outside the main
+table.  In this publication, we concentrate fully on hash tables with
+open addressing (see TODO next section for our full reasoning)
+
+** Cuckoo Hashing
+Cuckoo hashing is a technique to resolve hash conflicts in an open
+addressing hash table. Its main draw is that it guarantees constant
+lookup times even in densely filled tables. The article TODO by TODO
+(probably mitzenmacher with or without dietzfelbinger) et al. gives a
+good overview over the many variants of cuckoo hashing.  The
+technique, which distinguishes variants of cuckoo hashing from most
+other techniques is, that in case of conflicts one or more alternative
+hash functions are used to find alternative positions.  Even when all
+alternative positions are filled one can often move elements to open
+up space for the current element.
+
+Throughout this paper we use an adaptation of cuckoo hashing with
+buckets. This variant was first presented in TODO ... .  It uses only
+two hash functions, therefore, each element has exactly two buckets
+that can store it.
+
+*Lookup:* Search operations have a guaranteed constant running
+time. Independent from the tables density, there are exactly two
+possible buckets we have to search to find an element (each has
+constant size).
+
+*Insert:* Each element is associated with two buckets.  If at least
+one of those buckets has space left, then we store the element in the
+bucket, that has more space.  But when both buckets are full, then we
+have to move elements around the table, such that a new space becomes
+available.
+
+# IMPLICIT GRAPH MODEL
+To visualize the problem of displacing elements, one can think of the
+following *implicit graph*.  There is one node per bucket and an edge
+per element connecting its two associated buckets (nodes).  To insert
+an element, we have to find a way from one of its associated buckets,
+to a bucket, that has space remaining.  The two most common techniques
+to do this is a *random walk* or a *breadth first search*.
+
+*** Some Performance Bounds
+
+** \((1+\varepsilon)\)-Space Efficient Hash Tables
+In the absence of compression, it is clear that the minimum memory
+required for storing a hash table is the combined memory of all stored
+elements \((/se/ \cdot n)\).  We call a hash table
+\((1+\varepsilon)\)-space efficient when it can efficiently operate
+with $n$ elements while using less than \((1+\varepsilon)\cdot n \cdot
+/se/\) memory.
+
+While using open addressing hash tables it is clear, that we cannot
+reach the minimum space of \(n\cdot/se/\) in a non-static scenario
+with on-line insertions and deletions.  Therefore, we assume that
+\(\varepsilon > 0\).  To efficiently use the given memory, we will
+usually make sure, that the used tables are \(m = (1+\varepsilon)
+\cdot n\) cells large resulting in the necessary memory consumption.
+
+Note that above statement is only true for tables which use open
+addressing.  It disregards indirect techniques which store pointers in
+the table.  This makes sense in the common scenario of reasonably
+small elements (not \(/se/ >> /pointer size/\)). In this scenario,
+storing one pointer per element becomes prohibitively large.
+
+In the case where elements are large compared to pointers we can
+easily construct a hash table with good space efficiency by using a
+non-space efficient table and storing only pointers to elements.
+Using this technique the overall memory consumption is \(\approx
+m\cdot /pointer size/ + n\cdot /se/\). Which is close to the optimum
+\(n\cdot /se/\) for large /se/.
+
+Therefore, we will concentrate on hash tables with open
+addressing. This means, that all investigated hash tables at some
+level consist of an array, which stores elements directly.
+
+*** Why Space Efficiency is not Enough!
+Let us assume we use a \((1+\varepsilon)\)-space efficient hash
+table. We know an upper bound $c$ to the number of unique elements
+used in our test.  If the specific instant uses only $n = \gamma\cdot
+c$ elements ($\gamma < 1$), then good results could have been achieved
+using a \((1+\varepsilon)\cdot 1/\gamma\%\) space efficient table that
+was properly initiated. Therefore, optimizing static tables to support
+higher densities only makes sense if the expected size of the table
+can be guessed equally exact.
+
+For example looking at a classic cuckoo hash table with ....TODO. This
+table works well until it is approximately 95% filled, therefore we
+choose \(m = 0.95^{-1}\cdot u\) where $u$ is the known upper bound to
+the number of elements.  Let's now assume the computed instance
+contains 20% less unique keys than the upper bound, the space
+consumption is \(m\cdot /se/ = 0.95^{-1}\cdot u \cdot /se/ =
+0.95^{-1}\cdot 0.8^{-1}\cdot n \cdot /se/ \approx 1.32 \cdot n \dot
+/se/\).
+
+Achieving space efficiency in cases where the final table size is not known
+a priori (or only insufficiently known), forces us to remain space
+efficient at all times during the hash tables life span (every
+operation could be the last).  Therefore, the size of the table has to
+grow closely together with the number of inserted elements -- all
+while ensuring that the costs of each operation stay (expected,
+amortized) constant.
+
+*** \((1+\varepsilon)\)-Space Efficiency for Dynamic Tables
+The definition of a space efficient table specifically works for
+preallocated tables. Even an empty table can be space
+efficient, if it can still operate when it is filled further. It has
+to be initialized with an exact count of unique keys, to actually make
+the \((1+\varepsilon\))-space efficiency matter. Since this is not
+necessarily possible we will now define the notion of
+space efficient growing tables.
+
+We call a hash table \((1+\varepsilon)\)-space efficiently growing,
+when it can grow over its original capacity and throughout its
+lifetime, will only use \((1+\varepsilon)\cdot n \cdot /se/\) where
+$n$ is the *current* number of elements.
+
+**** Trivial Examples
+One simple example of this is a linear probing table, which grows by a
+factor of two, whenever 50% of the table is filled. Here the table is
+at least 25% filled (immediately after growing), therefore, the table
+is 4-space efficient. Another example would be a cuckoo table which
+doubles in size whenever it surpasses 95%, fill rate. This would be a
+$0.45^-1\approx 2.22$-space efficient table.
+
+**** Memory Usage while Growing
+An additional problem we have not yet mentioned is the memory usage,
+during table migrations. When we allocate a new table to move all
+elements into, there is a time when both the old and the new table
+coexist. during that time, the overall memory usage is even worse.  In
+the example of the 4-space efficient linear probing table above there
+is a time where \(6\cdot n \cdot /se/\) memory is used (old table 50%
+filled and new table 0% filled). So as a dynamic table it is only 6-space
+efficient.
 
 * Proposed Data Structure
-** Two Level Approach
+The main feature of our data structure is its ability to efficiently
+grow with the number of elements stored in the table and thus remain
+space efficient throughout its lifetime.  A common technique to make
+static data structures dynamic  is to allocate a new structure with
+twice the capacity and to migrate the currently held objects, whenever
+the table gets too full. But doubling the whole data structure cannot
+be space efficient.  The natural thought is to double only part of the
+data structure.
 
-** Growing in small steps fixes problems
-*** Doubling small tables
-*** Grow Thresholds
+** Two Level Approach
+We use a two level approach (shown in TODO FIGREFRENCE) to allow
+differentiated growing between table parts.  The first level consists
+of table which stores a constant number /tl/ (\(/tl/ = 2^k\)) of
+second level tables. The second level tables consist of buckets that
+store elements directly.
+
+Each element is still associated with exactly two buckets, these can
+be in the same, or in different hash tables. To find the first bucket
+associated with an element $e$, we compute $e$s hash value using the
+first hash function $h_1(e)$. We then use the first $k$ bits, to chose
+the appropriate second level table. There we find the correct bucket
+using the other bits of the hash value (value modulo table size).
+
+It is important to realize, that during lookup operations the two
+level data structure does not force any additional cache misses, since
+the first level hash table will quickly be stored in the cache.  This
+allows our hierarchical table structure to be competitive with even
+the most simplest solutions.
+
+** Partial Growing
+Let $s$ be the size of the smallest second level table.  When the
+number of elements surpasses a threshold ($(1+\varepsilon) \cdot n >
+m+s$).  One can grow the smallest second level table by doubling its
+size and still remain space efficient.  Assuming all second level
+tables start with the same size $s$ -- growing one of them increases
+the overall capacity from $/tl/\cdot s$ to $(/tl/+1)\cdot s$ (factor:
+$\frac{/tl/+1}{/tl/}$).  Note that all subsequent grows increase the
+capacity by the same (smaller factor) until all second level
+tables have the same size again.
+
+Between each two growing operation we inserted $s\cdot (1+\varepsilon)^-1$
+elements amortizing the migration easily.
+
+
 * Implementation
 * Experiments
 ** Comparison Implementations
