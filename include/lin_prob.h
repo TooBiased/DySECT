@@ -6,6 +6,7 @@
 #include <tuple>
 
 #include "config.h"
+#include "bucket.h"
 
 template <class T>
 class CuckooTraits;

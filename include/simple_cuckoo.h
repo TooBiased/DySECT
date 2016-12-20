@@ -1,7 +1,6 @@
 #pragma once
 
-#include "config.h"
-
+#include "cuckoo_base.h"
 
 template<class K, class D, class HF = std::hash<K>,
          class Conf = Config<> >

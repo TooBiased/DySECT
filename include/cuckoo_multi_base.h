@@ -180,7 +180,7 @@ CuckooMultiBase<SCuckoo>::find(Key k) const
     // Make sure this is unrolled and inlined
     for (size_t i = 0; i < nh; ++i)
     {
-        p[i] = ptr[i](hash)->find(k);
+        p[i] = ptr[i]->find(k);
     }
 
     // seperated from top for data independence
@@ -203,7 +203,7 @@ inline bool CuckooMultiBase<SCuckoo>::remove(Key k)
     // Make sure this is unrolled and inlined
     for (size_t i = 0; i < nh; ++i)
     {
-        p[i] = ptr[i](hash)->remove(k);
+        p[i] = ptr[i]->remove(k);
     }
 
     for (size_t i = 0; i < nh; ++i)

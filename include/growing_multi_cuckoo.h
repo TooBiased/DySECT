@@ -15,15 +15,18 @@ private:
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
     friend Base_t;
 
+public:
     static constexpr size_t bs = CuckooTraits<This_t>::bs;
     static constexpr size_t tl = CuckooTraits<This_t>::tl;
     static constexpr size_t nh = CuckooTraits<This_t>::nh;
 
+private:
     using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
     //using HashSplitter_t = typename CuckooTraits<This_t>::HashSplitter_t;
     using Hasher_t       = typename CuckooTraits<This_t>::Hasher_t;
-    using Hashed_t       = Hasher_t::Hashed_t;
-    using Extractor_t    = Hasher_t::template Extractor<nh>;
+    using Hashed_t       = typename Hasher_t::Hashed_t;
+    using TabExtractor_t = typename Hasher_t::template TabExtractor<nh>;
+    using LocExtractor_t = typename Hasher_t::template LocExtractor<nh>;
 
 public:
     using Key            = typename CuckooTraits<This_t>::Key;
@@ -101,7 +104,7 @@ public:
     using Base_t::alpha;
     using Base_t::capacity;
 
-    using Base_t::h;
+    using Base_t::hasher;
 
 private:
     size_t                      llb[tl];
@@ -122,8 +125,8 @@ private:
 
     inline Bucket_t* getBucket (Hashed_t h, size_t i) const
     {
-        size_t tab = Extractor_t::tab(h,i); //(h.tab1+i*h.tab2) & tl_bitmask;
-        size_t loc = Extractor_t::loc(h,i) & llb[tab]; //(h.loc1+i*h.loc2) & llb[tab];
+        size_t tab = TabExtractor_t::tab(h,i); //(h.tab1+i*h.tab2) & tl_bitmask;
+        size_t loc = LocExtractor_t::loc(h,i) & llb[tab]; //(h.loc1+i*h.loc2) & llb[tab];
         return &(llt[tab][loc]);
     }
 
@@ -160,10 +163,10 @@ private:
 
                 for (size_t ti = 0; ti < nh; ++ti)
                 {
-                    if (  Extractor_t::tab(hash, ti) == tab && //hash.tab1+ti*hash.tab2 == tab &&
-                         (Extractor_t::loc(hash, ti) & llb[tab])  == i) //((hash.loc1+ti*hash.loc2) & llb[tab]) == i)
+                    if (  TabExtractor_t::tab(hash, ti) == tab && //hash.tab1+ti*hash.tab2 == tab &&
+                         (LocExtractor_t::loc(hash, ti) & llb[tab])  == i) //((hash.loc1+ti*hash.loc2) & llb[tab]) == i)
                     {
-                        target[Extractor_t::loc(hash, ti) & bitmask].insert(e.first, e.second);
+                        target[LocExtractor_t::loc(hash, ti) & bitmask].insert(e.first, e.second);
                         break;
                     }
                 }

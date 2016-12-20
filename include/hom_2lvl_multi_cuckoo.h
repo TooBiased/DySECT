@@ -15,15 +15,18 @@ private:
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
     friend Base_t;
 
+public:
     static constexpr size_t bs = CuckooTraits<This_t>::bs;
     static constexpr size_t tl = CuckooTraits<This_t>::tl;
     static constexpr size_t nh = CuckooTraits<This_t>::nh;
 
+private:
     using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
     //using HashSplitter_t = typename CuckooTraits<This_t>::HashSplitter_t;
     using Hasher_t       = typename CuckooTraits<This_t>::Hasher_t;
-    using Hashed_t       = Hasher_t::Hashed_t;
-    using Extractor_t    = Hasher_t::template Extractor<nh>;
+    using Hashed_t       = typename Hasher_t::Hashed_t;
+    using TabExtractor_t = typename Hasher_t::template TabExtractor<nh>;
+    using LocExtractor_t = typename Hasher_t::template LocExtractor<nh>;
 
 public:
     using Key            = typename CuckooTraits<This_t>::Key;
@@ -89,8 +92,8 @@ private:
 
     inline Bucket_t* getBucket(Hashed_t h, size_t i) const
     {
-        size_t tab = Extractor_t::tab(h,i);
-        return &(llt[tab][Extractor_t::loc(h,i) * factor);
+        size_t tab = TabExtractor_t::tab(h,i);
+        return &(llt[tab][LocExtractor_t::loc(h,i) * factor);
     }
 };
 

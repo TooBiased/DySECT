@@ -26,7 +26,8 @@ private:
     //using HashSplitter_t = typename CuckooTraits<This_t>::HashSplitter_t;
     using Hasher_t       = typename CuckooTraits<This_t>::Hasher_t;
     using Hashed_t       = typename Hasher_t::Hashed_t;
-    using Extractor_t    = typename Hasher_t::template Extractor<nh>;
+    using TabExtractor_t = typename Hasher_t::template TabExtractor<nh>;
+    using LocExtractor_t = typename Hasher_t::template LocExtractor<nh>;
 
 public:
     using Key            = typename CuckooTraits<This_t>::Key;
@@ -107,7 +108,7 @@ private:
 
     inline Bucket_t* getBucket (Hashed_t h, size_t i) const
     {
-        return &(llt[Extractor_t::tab(h,0)][Extractor_t::loc(h,i)*factor]);
+        return &(llt[TabExtractor_t::tab(h,0)][LocExtractor_t::loc(h,i)*factor]);
             //&(llt[h.tab][((h.loc1+i*h.loc2) & scnd_lvl_bitmask) * factor]);
     } // % lsize]); }
 
@@ -148,9 +149,9 @@ private:
 
                 for (size_t ti = 0; ti < nh; ++ti)
                 {
-                    if (i == Extractor_t::loc(hash, ti) * factor)
+                    if (i == LocExtractor_t::loc(hash, ti) * factor)
                     {
-                        target[Extractor_t::loc(hash, ti) * nfactor].insert(e.first, e.second);
+                        target[LocExtractor_t::loc(hash, ti) * nfactor].insert(e.first, e.second);
                     }
                 }
 
