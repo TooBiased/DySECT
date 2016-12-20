@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cmath>
-#include "config.h"
 #include "cuckoo_multi_base.h"
 
 template<class T>
@@ -14,21 +13,24 @@ class GrowingMultiCuckoo : public CuckooTraits<GrowingMultiCuckoo<K,D,HF,Conf> >
 private:
     using This_t         = GrowingMultiCuckoo<K,D,HF,Conf>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
-    using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
-    using HashSplitter_t = typename CuckooTraits<This_t>::HashSplitter_t;
-
     friend Base_t;
-
-public:
-    using Key            = typename CuckooTraits<This_t>::Key;
-    using Data           = typename CuckooTraits<This_t>::Data;
 
     static constexpr size_t bs = CuckooTraits<This_t>::bs;
     static constexpr size_t tl = CuckooTraits<This_t>::tl;
     static constexpr size_t nh = CuckooTraits<This_t>::nh;
 
+    using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
+    //using HashSplitter_t = typename CuckooTraits<This_t>::HashSplitter_t;
+    using Hasher_t       = typename CuckooTraits<This_t>::Hasher_t;
+    using Hashed_t       = Hasher_t::Hashed_t;
+    using Extractor_t    = Hasher_t::template Extractor<nh>;
+
+public:
+    using Key            = typename CuckooTraits<This_t>::Key;
+    using Data           = typename CuckooTraits<This_t>::Data;
+
     GrowingMultiCuckoo(size_t cap = 0      , double size_constraint = 1.1,
-                  size_t dis_steps = 0, size_t seed = 0)
+                       size_t dis_steps = 0, size_t seed = 0)
         : Base_t(0, size_constraint, dis_steps, seed)
     {
         double avg_size_f = double(cap) * size_constraint / double(tl*bs);
@@ -112,16 +114,16 @@ private:
 
     static constexpr size_t tl_bitmask = tl - 1;
 
-    inline void      getBuckets(HashSplitter_t h, Bucket_t** mem) const
+    inline void      getBuckets(Hashed_t h, Bucket_t** mem) const
     {
         for (size_t i = 0; i < nh; ++i)
             mem[i] = getBucket(h,i);
     }
 
-    inline Bucket_t* getBucket (HashSplitter_t h, size_t i) const
+    inline Bucket_t* getBucket (Hashed_t h, size_t i) const
     {
-        size_t tab = (h.tab1+i*h.tab2) & tl_bitmask;
-        size_t loc = (h.loc1+i*h.loc2) & llb[tab];
+        size_t tab = Extractor_t::tab(h,i); //(h.tab1+i*h.tab2) & tl_bitmask;
+        size_t loc = Extractor_t::loc(h,i) & llb[tab]; //(h.loc1+i*h.loc2) & llb[tab];
         return &(llt[tab][loc]);
     }
 
@@ -154,14 +156,14 @@ private:
             {
                 auto e    = curr->elements[j];
                 if (! e.first) break;
-                auto hash = h(e.first);
+                auto hash = hasher(e.first);
 
                 for (size_t ti = 0; ti < nh; ++ti)
                 {
-                    if (  hash.tab1+ti*hash.tab2              == tab &&
-                        ((hash.loc1+ti*hash.loc2) & llb[tab]) == i)
+                    if (  Extractor_t::tab(hash, ti) == tab && //hash.tab1+ti*hash.tab2 == tab &&
+                         (Extractor_t::loc(hash, ti) & llb[tab])  == i) //((hash.loc1+ti*hash.loc2) & llb[tab]) == i)
                     {
-                        target[bitmask & (hash.loc1+ti*hash.loc2)].insert(e.first, e.second);
+                        target[Extractor_t::loc(hash, ti) & bitmask].insert(e.first, e.second);
                         break;
                     }
                 }
@@ -179,16 +181,17 @@ public:
     using Base_t         = CuckooMultiBase<Specialized_t>;
     using Key            = K;
     using Data           = D;
-    using HashFct_t      = HF;
     using Config_t       = Conf;
+    //using HashFct_t      = HF;
 
     static constexpr size_t tl = Config_t::tl;
     static constexpr size_t bs = Config_t::bs;
     static constexpr size_t nh = Config_t::nh;
 
+    using Hasher_t       = Hasher<K, HF, ct_log(tl), 32-ct_log(tl), 2, 1>;
     using Bucket_t       = Bucket<K,D,bs>;
 
-    union HashSplitter_t
+    /*union HashSplitter_t
     {
         static constexpr size_t log(size_t k)
         { return (k-1) ? 1+log(k>>1) : 0; }
@@ -205,4 +208,5 @@ public:
             uint64_t loc2 : 32-log(tl);
         };
     };
+    */
 };

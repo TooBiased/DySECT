@@ -1,8 +1,24 @@
 #pragma once
 
 #include <memory>
-#include "include/multistrategies/dstrat_triv.h"
-#include "include/multistrategies/dstrat_bfs.h"
+#include <iostream>
+#include <tuple>
+
+template <class Parent>
+class dstrat_triv
+{
+public:
+    using Key            = typename Parent::Key;
+    using Data           = typename Parent::Data;
+    using Hashed_t       = typename Parent::Hashed_t;
+
+    dstrat_triv(Parent&, size_t, size_t) {}
+    dstrat_triv(Parent&, dstrat_triv&&) {}
+
+    inline int insert(std::pair<Key, Data>, Hashed_t)
+    {   return -1; }
+};
+
 
 class hist_count
 {
@@ -26,8 +42,8 @@ public:
     static constexpr size_t* hist  = nullptr;
 };
 
-template<size_t BS = 4, size_t NH = 3, size_t TL = 128,
-         template <class> class DisStrat = dstrat_multi_bfs,
+template<size_t BS = 8, size_t NH = 2, size_t TL = 128,
+         template <class> class DisStrat = dstrat_triv,
          class HistCount = hist_count>
 struct Config
 {

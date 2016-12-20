@@ -16,7 +16,7 @@ private:
     using This_t         = TrivGrowingCuckoo<K,D,HF,Conf>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
     using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
-    using HashSplitter_t = typename CuckooTraits<This_t>::HashSplitter_t;
+    using Hashed_t = typename CuckooTraits<This_t>::Hashed_t;
 
     friend Base_t;
 
@@ -26,7 +26,7 @@ public:
 
     static constexpr size_t bs = CuckooTraits<This_t>::bs;
     static constexpr size_t tl = CuckooTraits<This_t>::tl;
-    static constexpr double fac_div = double (1ull << HashSplitter_t::sign_loc);
+    static constexpr double fac_div = double (1ull << Hashed_t::sign_loc);
 
     TrivGrowingCuckoo(size_t cap = 0      , double size_constraint = 1.1,
                   size_t dis_steps = 0, size_t seed = 0)
@@ -92,10 +92,10 @@ private:
     size_t factor;
     std::unique_ptr<Bucket_t[]> llt[tl];
 
-    inline Bucket_t* getBucket1(HashSplitter_t h) const
+    inline Bucket_t* getBucket1(Hashed_t h) const
     { return &(llt[h.tab][h.loc1 * factor]); } // % lsize]); }
 
-    inline Bucket_t* getBucket2(HashSplitter_t h) const
+    inline Bucket_t* getBucket2(Hashed_t h) const
     { return &(llt[h.tab][h.loc2 * factor]); } // % lsize]); }
 
     inline void inc_n()
@@ -160,7 +160,7 @@ public:
 
     using Bucket_t       = Bucket<K,D,bs>;
 
-    union HashSplitter_t
+    union Hashed_t
     {
         static constexpr size_t log(size_t k)
         { return (k-1) ? 1+log(k>>1) : 0; }

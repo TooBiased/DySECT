@@ -3,6 +3,7 @@
 #include "hopscotch_map.h"
 //#include "extern/hopscotch-map/src/hopscotch_map.h"
 #include "config.h"
+#include "bucket.h"
 
 
 template<class K, class D, class HF = std::hash<K>, class Conf = Config<> >

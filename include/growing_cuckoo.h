@@ -15,7 +15,7 @@ private:
     using This_t         = GrowingCuckoo<K,D,HF,Conf>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
     using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
-    using HashSplitter_t = typename CuckooTraits<This_t>::HashSplitter_t;
+    using Hashed_t       = typename CuckooTraits<This_t>::Hashed_t;
 
     friend Base_t;
 
@@ -108,10 +108,10 @@ private:
     size_t grow_amount;
     size_t grow_thresh;
 
-    inline Bucket_t* getBucket1(HashSplitter_t h) const
+    inline Bucket_t* getBucket1(Hashed_t h) const
     { return &(llt[h.tab1][h.loc1 & llb[h.tab1]]); }
 
-    inline Bucket_t* getBucket2(HashSplitter_t h) const
+    inline Bucket_t* getBucket2(Hashed_t h) const
     { return &(llt[h.tab2][h.loc2 & llb[h.tab2]]); }
 
     inline void inc_n()
@@ -173,7 +173,7 @@ public:
 
     using Bucket_t       = Bucket<K,D,bs>;
 
-    union HashSplitter_t
+    union Hashed_t
     {
         static constexpr size_t log(size_t k)
         { return (k-1) ? 1+log(k>>1) : 0; }

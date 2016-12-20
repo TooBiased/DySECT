@@ -1,6 +1,5 @@
 #pragma once
 
-#include "config.h"
 #include "cuckoo_multi_base.h"
 
 template<class K, class D, class HF = std::hash<K>,
@@ -10,21 +9,27 @@ class SimpleMultiCuckoo : public CuckooTraits<SimpleMultiCuckoo<K,D,HF,Conf> >::
 private:
     using This_t         = SimpleMultiCuckoo<K,D,HF,Conf>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
-    using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
-    using HashSplitter_t = typename CuckooTraits<This_t>::HashSplitter_t;
-
     friend Base_t;
+
+public:
+    static constexpr size_t bs = CuckooTraits<This_t>::bs;
+    static constexpr size_t nh = CuckooTraits<This_t>::nh;
+    static constexpr size_t tl = 1;
+
+private:
+    using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
+    //using HashSplitter_t = typename CuckooTraits<This_t>::HashSplitter_t;
+    using Hasher_t       = typename CuckooTraits<This_t>::Hasher_t;
+    using Hashed_t       = typename Hasher_t::Hashed_t;
+    using Extractor_t    = typename Hasher_t::template Extractor<nh>;
 
 public:
     using Key            = typename CuckooTraits<This_t>::Key;
     using Data           = typename CuckooTraits<This_t>::Data;
 
-    static constexpr size_t bs = CuckooTraits<This_t>::bs;
-    static constexpr size_t nh = CuckooTraits<This_t>::nh;
-    static constexpr size_t tl = 1;
 
     SimpleMultiCuckoo(size_t cap = 0      , double size_constraint = 1.1,
-                 size_t dis_steps = 0, size_t seed = 0)
+                      size_t dis_steps = 0, size_t seed = 0)
         : Base_t(std::max(size_t((cap*size_constraint)/bs)*bs, bs), size_constraint,
                  dis_steps, seed),
           n_buckets(std::max(size_t((cap*size_constraint)/bs), 1ul)), factor(double(n_buckets)/double(1ull<<32)),
@@ -49,18 +54,17 @@ private:
     std::unique_ptr<Bucket_t[]> table;
     static constexpr size_t u32bitset = (1ull<<32) -1;
 
-    inline void getBuckets(HashSplitter_t h, Bucket_t** mem) const
+    inline void getBuckets(Hashed_t h, Bucket_t** mem) const
     {
         for (size_t i = 0; i < nh; ++i)
         {
-            size_t l = ((h.loc1 + h.loc2*i) & u32bitset) * factor;
-            mem[i] = &(table[l]);
+            mem[i] = getBucket(h,i);
         }
     }
 
-    inline Bucket_t* getBucket(HashSplitter_t h, size_t i) const
+    inline Bucket_t* getBucket(Hashed_t h, size_t i) const
     {
-        size_t l = ((h.loc1 + h.loc2*i) & u32bitset) * factor;
+        size_t l = Extractor_t::loc(h,i) * factor;
         return &(table[l]);
     }
 };
@@ -75,7 +79,8 @@ public:
     using Base_t         = CuckooMultiBase<Specialized_t>;
     using Key            = K;
     using Data           = D;
-    using HashFct_t      = HF;
+    //using HashFct_t      = HF;
+    using Hasher_t       = Hasher<K, HF, 0, 32, 2, 1>
     using Config_t       = Conf;
 
     static constexpr size_t tl = 1;
@@ -84,6 +89,7 @@ public:
 
     using Bucket_t       = Bucket<K,D,bs>;
 
+    /*
     union HashSplitter_t
     {
         uint64_t hash;
@@ -93,4 +99,5 @@ public:
             uint64_t loc2 : 32;
         };
     };
+    */
 };

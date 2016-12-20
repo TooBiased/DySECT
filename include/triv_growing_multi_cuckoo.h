@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cmath>
-#include "config.h"
 #include "cuckoo_multi_base.h"
 
 template<class T>
@@ -15,24 +14,29 @@ class TrivGrowingMultiCuckoo
 private:
     using This_t         = TrivGrowingMultiCuckoo<K,D,HF,Conf>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
-    using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
-    using HashSplitter_t = typename CuckooTraits<This_t>::HashSplitter_t;
-
     friend Base_t;
+
+public:
+    static constexpr size_t bs = CuckooTraits<This_t>::bs;
+    static constexpr size_t tl = CuckooTraits<This_t>::tl;
+    static constexpr size_t nh = CuckooTraits<This_t>::nh;
+
+private:
+    using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
+    //using HashSplitter_t = typename CuckooTraits<This_t>::HashSplitter_t;
+    using Hasher_t       = typename CuckooTraits<This_t>::Hasher_t;
+    using Hashed_t       = typename Hasher_t::Hashed_t;
+    using Extractor_t    = typename Hasher_t::template Extractor<nh>;
 
 public:
     using Key            = typename CuckooTraits<This_t>::Key;
     using Data           = typename CuckooTraits<This_t>::Data;
 
-    static constexpr size_t bs = CuckooTraits<This_t>::bs;
-    static constexpr size_t tl = CuckooTraits<This_t>::tl;
-    static constexpr size_t nh = CuckooTraits<This_t>::nh;
 
-    static constexpr double fac_div = double (1ull << HashSplitter_t::sign_loc);
-    static constexpr size_t scnd_lvl_bitmask = 1ull << HashSplitter_t::sign_loc;
+    static constexpr double fac_div = double (1ull << (32 - ct_log(tl)));
 
     TrivGrowingMultiCuckoo(size_t cap = 0      , double size_constraint = 1.1,
-                  size_t dis_steps = 0, size_t seed = 0)
+                           size_t dis_steps = 0, size_t seed = 0)
         : Base_t(0, size_constraint, dis_steps, seed), beta((1.0+size_constraint)/2.0)
     {
         lsize  = std::floor(cap * size_constraint / double(tl*bs));
@@ -89,22 +93,22 @@ private:
     using Base_t::alpha;
     double beta;
     size_t grow_thresh;
-    using Base_t::h;
+    using Base_t::hasher;
 
     size_t lsize;
     size_t factor;
     std::unique_ptr<Bucket_t[]> llt[tl];
 
-    inline void getBuckets(HashSplitter_t h, Bucket_t** mem) const
+    inline void getBuckets(Hashed_t h, Bucket_t** mem) const
     {
         for (size_t i = 0; i < nh; ++i)
             mem[i] = getBucket(h, i);
-        //return &(llt[h.tab][h.loc1 * factor]);
-    } // % lsize]); }
+    }
 
-    inline Bucket_t* getBucket (HashSplitter_t h, size_t i) const
+    inline Bucket_t* getBucket (Hashed_t h, size_t i) const
     {
-        return &(llt[h.tab][((h.loc1+i*h.loc2) & scnd_lvl_bitmask) * factor]);
+        return &(llt[Extractor_t::tab(h,0)][Extractor_t::loc(h,i)*factor]);
+            //&(llt[h.tab][((h.loc1+i*h.loc2) & scnd_lvl_bitmask) * factor]);
     } // % lsize]); }
 
     inline void inc_n()
@@ -140,13 +144,13 @@ private:
             {
                 auto e    = curr->elements[j];
                 if (! e.first) break;
-                auto hash = h(e.first);
+                auto hash = hasher(e.first);
 
                 for (size_t ti = 0; ti < nh; ++ti)
                 {
-                    if (i == ((hash.loc1+ti*hash.loc2) & scnd_lvl_bitmask) * factor)
+                    if (i == Extractor_t::loc(hash, ti) * factor)
                     {
-                        target[((hash.loc1+ti*hash.loc2) & scnd_lvl_bitmask) * nfactor];
+                        target[Extractor_t::loc(hash, ti) * nfactor].insert(e.first, e.second);
                     }
                 }
 
@@ -170,15 +174,17 @@ public:
     using Base_t         = CuckooMultiBase<Specialized_t>;
     using Key            = K;
     using Data           = D;
-    using HashFct_t      = HF;
     using Config_t       = Conf;
+    //using HashFct_t      = HF;
 
     static constexpr size_t bs = Conf::bs;
     static constexpr size_t tl = Conf::tl;
     static constexpr size_t nh = Conf::nh;
 
+    using Hasher_t       = Hasher<K, HF, ct_log(tl), 32-ct_log(tl), 2, 1>;
     using Bucket_t       = Bucket<K,D,bs>;
 
+    /*
     union HashSplitter_t
     {
         static constexpr size_t log(size_t k)
@@ -198,4 +204,5 @@ public:
             uint64_t loc2   : 32 - log(tl);
         };
     };
+    */
 };

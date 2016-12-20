@@ -7,6 +7,7 @@
 
 #include "bucket.h"
 #include "config.h"
+#include "hasher.h"
 // CRTP base class for all cuckoo tables, this encapsulates
 // main cuckoo table functionality (insert, find, and remove)
 
@@ -21,18 +22,10 @@ public:
     using Key            = ... ;
     using Data           = ... ;
     using Bucket_t       = Bucket<Key,Data,bs>;
-    using HashFct_t      = ... ;
 
     using Config_t       = CuckooConfig<...>;
 
-    union HashSplitter
-    {
-        uint64_t hash;
-        struct
-        {
-            ... //partial hash bits;
-        };
-    };
+    union Hasher_t = Hasher<Key, HashFct, ...>;
 };*/
 
 
@@ -43,19 +36,17 @@ private:
 
     using This_t         = CuckooMultiBase<SCuckoo>;
     using Specialized_t  = typename CuckooTraits<SCuckoo>::Specialized_t;
-    using HashFct_t      = typename CuckooTraits<SCuckoo>::HashFct_t;
+    //using HashFct_t      = typename CuckooTraits<SCuckoo>::HashFct_t;
     using DisStrat_t     = typename CuckooTraits<SCuckoo>::Config_t::template DisStrat_temp<This_t>;
     using HistCount_t    = typename CuckooTraits<SCuckoo>::Config_t::HistCount_t;
+    using Hasher_t       = typename CuckooTraits<SCuckoo>::Hasher_t;
 
     friend Specialized_t;
     friend DisStrat_t;
 
 public:
     using Bucket_t       = typename CuckooTraits<SCuckoo>::Bucket_t;
-    using HashSplitter_t = typename CuckooTraits<SCuckoo>::HashSplitter_t;
-    static_assert( sizeof(HashSplitter_t) == 8,
-                   "HashSplitter must be 64bit!" );
-
+    using Hashed_t       = typename Hasher_t::Hashed_t;
 
     using Key      = typename CuckooTraits<SCuckoo>::Key;
     using Data     = typename CuckooTraits<SCuckoo>::Data;
@@ -95,34 +86,27 @@ public:
     { for (size_t i = 0; i < hcounter.steps; ++i) hcounter.hist[i] = 0; }
 
     /*** members that should become private at some point *********************/
-    size_t     n;
-    size_t     capacity;
-    double     alpha;
-    HashFct_t  hasher;
-    DisStrat_t displacer;
+    size_t       n;
+    size_t       capacity;
+    double       alpha;
+    Hasher_t     hasher;
+    DisStrat_t   displacer;
     HistCount_t  hcounter;
     static constexpr size_t bs = CuckooTraits<Specialized_t>::bs;
     static constexpr size_t tl = CuckooTraits<Specialized_t>::tl;
     static constexpr size_t nh = CuckooTraits<Specialized_t>::nh;
 
 private:
-    inline HashSplitter_t h(Key k) const
-    {
-        HashSplitter_t a;
-        a.hash = hasher(k);
-        return a;
-    }
-
     /*** static polymorph functions *******************************************/
     inline void inc_n() { ++n; }
     inline void dec_n() { --n; }
 
-    inline void getBuckets(HashSplitter_t h, Bucket_t** mem) const
+    inline void getBuckets(Hashed_t h, Bucket_t** mem) const
     {
         return static_cast<const Specialized_t*>(this)->getBuckets(h, mem);
     }
 
-    inline Bucket_t* getBucket(HashSplitter_t h, size_t i) const
+    inline Bucket_t* getBucket(Hashed_t h, size_t i) const
     {
         return static_cast<const Specialized_t*>(this)->getBucket(h, i);
     }
@@ -142,7 +126,7 @@ inline bool CuckooMultiBase<SCuckoo>::insert(Key k, Data d)
 template<class SCuckoo>
 inline bool CuckooMultiBase<SCuckoo>::insert(std::pair<Key, Data> t)
 {
-    auto hash = h(t.first);
+    auto hash = hasher(t.first);
     Bucket_t* ptr[nh];
     getBuckets(hash, ptr);
 
@@ -188,7 +172,7 @@ template<class SCuckoo>
 inline typename CuckooMultiBase<SCuckoo>::FRet
 CuckooMultiBase<SCuckoo>::find(Key k) const
 {
-    auto hash = h(k);
+    auto hash = hasher(k);
     Bucket_t* ptr[nh];
     getBuckets(hash, ptr);
 
@@ -211,7 +195,7 @@ CuckooMultiBase<SCuckoo>::find(Key k) const
 template<class SCuckoo>
 inline bool CuckooMultiBase<SCuckoo>::remove(Key k)
 {
-    auto hash = h(k);
+    auto hash = hasher(k);
     Bucket_t* ptr[nh];
     getBuckets(hash, ptr);
 
@@ -224,7 +208,11 @@ inline bool CuckooMultiBase<SCuckoo>::remove(Key k)
 
     for (size_t i = 0; i < nh; ++i)
     {
-        if (p[i]) return true;
+        if (p[i])
+        {
+            static_cast<Specialized_t*>(this)->dec_n();
+            return true;
+        }
     }
     return false;
 }

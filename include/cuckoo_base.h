@@ -71,12 +71,12 @@ private:
     using HashFct_t      = typename CuckooTraits<SCuckoo>::HashFct_t;
     using DisStrat_t     = typename CuckooTraits<SCuckoo>::Config_t::template DisStrat_temp<This_t>;
     using HistCount_t    = typename CuckooTraits<SCuckoo>::Config_t::HistCount_t;
-    using HashSplitter_t = typename CuckooTraits<SCuckoo>::HashSplitter_t;
+    using Hashed_t       = typename CuckooTraits<SCuckoo>::Hashed_t;
 
     friend Specialized_t;
     friend DisStrat_t;
 
-    static_assert( sizeof(HashSplitter_t) == 8,
+    static_assert( sizeof(Hashed_t) == 8,
                    "HashSplitter must be 64bit!" );
 
 public:
@@ -128,9 +128,9 @@ public:
     static constexpr size_t tl = CuckooTraits<Specialized_t>::tl;
 
 private:
-    inline HashSplitter_t h(Key k) const
+    inline Hashed_t h(Key k) const
     {
-        HashSplitter_t a;
+        Hashed_t a;
         a.hash = hasher(k);
         return a;
     }
@@ -139,10 +139,10 @@ private:
     inline void inc_n() { ++n; }
     inline void dec_n() { --n; }
 
-    inline Bucket_t* getBucket1(HashSplitter_t h) const
+    inline Bucket_t* getBucket1(Hashed_t h) const
     { return static_cast<const Specialized_t*>(this)->getBucket1(h); }
 
-    inline Bucket_t* getBucket2(HashSplitter_t h) const
+    inline Bucket_t* getBucket2(Hashed_t h) const
     { return static_cast<const Specialized_t*>(this)->getBucket2(h); }
 };
 

@@ -12,7 +12,7 @@ public:
     using Key            = typename Parent::Key;
     using Data           = typename Parent::Data;
     using Parent_t       = typename Parent::This_t;
-    using HashSplitter_t = typename Parent::HashSplitter_t;
+    using Hashed_t       = typename Parent::Hashed_t;
     using Bucket_t       = typename Parent::Bucket_t;
 
     using BFSQueue       = std::vector<std::tuple<Key, int, Bucket_t*> >;
@@ -96,7 +96,7 @@ public:
         return true;
     }
 
-    inline int insert(std::pair<Key,Data> t, HashSplitter_t hash)
+    inline int insert(std::pair<Key,Data> t, Hashed_t hash)
     {
         BFSQueue  bq;
         Bucket_t* b1 = tab.getBucket1(hash);

@@ -14,7 +14,7 @@ public:
     using Key            = typename Parent::Key;
     using Data           = typename Parent::Data;
     using Parent_t       = Parent;
-    using HashSplitter_t = typename Parent::HashSplitter_t;
+    using Hashed_t       = typename Parent::Hashed_t;
     using Bucket_t       = typename Parent::Bucket_t;
 
     Parent&      tab;
@@ -29,7 +29,7 @@ public:
         : tab(parent), re(std::move(rhs.re)), steps(rhs.steps)
     { }
 
-    inline int insert(std::pair<Key,Data> t, HashSplitter_t hash)
+    inline int insert(std::pair<Key,Data> t, Hashed_t hash)
     {
         std::vector<std::pair<std::pair<Key, Data>, Bucket_t*> > queue;
         std::uniform_int_distribution<size_t> bin(0,1);

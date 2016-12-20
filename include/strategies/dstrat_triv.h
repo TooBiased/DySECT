@@ -11,11 +11,11 @@ class dstrat_triv
 public:
     using Key            = typename Parent::Key;
     using Data           = typename Parent::Data;
-    using HashSplitter_t = typename Parent::HashSplitter_t;
+    using Hashed_t       = typename Parent::Hashed_t;
 
     dstrat_triv(Parent&, size_t, size_t) {}
     dstrat_triv(Parent&, dstrat_triv&&) {}
 
-    inline int insert(std::pair<Key, Data>, HashSplitter_t)
+    inline int insert(std::pair<Key, Data>, Hashed_t)
     {   return -1; }
 };

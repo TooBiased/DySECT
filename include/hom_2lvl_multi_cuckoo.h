@@ -1,50 +1,53 @@
 #pragma once
 
 #include <cmath>
-#include "config.h"
-#include "cuckoo_base.h"
+#include "cuckoo_multi_base.h"
 
 template<class T>
 class CuckooTraits;
 
 template<class K, class D, class HF = std::hash<K>,
          class Conf = Config<> >
-class Hom2LvlCuckoo : public CuckooTraits<Hom2LvlCuckoo<K,D,HF,Conf> >::Base_t
+class Hom2LvlMultiCuckoo : public CuckooTraits<Hom2LvlMultiCuckoo<K,D,HF,Conf> >::Base_t
 {
 private:
-    using This_t         = Hom2LvlCuckoo<K,D,HF,Conf>;
+    using This_t         = Hom2LvlMultiCuckoo<K,D,HF,Conf>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
-    using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
-    using Hashed_t       = typename CuckooTraits<This_t>::Hashed_t;
-
     friend Base_t;
+
+    static constexpr size_t bs = CuckooTraits<This_t>::bs;
+    static constexpr size_t tl = CuckooTraits<This_t>::tl;
+    static constexpr size_t nh = CuckooTraits<This_t>::nh;
+
+    using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
+    //using HashSplitter_t = typename CuckooTraits<This_t>::HashSplitter_t;
+    using Hasher_t       = typename CuckooTraits<This_t>::Hasher_t;
+    using Hashed_t       = Hasher_t::Hashed_t;
+    using Extractor_t    = Hasher_t::template Extractor<nh>;
 
 public:
     using Key            = typename CuckooTraits<This_t>::Key;
     using Data           = typename CuckooTraits<This_t>::Data;
 
-    static constexpr size_t bs = CuckooTraits<This_t>::Config_t::bs;
-    static constexpr size_t tl = CuckooTraits<This_t>::Config_t::tl;
-
-    Hom2LvlCuckoo(size_t cap = 0      , double size_constraint = 1.1,
-                  size_t dis_steps = 0, size_t seed = 0)
+    Hom2LvlMultiCuckoo(size_t cap = 0      , double size_constraint = 1.1,
+                       size_t dis_steps = 0, size_t seed = 0)
         : Base_t(0, size_constraint, dis_steps, seed)
     {
         size_t l2size = std::floor(double(cap) * size_constraint / double(tl*bs));
 
         for (size_t i = 0; i < tl; ++i)
         {
-            llb[i] = l2size;
             llt[i] = std::make_unique<Bucket_t[]>(l2size);
         }
 
         capacity    = tl * l2size * bs;
+        factor      = double(l2size) / double(1ull << 32 - ct_log(tl));
     }
 
-    Hom2LvlCuckoo(const Hom2LvlCuckoo&) = delete;
-    Hom2LvlCuckoo& operator=(const Hom2LvlCuckoo&) = delete;
+    Hom2LvlMultiCuckoo(const Hom2LvlMultiCuckoo&) = delete;
+    Hom2LvlMultiCuckoo& operator=(const Hom2LvlMultiCuckoo&) = delete;
 
-    Hom2LvlCuckoo(Hom2LvlCuckoo&& rhs)
+    Hom2LvlMultiCuckoo(Hom2LvlMultiCuckoo&& rhs)
         : Base_t(std::move(rhs))
     {
         for (size_t i = 0; i < tl; ++i)
@@ -54,13 +57,13 @@ public:
         }
     }
 
-    Hom2LvlCuckoo& operator=(Hom2LvlCuckoo&& rhs)
+    Hom2LvlMultiCuckoo& operator=(Hom2LvlMultiCuckoo&& rhs)
     {
         Base_t::operator=(std::move(rhs));
 
         for (size_t i = 0; i < tl; ++i)
         {
-            std::swap(llb[i], rhs.llb[i]);
+            std::swap(factor, rhs.factor);
             std::swap(llt[i], rhs.llt[i]);
         }
         return *this;
@@ -72,38 +75,46 @@ public:
                         : std::make_pair(0,nullptr);
     }
 
-    using Base_t::n;
     using Base_t::capacity;
 
 private:
-    size_t                      llb[tl];
+    double                      factor;
     std::unique_ptr<Bucket_t[]> llt[tl];
 
-    inline Bucket_t* getBucket1(Hashed_t h) const
-    { return &(llt[h.tab1][h.loc1 % llb[h.tab1]]); }
+    inline void getBuckets(Hashed_t h, Bucket_t** mem) const
+    {
+        for (size_t i = 0; i < nh; ++i)
+            mem[i] = getBucket(h,i);
+    }
 
-    inline Bucket_t* getBucket2(Hashed_t h) const
-    { return &(llt[h.tab2][h.loc2 % llb[h.tab2]]); }
+    inline Bucket_t* getBucket(Hashed_t h, size_t i) const
+    {
+        size_t tab = Extractor_t::tab(h,i);
+        return &(llt[tab][Extractor_t::loc(h,i) * factor);
+    }
 };
 
 template<class K, class D, class HF,
          class Conf>
-class CuckooTraits<Hom2LvlCuckoo<K,D,HF,Conf> >
+class CuckooTraits<Hom2LvlMultiCuckoo<K,D,HF,Conf> >
 {
 public:
-    using Specialized_t  = Hom2LvlCuckoo<K,D,HF,Conf>;
-    using Base_t         = CuckooBase<Specialized_t>;
+    using Specialized_t  = Hom2LvlMultiCuckoo<K,D,HF,Conf>;
+    using Base_t         = CuckooMultiBase<Specialized_t>;
     using Key            = K;
     using Data           = D;
-    using HashFct_t      = HF;
     using Config_t       = Conf;
+    //using HashFct_t      = HF;
 
     static constexpr size_t tl = Config_t::tl;
     static constexpr size_t bs = Config_t::bs;
+    static constexpr size_t nh = Config_t::nh;
 
+    using Hasher_t       = Hasher<K, HF, ct_log(tl), 32-ct_log(tl), 2, 1>;
     using Bucket_t       = Bucket<K,D,bs>;
 
-    union Hashed_t
+    /*
+    union HashSplitter_t
     {
         static constexpr size_t log(size_t k)
         { return (k-1) ? 1+log(k>>1) : 0; }
@@ -120,4 +131,5 @@ public:
             uint64_t loc2 : 32-log(tl);
         };
     };
+    */
 };

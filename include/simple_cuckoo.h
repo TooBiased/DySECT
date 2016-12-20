@@ -11,7 +11,7 @@ private:
     using This_t         = SimpleCuckoo<K,D,HF,Conf>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
     using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
-    using HashSplitter_t = typename CuckooTraits<This_t>::HashSplitter_t;
+    using Hashed_t       = typename CuckooTraits<This_t>::Hashed_t;
 
     friend Base_t;
 
@@ -47,10 +47,10 @@ private:
     double factor;
     std::unique_ptr<Bucket_t[]> table;
 
-    inline Bucket_t* getBucket1(HashSplitter_t h) const
+    inline Bucket_t* getBucket1(Hashed_t h) const
     { return &(table[h.loc1 * factor]); } //% n_buckets]); }
 
-    inline Bucket_t* getBucket2(HashSplitter_t h) const
+    inline Bucket_t* getBucket2(Hashed_t h) const
     { return &(table[h.loc2 * factor]); } //% n_buckets]); }
 };
 
@@ -72,7 +72,7 @@ public:
 
     using Bucket_t       = Bucket<K,D,bs>;
 
-    union HashSplitter_t
+    union Hashed_t
     {
         uint64_t hash;
         struct
