@@ -1,17 +1,18 @@
 #pragma once
 
 #include <cmath>
+#include "config.h"
 #include "cuckoo_base.h"
 
 template<class T>
 class CuckooTraits;
 
 template<class K, class D, class HF = std::hash<K>,
-         class Config = CuckooConfig<> >
-class Hom2LvlCuckoo : public CuckooTraits<Hom2LvlCuckoo<K,D,HF,Config> >::Base_t
+         class Conf = Config<> >
+class Hom2LvlCuckoo : public CuckooTraits<Hom2LvlCuckoo<K,D,HF,Conf> >::Base_t
 {
 private:
-    using This_t         = Hom2LvlCuckoo<K,D,HF,Config>;
+    using This_t         = Hom2LvlCuckoo<K,D,HF,Conf>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
     using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
     using HashSplitter_t = typename CuckooTraits<This_t>::HashSplitter_t;
@@ -86,19 +87,19 @@ private:
 };
 
 template<class K, class D, class HF,
-         class Config>
-class CuckooTraits<Hom2LvlCuckoo<K,D,HF,Config> >
+         class Conf>
+class CuckooTraits<Hom2LvlCuckoo<K,D,HF,Conf> >
 {
 public:
-    using Specialized_t  = Hom2LvlCuckoo<K,D,HF,Config>;
+    using Specialized_t  = Hom2LvlCuckoo<K,D,HF,Conf>;
     using Base_t         = CuckooBase<Specialized_t>;
     using Key            = K;
     using Data           = D;
     using HashFct_t      = HF;
-    using Config_t       = Config;
+    using Config_t       = Conf;
 
-    static constexpr size_t tl = Config::tl;
-    static constexpr size_t bs = Config::bs;
+    static constexpr size_t tl = Config_t::tl;
+    static constexpr size_t bs = Config_t::bs;
 
     using Bucket_t       = Bucket<K,D,bs>;
 

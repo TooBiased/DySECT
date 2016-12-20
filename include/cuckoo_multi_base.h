@@ -7,33 +7,9 @@
 
 #include "bucket.h"
 #include "config.h"
-
 // CRTP base class for all cuckoo tables, this encapsulates
 // main cuckoo table functionality (insert, find, and remove)
 
-/*
-class hist_count
-{
-public:
-    hist_count(size_t s) : steps(s), hist(new size_t[s])
-    { for (size_t i = 0; i < s; ++i) { hist[i] = 0; } }
-
-    void add(size_t i) { auto ind = (i<steps) ? i:steps-1; ++hist[ind];}
-
-    const size_t steps;
-    std::unique_ptr<size_t[]> hist;
-};
-
-
-class no_hist_count
-{
-public:
-    no_hist_count(size_t) { }
-    void add(size_t) { }
-    static constexpr size_t  steps = 0;
-    static constexpr size_t* hist  = nullptr;
-};
-*/
 
 template<class T>
 class CuckooTraits;
@@ -41,13 +17,13 @@ class CuckooTraits;
 {
 public:
     using Specialized_t  = T;
-    using Base_t         = CuckooBase<T>;
+    using Base_t         = CuckooMultiBase<T>;
     using Key            = ... ;
     using Data           = ... ;
     using Bucket_t       = Bucket<Key,Data,bs>;
     using HashFct_t      = ... ;
 
-    using Config_t       = Config<...>;
+    using Config_t       = CuckooConfig<...>;
 
     union HashSplitter
     {
@@ -61,46 +37,47 @@ public:
 
 
 template<class SCuckoo>
-class CuckooBase
+class CuckooMultiBase
 {
 private:
 
-    using This_t         = CuckooBase<SCuckoo>;
+    using This_t         = CuckooMultiBase<SCuckoo>;
     using Specialized_t  = typename CuckooTraits<SCuckoo>::Specialized_t;
-    using Bucket_t       = typename CuckooTraits<SCuckoo>::Bucket_t;
     using HashFct_t      = typename CuckooTraits<SCuckoo>::HashFct_t;
     using DisStrat_t     = typename CuckooTraits<SCuckoo>::Config_t::template DisStrat_temp<This_t>;
     using HistCount_t    = typename CuckooTraits<SCuckoo>::Config_t::HistCount_t;
-    using HashSplitter_t = typename CuckooTraits<SCuckoo>::HashSplitter_t;
 
     friend Specialized_t;
     friend DisStrat_t;
 
+public:
+    using Bucket_t       = typename CuckooTraits<SCuckoo>::Bucket_t;
+    using HashSplitter_t = typename CuckooTraits<SCuckoo>::HashSplitter_t;
     static_assert( sizeof(HashSplitter_t) == 8,
                    "HashSplitter must be 64bit!" );
 
-public:
+
     using Key      = typename CuckooTraits<SCuckoo>::Key;
     using Data     = typename CuckooTraits<SCuckoo>::Data;
     using FRet     = std::pair<bool, Data>;
 
-    CuckooBase(size_t cap = 0, double size_constraint = 1.1,
+    CuckooMultiBase(size_t cap = 0, double size_constraint = 1.1,
                size_t dis_steps = 0, size_t seed = 0)
         : n(0), capacity(cap), alpha(size_constraint),
           displacer(*this, dis_steps, seed), hcounter(dis_steps)
     { }
 
-    ~CuckooBase() = default;
+    ~CuckooMultiBase() = default;
 
-    CuckooBase(const CuckooBase&) = delete;
-    CuckooBase& operator=(const CuckooBase&) = delete;
+    CuckooMultiBase(const CuckooMultiBase&) = delete;
+    CuckooMultiBase& operator=(const CuckooMultiBase&) = delete;
 
-    CuckooBase(CuckooBase&& rhs)
+    CuckooMultiBase(CuckooMultiBase&& rhs)
         : n(rhs.n), capacity(rhs.capacity), alpha(rhs.alpha),
           displacer(*this, std::move(rhs.displacer))
     { }
 
-    CuckooBase& operator=(CuckooBase&& rhs)
+    CuckooMultiBase& operator=(CuckooMultiBase&& rhs)
     {
         n = rhs.n;   capacity = rhs.capacity;   alpha = rhs.alpha;
         return *this;
@@ -126,6 +103,7 @@ public:
     HistCount_t  hcounter;
     static constexpr size_t bs = CuckooTraits<Specialized_t>::bs;
     static constexpr size_t tl = CuckooTraits<Specialized_t>::tl;
+    static constexpr size_t nh = CuckooTraits<Specialized_t>::nh;
 
 private:
     inline HashSplitter_t h(Key k) const
@@ -139,50 +117,57 @@ private:
     inline void inc_n() { ++n; }
     inline void dec_n() { --n; }
 
-    inline Bucket_t* getBucket1(HashSplitter_t h) const
-    { return static_cast<const Specialized_t*>(this)->getBucket1(h); }
+    inline void getBuckets(HashSplitter_t h, Bucket_t** mem) const
+    {
+        return static_cast<const Specialized_t*>(this)->getBuckets(h, mem);
+    }
 
-    inline Bucket_t* getBucket2(HashSplitter_t h) const
-    { return static_cast<const Specialized_t*>(this)->getBucket2(h); }
+    inline Bucket_t* getBucket(HashSplitter_t h, size_t i) const
+    {
+        return static_cast<const Specialized_t*>(this)->getBucket(h, i);
+    }
 };
 
 
 
 /* IMPLEMENTATION *************************************************************/
 
+
 template<class SCuckoo>
-inline bool CuckooBase<SCuckoo>::insert(Key k, Data d)
+inline bool CuckooMultiBase<SCuckoo>::insert(Key k, Data d)
 {
     return insert(std::make_pair(k,d));
 }
 
 template<class SCuckoo>
-inline bool CuckooBase<SCuckoo>::insert(std::pair<Key, Data> t)
+inline bool CuckooMultiBase<SCuckoo>::insert(std::pair<Key, Data> t)
 {
     auto hash = h(t.first);
+    Bucket_t* ptr[nh];
+    getBuckets(hash, ptr);
 
-    auto p1 = getBucket1(hash)->probe(t.first);
-    auto p2 = getBucket2(hash)->probe(t.first);
+    int p[nh];
+    for (size_t i = 0; i < nh; ++i)
+    {
+        p[i] = ptr[i]->probe(t.first);
+    }
 
-    if ((p1 < 0) || (p2 < 0)) return false;
+    size_t maxi = 0;
+    int maxv = p[0];
+    if (maxv < 0) return false;
+    //Seperated from top part to allow pipelining
+    for (size_t i = 1; i < nh; ++i)
+    {
+        if (maxv < 0) return false;
+        if (p[i] > maxv) { maxi = i; maxv = p[i]; }
+    }
 
     auto r = -1;
 
-    if (p1 > p2)
+    // insert into the table with the most space, or trigger displacement
+    if (maxv)
     {
-        // insert into p1
-        r = (getBucket1(hash)->insert(t)) ? 0 : -1;
-
-    }
-    else if (p2 > p1)
-    {
-        // insert into p2
-        r = (getBucket2(hash)->insert(t)) ? 0 : -1;
-    }
-    else if (p1)
-    {
-        // insert into p1
-        r = (getBucket1(hash)->insert(t)) ? 0 : -1;
+        r = (ptr[maxi]->insert(t)) ? 0 : -1;
     }
     else
     {
@@ -200,28 +185,46 @@ inline bool CuckooBase<SCuckoo>::insert(std::pair<Key, Data> t)
 }
 
 template<class SCuckoo>
-inline typename CuckooBase<SCuckoo>::FRet
-CuckooBase<SCuckoo>::find(Key k) const
+inline typename CuckooMultiBase<SCuckoo>::FRet
+CuckooMultiBase<SCuckoo>::find(Key k) const
 {
     auto hash = h(k);
-    auto p1 = getBucket1(hash)->find(k);
-    auto p2 = getBucket2(hash)->find(k);
+    Bucket_t* ptr[nh];
+    getBuckets(hash, ptr);
 
-    if (p1.first) return p1;
-    else          return p2;
+    FRet p[nh];
+    // Make sure this is unrolled and inlined
+    for (size_t i = 0; i < nh; ++i)
+    {
+        p[i] = ptr[i](hash)->find(k);
+    }
+
+    // seperated from top for data independence
+    for (size_t i = 0; i < nh; ++i)
+    {
+        if (p[i].first) return p[i];
+    }
+
+    return std::make_pair(false, 0ull);
 }
 
 template<class SCuckoo>
-inline bool CuckooBase<SCuckoo>::remove(Key k)
+inline bool CuckooMultiBase<SCuckoo>::remove(Key k)
 {
     auto hash = h(k);
-    auto p1 = getBucket1(hash)->remove(k);
-    auto p2 = getBucket2(hash)->remove(k);
+    Bucket_t* ptr[nh];
+    getBuckets(hash, ptr);
 
-    if (p1 || p2)
+    bool p[nh];
+    // Make sure this is unrolled and inlined
+    for (size_t i = 0; i < nh; ++i)
     {
-        static_cast<Specialized_t*>(this)->dec_n();
-        return true;
+        p[i] = ptr[i](hash)->remove(k);
     }
-    else return false;
+
+    for (size_t i = 0; i < nh; ++i)
+    {
+        if (p[i]) return true;
+    }
+    return false;
 }

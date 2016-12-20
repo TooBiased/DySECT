@@ -2,18 +2,18 @@
 
 #include <cmath>
 #include "config.h"
-#include "cuckoo_base.h"
+#include "cuckoo_multi_base.h"
 
 template<class T>
 class CuckooTraits;
 
 template<class K, class D, class HF = std::hash<K>,
          class Conf = Config<> >
-class TrivGrowingCuckoo
-    : public CuckooTraits<TrivGrowingCuckoo<K,D,HF,Conf> >::Base_t
+class TrivGrowingMultiCuckoo
+    : public CuckooTraits<TrivGrowingMultiCuckoo<K,D,HF,Conf> >::Base_t
 {
 private:
-    using This_t         = TrivGrowingCuckoo<K,D,HF,Conf>;
+    using This_t         = TrivGrowingMultiCuckoo<K,D,HF,Conf>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
     using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
     using HashSplitter_t = typename CuckooTraits<This_t>::HashSplitter_t;
@@ -26,9 +26,12 @@ public:
 
     static constexpr size_t bs = CuckooTraits<This_t>::bs;
     static constexpr size_t tl = CuckooTraits<This_t>::tl;
-    static constexpr double fac_div = double (1ull << HashSplitter_t::sign_loc);
+    static constexpr size_t nh = CuckooTraits<This_t>::nh;
 
-    TrivGrowingCuckoo(size_t cap = 0      , double size_constraint = 1.1,
+    static constexpr double fac_div = double (1ull << HashSplitter_t::sign_loc);
+    static constexpr size_t scnd_lvl_bitmask = 1ull << HashSplitter_t::sign_loc;
+
+    TrivGrowingMultiCuckoo(size_t cap = 0      , double size_constraint = 1.1,
                   size_t dis_steps = 0, size_t seed = 0)
         : Base_t(0, size_constraint, dis_steps, seed), beta((1.0+size_constraint)/2.0)
     {
@@ -45,10 +48,10 @@ public:
         grow_thresh = capacity / beta;
     }
 
-    TrivGrowingCuckoo(const TrivGrowingCuckoo&) = delete;
-    TrivGrowingCuckoo& operator=(const TrivGrowingCuckoo&) = delete;
+    TrivGrowingMultiCuckoo(const TrivGrowingMultiCuckoo&) = delete;
+    TrivGrowingMultiCuckoo& operator=(const TrivGrowingMultiCuckoo&) = delete;
 
-    TrivGrowingCuckoo(TrivGrowingCuckoo&& rhs)
+    TrivGrowingMultiCuckoo(TrivGrowingMultiCuckoo&& rhs)
         : Base_t(std::move(rhs)), beta(rhs.beta),
           grow_thresh(rhs.grow_thresh), lsize(rhs.lsize), factor(rhs.factor)
     {
@@ -58,7 +61,7 @@ public:
         }
     }
 
-    TrivGrowingCuckoo& operator=(TrivGrowingCuckoo&& rhs)
+    TrivGrowingMultiCuckoo& operator=(TrivGrowingMultiCuckoo&& rhs)
     {
         Base_t::operator=(std::move(rhs));
         beta        = rhs.beta;
@@ -92,11 +95,17 @@ private:
     size_t factor;
     std::unique_ptr<Bucket_t[]> llt[tl];
 
-    inline Bucket_t* getBucket1(HashSplitter_t h) const
-    { return &(llt[h.tab][h.loc1 * factor]); } // % lsize]); }
+    inline void getBuckets(HashSplitter_t h, Bucket_t** mem) const
+    {
+        for (size_t i = 0; i < nh; ++i)
+            mem[i] = getBucket(h, i);
+        //return &(llt[h.tab][h.loc1 * factor]);
+    } // % lsize]); }
 
-    inline Bucket_t* getBucket2(HashSplitter_t h) const
-    { return &(llt[h.tab][h.loc2 * factor]); } // % lsize]); }
+    inline Bucket_t* getBucket (HashSplitter_t h, size_t i) const
+    {
+        return &(llt[h.tab][((h.loc1+i*h.loc2) & scnd_lvl_bitmask) * factor]);
+    } // % lsize]); }
 
     inline void inc_n()
     {
@@ -122,7 +131,7 @@ private:
         grow_thresh = capacity / beta;
     }
 
-    inline void migrate(size_t tab, std::unique_ptr<Bucket_t[]>& target, double factor)
+    inline void migrate(size_t tab, std::unique_ptr<Bucket_t[]>& target, double nfactor)
     {
         for (size_t i = 0; i < lsize; ++i)
         {
@@ -132,24 +141,33 @@ private:
                 auto e    = curr->elements[j];
                 if (! e.first) break;
                 auto hash = h(e.first);
-                if      (getBucket1(hash) == curr) target[hash.loc1 * factor].insert(e.first, e.second);
-                else if (getBucket2(hash) == curr) target[hash.loc2 * factor].insert(e.first, e.second);
-                else
+
+                for (size_t ti = 0; ti < nh; ++ti)
                 {
-                    std::cout << "something is wrong neither in first, nor second bucket." << std::endl;
-                    exit(64);
+                    if (i == ((hash.loc1+ti*hash.loc2) & scnd_lvl_bitmask) * factor)
+                    {
+                        target[((hash.loc1+ti*hash.loc2) & scnd_lvl_bitmask) * nfactor];
+                    }
                 }
+
+                // if      (getBucket1(hash) == curr) target[hash.loc1 * factor].insert(e.first, e.second);
+                // else if (getBucket2(hash) == curr) target[hash.loc2 * factor].insert(e.first, e.second);
+                // else
+                // {
+                //     std::cout << "something is wrong neither in first, nor second bucket." << std::endl;
+                //     exit(64);
+                // }
             }
         }
     }
 };
 
 template<class K, class D, class HF, class Conf>
-class CuckooTraits<TrivGrowingCuckoo<K,D,HF,Conf> >
+class CuckooTraits<TrivGrowingMultiCuckoo<K,D,HF,Conf> >
 {
 public:
-    using Specialized_t  = TrivGrowingCuckoo<K,D,HF,Conf>;
-    using Base_t         = CuckooBase<Specialized_t>;
+    using Specialized_t  = TrivGrowingMultiCuckoo<K,D,HF,Conf>;
+    using Base_t         = CuckooMultiBase<Specialized_t>;
     using Key            = K;
     using Data           = D;
     using HashFct_t      = HF;
@@ -157,6 +175,7 @@ public:
 
     static constexpr size_t bs = Conf::bs;
     static constexpr size_t tl = Conf::tl;
+    static constexpr size_t nh = Conf::nh;
 
     using Bucket_t       = Bucket<K,D,bs>;
 

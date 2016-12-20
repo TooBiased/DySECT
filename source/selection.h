@@ -1,6 +1,18 @@
 #pragma once
 
-#if (!CUCKOO && !GROWS && !HOM2LVL && !TRIVGROW && !LINPROB && !SPACEPROB && !HOPSCOTCH && !SPACEHOPSCOTCH)
+#include "include/config.h"
+
+#if (!CUCKOO         && \
+     !GROWS          && \
+     !HOM2LVL        && \
+     !TRIVGROW       && \
+     !LINPROB        && \
+     !SPACEPROB      && \
+     !HOPSCOTCH      && \
+     !SPACEHOPSCOTCH && \
+     !MULTISIMPLE    && \
+     !MULTIGROW      && \
+     !MULTITRIV      )
 #define GROWS
 #endif // NO HASHTYPE DEFINED => GROWS
 
@@ -45,31 +57,46 @@
 #define  HASHTYPE SpaceHopscotch
 #endif
 
+#ifdef MULTISIMPLE
+#include "include/simple_multi_cuckoo.h"
+#define HASHTYPE SimpleMultiCuckoo
+#endif
+
+#ifdef MULTIGROW
+#include "include/growing_multi_cuckoo.h"
+#define HASHTYPE GrowingMultiCuckoo
+#endif
+
+#ifdef MULTITRIV
+#include "include/triv_growing_multi_cuckoo.h"
+#define HASHTYPE TrivGrowingMultiCuckoo
+#endif
 
 #include "include/strategies/dstrat_bfs.h"
 #include "include/strategies/dstrat_rwalk.h"
 #include "include/strategies/dstrat_rwalk_cyclic.h"
+#include "include/multistrategies/dstrat_bfs.h"
 
 #include "utils/commandline.h"
 
-#define NORMAL
+//#define NORMAL
 
 struct Chooser
 {
 #ifndef NORMAL
     template<template<class> class Functor, class Hist,
              class ... Types>
-    inline static typename std::result_of<Functor<CuckooConfig<> >(Types&& ...)>::type
+    inline static typename std::result_of<Functor<Config<> >(Types&& ...)>::type
     execute(CommandLine&, Types&& ... param)
     {
-        Functor<CuckooConfig<> > f;
+        Functor<Config<> > f;
         return f(std::forward<Types>(param)...);
     }
 #else
 
     template<template<class> class Functor, class Hist,
              class ... Types>
-    inline static typename std::result_of<Functor<CuckooConfig<> >(Types&& ...)>::type
+    inline static typename std::result_of<Functor<Config<> >(Types&& ...)>::type
     execute(CommandLine& c, Types&& ... param)
     {
         if      (c.boolArg("-bfs"))
@@ -84,10 +111,10 @@ struct Chooser
     }
 
     template<template<class> class Functor, class Hist, template<class> class Displacer, class ... Types>
-    inline static typename std::result_of<Functor<CuckooConfig<> >(Types&& ...)>::type
+    inline static typename std::result_of<Functor<Config<> >(Types&& ...)>::type
     executeD(CommandLine& c, Types&& ... param)
     {
-        auto tl = c.intArg("-tl", CuckooConfig<>::tl);
+        auto tl = c.intArg("-tl", Config<>::tl);
         switch (tl)
         {
         case 64:
@@ -103,7 +130,7 @@ struct Chooser
         case 2048:
             return executeDT<Functor, Hist, Displacer, 2048> (c, std::forward<Types>(param)...);
         default:
-            constexpr auto ttl = CuckooConfig<>::tl;
+            constexpr auto ttl = Config<>::tl;
             std::cout << "ERROR: unknown TL value (use "
                       << ttl << ")" << std::endl;
             return executeDT<Functor, Hist, Displacer, ttl>  (c, std::forward<Types>(param)...);
@@ -111,10 +138,10 @@ struct Chooser
     }
 
     template<template<class> class Functor, class Hist, template<class> class Displacer, size_t TL, class ... Types>
-    inline static typename std::result_of<Functor<CuckooConfig<> >(Types&& ...)>::type
+    inline static typename std::result_of<Functor<Config<> >(Types&& ...)>::type
     executeDT(CommandLine& c, Types&& ... param)
     {
-        auto bs = c.intArg("-bs", CuckooConfig<>::bs);
+        auto bs = c.intArg("-bs", Config<>::bs);
         switch (bs)
         {
         case 4:
@@ -128,7 +155,7 @@ struct Chooser
         case 16:
             return executeDTB<Functor, Hist, Displacer, TL, 16> (c, std::forward<Types>(param)...);
         default:
-            constexpr auto tbs = CuckooConfig<>::bs;
+            constexpr auto tbs = Config<>::bs;
             std::cout << "ERROR: unknown BS value (use "
                       << tbs << ")" << std::endl;
             return executeDTB<Functor, Hist, Displacer, TL, tbs> (c, std::forward<Types>(param)...);
@@ -138,10 +165,10 @@ struct Chooser
     template<template<class> class Functor, class Hist,
              template<class> class Displacer, size_t TL, size_t BS,
              class ... Types>
-    inline static typename std::result_of<Functor<CuckooConfig<> >(Types&& ...)>::type
+    inline static typename std::result_of<Functor<Config<> >(Types&& ...)>::type
     executeDTB(CommandLine&, Types&& ... param)
     {
-        Functor<CuckooConfig<BS,TL,Displacer,Hist> > f;
+        Functor<Config<BS,3,TL,Displacer,Hist> > f;
         return f(std::forward<Types>(param)...);
     }
 #endif

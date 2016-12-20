@@ -2,17 +2,17 @@
 
 #include <cmath>
 #include "config.h"
-#include "cuckoo_base.h"
+#include "cuckoo_multi_base.h"
 
 template<class T>
 class CuckooTraits;
 
 template<class K, class D, class HF = std::hash<K>,
          class Conf = Config<> >
-class GrowingCuckoo : public CuckooTraits<GrowingCuckoo<K,D,HF,Conf> >::Base_t
+class GrowingMultiCuckoo : public CuckooTraits<GrowingMultiCuckoo<K,D,HF,Conf> >::Base_t
 {
 private:
-    using This_t         = GrowingCuckoo<K,D,HF,Conf>;
+    using This_t         = GrowingMultiCuckoo<K,D,HF,Conf>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
     using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
     using HashSplitter_t = typename CuckooTraits<This_t>::HashSplitter_t;
@@ -23,10 +23,11 @@ public:
     using Key            = typename CuckooTraits<This_t>::Key;
     using Data           = typename CuckooTraits<This_t>::Data;
 
-    static constexpr size_t bs = CuckooTraits<This_t>::Config_t::bs;
-    static constexpr size_t tl = CuckooTraits<This_t>::Config_t::tl;
+    static constexpr size_t bs = CuckooTraits<This_t>::bs;
+    static constexpr size_t tl = CuckooTraits<This_t>::tl;
+    static constexpr size_t nh = CuckooTraits<This_t>::nh;
 
-    GrowingCuckoo(size_t cap = 0      , double size_constraint = 1.1,
+    GrowingMultiCuckoo(size_t cap = 0      , double size_constraint = 1.1,
                   size_t dis_steps = 0, size_t seed = 0)
         : Base_t(0, size_constraint, dis_steps, seed)
     {
@@ -56,10 +57,10 @@ public:
         grow_thresh = std::ceil((capacity + grow_amount*bs)/alpha);
     }
 
-    GrowingCuckoo(const GrowingCuckoo&) = delete;
-    GrowingCuckoo& operator=(const GrowingCuckoo&) = delete;
+    GrowingMultiCuckoo(const GrowingMultiCuckoo&) = delete;
+    GrowingMultiCuckoo& operator=(const GrowingMultiCuckoo&) = delete;
 
-    GrowingCuckoo(GrowingCuckoo&& rhs)
+    GrowingMultiCuckoo(GrowingMultiCuckoo&& rhs)
         : Base_t(std::move(rhs)),
           grow_table(rhs.grow_table),
           grow_amount(rhs.grow_amount),
@@ -72,7 +73,7 @@ public:
         }
     }
 
-    GrowingCuckoo& operator=(GrowingCuckoo&& rhs)
+    GrowingMultiCuckoo& operator=(GrowingMultiCuckoo&& rhs)
     {
         Base_t::operator=(std::move(rhs));
 
@@ -108,11 +109,21 @@ private:
     size_t grow_amount;
     size_t grow_thresh;
 
-    inline Bucket_t* getBucket1(HashSplitter_t h) const
-    { return &(llt[h.tab1][h.loc1 & llb[h.tab1]]); }
 
-    inline Bucket_t* getBucket2(HashSplitter_t h) const
-    { return &(llt[h.tab2][h.loc2 & llb[h.tab2]]); }
+    static constexpr size_t tl_bitmask = tl - 1;
+
+    inline void      getBuckets(HashSplitter_t h, Bucket_t** mem) const
+    {
+        for (size_t i = 0; i < nh; ++i)
+            mem[i] = getBucket(h,i);
+    }
+
+    inline Bucket_t* getBucket (HashSplitter_t h, size_t i) const
+    {
+        size_t tab = (h.tab1+i*h.tab2) & tl_bitmask;
+        size_t loc = (h.loc1+i*h.loc2) & llb[tab];
+        return &(llt[tab][loc]);
+    }
 
     inline void inc_n()
     {
@@ -144,12 +155,15 @@ private:
                 auto e    = curr->elements[j];
                 if (! e.first) break;
                 auto hash = h(e.first);
-                if      (getBucket1(hash) == curr) target[bitmask & hash.loc1].insert(e.first, e.second);
-                else if (getBucket2(hash) == curr) target[bitmask & hash.loc2].insert(e.first, e.second);
-                else
+
+                for (size_t ti = 0; ti < nh; ++ti)
                 {
-                    std::cout << "something is wrong neither in first, nor second bucket." << std::endl;
-                    exit(64);
+                    if (  hash.tab1+ti*hash.tab2              == tab &&
+                        ((hash.loc1+ti*hash.loc2) & llb[tab]) == i)
+                    {
+                        target[bitmask & (hash.loc1+ti*hash.loc2)].insert(e.first, e.second);
+                        break;
+                    }
                 }
             }
         }
@@ -158,11 +172,11 @@ private:
 
 template<class K, class D, class HF,
          class Conf>
-class CuckooTraits<GrowingCuckoo<K,D,HF,Conf> >
+class CuckooTraits<GrowingMultiCuckoo<K,D,HF,Conf> >
 {
 public:
-    using Specialized_t  = GrowingCuckoo<K,D,HF,Conf>;
-    using Base_t         = CuckooBase<Specialized_t>;
+    using Specialized_t  = GrowingMultiCuckoo<K,D,HF,Conf>;
+    using Base_t         = CuckooMultiBase<Specialized_t>;
     using Key            = K;
     using Data           = D;
     using HashFct_t      = HF;
@@ -170,6 +184,7 @@ public:
 
     static constexpr size_t tl = Config_t::tl;
     static constexpr size_t bs = Config_t::bs;
+    static constexpr size_t nh = Config_t::nh;
 
     using Bucket_t       = Bucket<K,D,bs>;
 

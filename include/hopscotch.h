@@ -2,10 +2,10 @@
 
 #include "hopscotch_map.h"
 //#include "extern/hopscotch-map/src/hopscotch_map.h"
-#include "cuckoo_base.h"
+#include "config.h"
 
 
-template<class K, class D, class HF = std::hash<K>, class Config = CuckooConfig<> >
+template<class K, class D, class HF = std::hash<K>, class Conf = Config<> >
 class Hopscotch
 {
 private:
@@ -55,7 +55,7 @@ private:
 
 public:
     /*** for symmetry with my implementation **********************************/
-    using HistCount_t = typename Config::HistCount_t;
+    using HistCount_t = typename Conf::HistCount_t;
     using Bucket_t    = Bucket<K,D,1>;
     HistCount_t hcounter;
 
@@ -67,7 +67,7 @@ public:
 };
 
 
-template<class K, class D, class HF = std::hash<K>, class Config = CuckooConfig<> >
+template<class K, class D, class HF = std::hash<K>, class Conf = Config<> >
 class SpaceHopscotch
 {
 private:
@@ -117,7 +117,7 @@ private:
 
 public:
     /*** for symmetry with my implementation **********************************/
-    using HistCount_t = typename Config::HistCount_t;
+    using HistCount_t = typename Conf::HistCount_t;
     using Bucket_t    = Bucket<K,D,1>;
     HistCount_t hcounter;
 

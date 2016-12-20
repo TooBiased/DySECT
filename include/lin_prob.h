@@ -5,7 +5,7 @@
 #include <vector>
 #include <tuple>
 
-#include "cuckoo_base.h"
+#include "config.h"
 
 template <class T>
 class CuckooTraits;
@@ -178,11 +178,11 @@ inline bool LinProbBase<SpLinProb>::remove(Key k)
 
 
 template <class K, class D, class HF = std::hash<K>,
-          class Config = CuckooConfig<> >
-class FastLinProb : public CuckooTraits<FastLinProb<K,D,HF,Config> >::Base_t
+          class Conf = Config<> >
+class FastLinProb : public CuckooTraits<FastLinProb<K,D,HF,Conf> >::Base_t
 {
 private:
-    using This_t = FastLinProb<K,D,HF,Config>;
+    using This_t = FastLinProb<K,D,HF,Conf>;
     using Base_t = typename CuckooTraits<This_t>::Base_t;
 
     friend Base_t;
@@ -254,25 +254,25 @@ private:
 };
 
 
-template<class K, class D, class HF, class Config>
-class CuckooTraits<FastLinProb<K,D,HF,Config> >
+template<class K, class D, class HF, class Conf>
+class CuckooTraits<FastLinProb<K,D,HF,Conf> >
 {
 public:
-    using Specialized_t = FastLinProb<K,D,HF,Config>;
+    using Specialized_t = FastLinProb<K,D,HF,Conf>;
     using Base_t        = LinProbBase<Specialized_t>;
     using Key           = K;
     using Data          = D;
     using HashFct_t     = HF;
-    using Config_t      = Config;
+    using Config_t      = Conf;
 };
 
 
 template <class K, class D, class HF = std::hash<K>,
-          class Config = CuckooConfig<> >
-class SpaceLinProb : public CuckooTraits<SpaceLinProb<K,D,HF,Config> >::Base_t
+          class Conf = Config<> >
+class SpaceLinProb : public CuckooTraits<SpaceLinProb<K,D,HF,Conf> >::Base_t
 {
 private:
-    using This_t = SpaceLinProb<K,D,HF,Config>;
+    using This_t = SpaceLinProb<K,D,HF,Conf>;
     using Base_t = typename CuckooTraits<This_t>::Base_t;
 
     friend Base_t;
@@ -303,14 +303,14 @@ private:
 };
 
 
-template<class K, class D, class HF, class Config>
-class CuckooTraits<SpaceLinProb<K,D,HF,Config> >
+template<class K, class D, class HF, class Conf>
+class CuckooTraits<SpaceLinProb<K,D,HF,Conf> >
 {
 public:
-    using Specialized_t = SpaceLinProb<K,D,HF,Config>;
+    using Specialized_t = SpaceLinProb<K,D,HF,Conf>;
     using Base_t        = LinProbBase<Specialized_t>;
     using Key           = K;
     using Data          = D;
     using HashFct_t     = HF;
-    using Config_t      = Config;
+    using Config_t      = Conf;
 };
