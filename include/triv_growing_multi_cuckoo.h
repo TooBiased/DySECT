@@ -95,7 +95,7 @@ private:
     using Base_t::hasher;
 
     size_t lsize;
-    size_t factor;
+    double factor;
     std::unique_ptr<Bucket_t[]> llt[tl];
 
     inline void getBuckets(Hashed_t h, Bucket_t** mem) const

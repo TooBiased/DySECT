@@ -41,14 +41,17 @@ public:
         lsize  = std::floor(cap * size_constraint / double(tl*bs));
         lsize  = std::max(lsize, 1ul);
         factor = double(lsize)/fac_div;
+        grow_thresh = capacity / beta;
 
         for (size_t i = 0; i < tl; ++i)
         {
             llt[i] = std::make_unique<Bucket_t[]>(lsize);
+            lls[i] = lsize;
+            llg[i] = grow_thresh;
+            llf[i] = factor;
         }
 
         capacity    = bs * tl * lsize;
-        grow_thresh = capacity / beta;
     }
 
     IndTableGrowMultiCuckoo(const IndTableGrowMultiCuckoo&) = delete;
@@ -61,6 +64,10 @@ public:
         for (size_t i = 0; i < tl; ++i)
         {
             llt[i] = std::move(rhs.llt[i]);
+            llt[i] = rhs.llt[i]);
+            lls[i] = rhs.lls[i]);
+            llg[i] = rhs.llg[i]);
+            llf[i] = rhs.llf[i]);
         }
     }
 
@@ -75,6 +82,9 @@ public:
         for (size_t i = 0; i < tl; ++i)
         {
             std::swap(llt[i], rhs.llt[i]);
+            std::swap(lls[i], rhs.lls[i]);
+            std::swap(llg[i], rhs.llg[i]);
+            std::swap(llf[i], rhs.llf[i]);
         }
         return *this;
     }
@@ -95,8 +105,12 @@ private:
     using Base_t::hasher;
 
     size_t lsize;
-    size_t factor;
+    double factor;
     std::unique_ptr<Bucket_t[]> llt[tl];
+
+    size_t     lls[tl];
+    size_t     llg[tl];
+    double     llf[tl];
 
     inline void getBuckets(Hashed_t h, Bucket_t** mem) const
     {
@@ -106,7 +120,8 @@ private:
 
     inline Bucket_t* getBucket (Hashed_t h, size_t i) const
     {
-        return &(llt[Ext::tab(h,0)][Ext::loc(h,i)*factor]);
+        size_t tab = Ext::tab(h,0);
+        return &(llt[tab][Ext::loc(h,i)*llf[tab]]);
     }
 
     inline void inc_n()
@@ -120,11 +135,14 @@ private:
         nsize = std::max(nsize, lsize+1);
         double nfactor = double(nsize)/fac_div;
 
+        size_t f_grow_thresh = (bs * tl * lsize)/beta;
         for (size_t i = 0; i < tl; ++i)
         {
             auto ntable = std::make_unique<Bucket_t[]>(nsize);
             migrate(i, ntable, nfactor);
             llt[i] = std::move(ntable);
+            llf[i] = nfactor;
+            llg[i] = f_grow_thresh;
         }
 
         lsize       = nsize;
@@ -153,6 +171,39 @@ private:
                 }
             }
         }
+    }
+
+public:
+    /* Necessary Specialized Funcitions ***************************************/
+
+    bool insert(Key k, Data d)
+    {
+        return insert(std::make_pair(k,d));
+    }
+
+    bool insert(std::pair<Key, Data> t)
+    {
+        auto hash = hasher(t.first);
+        size_t ttl = Ext::tab(hash, 0);
+        if (Base_t::insert(t))
+        {
+            auto currsize = ++lls[ttl];
+            if (currsize > llg[ttl]) ; //potentially grow the single table
+            return true;
+        }
+        return false;
+    }
+
+    bool remove(Key k)
+    {
+        auto hash = hasher(k);
+        size_t ttl = Ext::tab(hash, 0);
+        if (Base_t::remove(t))
+        {
+            lls[ttl]++;
+            return true;
+        }
+        return false;
     }
 };
 
