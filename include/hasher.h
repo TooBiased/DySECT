@@ -5,177 +5,157 @@
 static constexpr size_t ct_log(size_t k)
 { return (k-1) ? 1+ct_log(k>>1) : 0; }
 
-template<class Parent, size_t NH>
-struct ExternLocExtractor;
+template<size_t t_w, bool dpair>
+struct Split;
 
-template<class Parent, size_t NH>
-struct ExternTabExtractor;
+template <class Hashed, size_t tab_width, bool dpair, bool lcomb>
+class ExternExtractor;
 
-template<size_t TAB_WIDTH, size_t LOC_WIDTH, size_t NSTUFF, size_t NWORDS>
-union ExternHashed;
 
-template <class Key, class HFCT, size_t TAB_WIDTH, size_t LOC_WIDTH, size_t NSTUFF, size_t NWORDS>
+
+
+/* MAIN CLASS *****************************************************************/
+template <class Key, class HFct, size_t TAB_WIDTH, size_t NH,
+          bool DPAIR = true, bool LCOMB = true>
 class Hasher
 {
 private:
-    /* auxiliary definitions **************************************************/
-    using This_t    = Hasher<Key, HFCT, TAB_WIDTH, LOC_WIDTH, NSTUFF, NWORDS>;
-    using HashFct_t = HFCT;
+    using This_t    = Hasher<Key, HFct, TAB_WIDTH, NH, DPAIR, LCOMB>;
+    using HashFct_t = HFct;
+    static constexpr size_t tab_w   = TAB_WIDTH;
+    static constexpr size_t pair_w  = (DPAIR) ? 32 : 64;
+    static constexpr size_t loc_w   = pair_w - tab_w;
+    static constexpr size_t n_hpair = (LCOMB) ? 2 : NH;
+    static constexpr size_t n_hval  = NH;
+    static constexpr size_t n_hfct  = (DPAIR) ? (n_hpair>>1)+(1&n_hpair)
+                                              :  n_hpair;
+    static_assert( tab_w < pair_w,
+                   "TAB_WIDTH has to be smaller than PAIR_WIDTH.");
+
+    using Split_t = Split<tab_w, DPAIR>;
 
 public:
-    using Hashed_t = ExternHashed<TAB_WIDTH, LOC_WIDTH, NSTUFF, NWORDS>;
+    union Hashed_t
+    {
+        uint64_t hash [n_hfct];
+        Split_t  split[n_hfct];
+    };
 
-    static_assert (sizeof(Hashed_t) == NWORDS*8, "HashSplitter Bigger Than Expected");
+    static_assert (sizeof(Hashed_t) == n_hfct*8,
+                   "HashSplitter Bigger Than Expected");
 
-    template<size_t NH>
-    using TabExtractor = ExternTabExtractor<This_t, NH>;
-    template<size_t NH>
-    using LocExtractor = ExternLocExtractor<This_t, NH>;
+    using Extractor_t = ExternExtractor<Hashed_t, tab_w, DPAIR, LCOMB>;
 
     /* hasher (itself) ********************************************************/
 private:
-    HashFct_t fct[NWORDS];
+    HashFct_t fct[n_hfct];
 
 public:
 
     Hasher()
     {
-        for (size_t i = 0; i < NWORDS; ++i)
+        for (size_t i = 0; i < n_hfct; ++i)
         {
-            fct[i] = HashFct_t(i*8768656543548765336ull);
+            fct[i] = HashFct_t(  2345745572344267838ull +
+                               i*8768656543548765336ull);
         }
     }
 
     Hashed_t operator()(Key k) const
     {
         Hashed_t result;
-        for (size_t i = 0; i < NWORDS; ++i)
+        for (size_t i = 0; i < n_hfct; ++i)
         {
             result.hash[i] = fct[i](k);
         }
         return result;
     }
-
 };
 
-template<class Key, class HFCT, size_t TAB_WIDTH, size_t LOC_WIDTH, size_t NSTUFF, size_t NWORDS>
-struct ExternTabExtractor<Hasher<Key,HFCT,TAB_WIDTH,LOC_WIDTH,NSTUFF,NWORDS>, NSTUFF>
+
+
+
+/* Hash Splitter Specializations **********************************************/
+template<size_t t_w>
+struct Split<t_w, true>
 {
-    using Parent_t = Hasher<Key,HFCT,TAB_WIDTH,LOC_WIDTH,NSTUFF,NWORDS>;
-    using Hashed_t = typename Parent_t::Hashed_t;
-
-    //static_assert(NH == NSTUFF, "wrong sized extractor");
-    static inline size_t tab(Hashed_t h, size_t i) { return h.pair[i].tab; }
+    uint64_t tab0 : t_w;
+    uint64_t loc0 : 32-t_w;
+    uint64_t tab1 : t_w;
+    uint64_t loc1 : 32-t_w;
 };
 
-template<class Key, class HFCT, size_t TAB_WIDTH, size_t LOC_WIDTH, size_t NSTUFF, size_t NWORDS>
-struct ExternLocExtractor<Hasher<Key,HFCT,TAB_WIDTH,LOC_WIDTH,NSTUFF,NWORDS>, NSTUFF>
+template<size_t t_w>
+struct Split<t_w, false>
 {
-    using Parent_t = Hasher<Key,HFCT,TAB_WIDTH,LOC_WIDTH,NSTUFF,NWORDS>;
-    using Hashed_t = typename Parent_t::Hashed_t;
-
-    //static_assert(NH == NSTUFF, "wrong sized extractor");
-    static inline size_t loc(Hashed_t h, size_t i) { return h.pair[i].loc; }
+    uint64_t tab  : t_w;
+    uint64_t loc  : 64-t_w;
 };
 
+template<>
+struct Split<0, true>
+{
+    static constexpr uint64_t tab0 = 0;
+    static constexpr uint64_t tab1 = 0;
+    uint64_t loc0 : 32;
+    uint64_t loc1 : 32;
+};
 
+template<>
+struct Split<0, false>
+{
+    static constexpr uint64_t tab = 0;
+    uint64_t loc  : 64;
+};
 
-template <class Key, class HFCT, size_t TAB_WIDTH, size_t LOC_WIDTH>
-class Hasher<Key, HFCT, TAB_WIDTH, LOC_WIDTH, 2, 1>
+/* Extractor Specializations without LCOMB ************************************/
+template <class Hashed, size_t tab_width>
+class ExternExtractor<Hashed, tab_width, false, false>
+{
+public:
+    inline static size_t tab(const Hashed& h, size_t i)
+    { return h.split[i].tab; }
+    inline static size_t loc(const Hashed& h, size_t i)
+    { return h.split[i].loc; }
+};
+
+template <class Hashed, size_t tab_width>
+class ExternExtractor<Hashed, tab_width, true, false>
+{
+public:
+    inline static size_t tab(const Hashed& h, size_t i)
+    { return (i & 1) ? h.split[i>>1].tab1
+                     : h.split[i>>1].tab0; }
+    inline static size_t loc(const Hashed& h, size_t i)
+    { return (i & 1) ? h.split[i>>1].loc1
+                     : h.split[i>>1].loc0; }
+};
+
+/* Extractor Specializations with LCOMB ***************************************/
+template <class Hashed, size_t tab_width>
+class ExternExtractor<Hashed, tab_width, false, true>
 {
 private:
-    /* auxiliary definitions **************************************************/
-    using This_t    = Hasher<Key, HFCT, TAB_WIDTH, LOC_WIDTH, 2, 1>;
-    using HashFct_t = HFCT;
-
+    static_assert((tab_width != 0) && (tab_width != 64),
+                  "Illegal TAB_WIDTH value 0 or 64.");
+    static constexpr size_t tab_mask = (1ull<<tab_width     )-1;
+    static constexpr size_t loc_mask = (1ull<<(64-tab_width))-1;
 public:
+    inline static size_t tab(const Hashed& h, size_t i)
+    { return (h.split[0].tab + i*h.split[1].tab) & tab_mask; }
+    inline static size_t loc(const Hashed& h, size_t i)
+    { return (h.split[0].loc + i*h.split[1].loc) & tab_mask; }
+};
 
-    using Hashed_t = ExternHashed<TAB_WIDTH, LOC_WIDTH, 2, 1>;
-    //static_assert (sizeof(Hashed_t) == 16, "HashSplitter Bigger Than Expected");
-
-    template<size_t NH>
-    using TabExtractor = ExternTabExtractor<This_t, NH>;
-    template<size_t NH>
-    using LocExtractor = ExternLocExtractor<This_t, NH>;
-
-    /* hasher (itself) ********************************************************/
+template <class Hashed, size_t tab_width>
+class ExternExtractor<Hashed, tab_width, true, true>
+{
 private:
-    HashFct_t fct;
-
+    static constexpr size_t tab_mask = (1ull<<tab_width     )-1;
+    static constexpr size_t loc_mask = (1ull<<(32-tab_width))-1;
 public:
-    Hashed_t operator()(Key k) const
-    {
-        Hashed_t result;
-        result.hash[0] = fct(k);
-        return result;
-    }
-};
-
-template<class Key, class HFCT, size_t TAB_WIDTH, size_t LOC_WIDTH, size_t NH>
-struct ExternTabExtractor<Hasher<Key,HFCT,TAB_WIDTH,LOC_WIDTH,2,1>, NH>
-{
-    using Parent_t = Hasher<Key,HFCT,TAB_WIDTH,LOC_WIDTH,2,1>;
-    using Hashed_t = typename Parent_t::Hashed_t;
-
-    static constexpr size_t tab_bitmask = (1ull << TAB_WIDTH) - 1;
-
-    static inline size_t tab(Hashed_t h, size_t i)
-    { return (h.pair[0].tab + i*h.pair[1].tab) & tab_bitmask; }
-};
-
-template<class Key, class HFCT, size_t TAB_WIDTH, size_t LOC_WIDTH>
-struct ExternTabExtractor<Hasher<Key,HFCT,TAB_WIDTH,LOC_WIDTH,2,1>, 2>
-{
-    using Parent_t = Hasher<Key,HFCT,TAB_WIDTH,LOC_WIDTH,2,1>;
-    using Hashed_t = typename Parent_t::Hashed_t;
-
-    static constexpr size_t tab_bitmask = (1ull << TAB_WIDTH) - 1;
-
-    static inline size_t tab(Hashed_t h, size_t i) { return h.pair[i].tab; }
-};
-
-template<class Key, class HFCT, size_t TAB_WIDTH, size_t LOC_WIDTH, size_t NH>
-struct ExternLocExtractor<Hasher<Key,HFCT,TAB_WIDTH,LOC_WIDTH,2,1>, NH>
-{
-    using Parent_t = Hasher<Key,HFCT,TAB_WIDTH,LOC_WIDTH,2,1>;
-    using Hashed_t = typename Parent_t::Hashed_t;
-
-    static constexpr size_t loc_bitmask = (1ull << LOC_WIDTH) - 1;
-
-    static inline size_t loc(Hashed_t h, size_t i)
-    { return (h.pair[0].loc + i*h.pair[1].loc) & loc_bitmask; }
-};
-
-template<class Key, class HFCT, size_t TAB_WIDTH, size_t LOC_WIDTH>
-struct ExternLocExtractor<Hasher<Key,HFCT,TAB_WIDTH,LOC_WIDTH,2,1>, 2>
-{
-    using Parent_t = Hasher<Key,HFCT,TAB_WIDTH,LOC_WIDTH,2,1>;
-    using Hashed_t = typename Parent_t::Hashed_t;
-
-    static constexpr size_t loc_bitmask = (1ull << LOC_WIDTH) - 1;
-
-    static inline size_t loc(Hashed_t h, size_t i) { return h.pair[i].loc; }
-};
-
-template<size_t TAB_WIDTH, size_t LOC_WIDTH, size_t NSTUFF, size_t NWORDS>
-union ExternHashed
-{
-    uint64_t hash[NWORDS];
-    struct Pair
-    {
-        uint64_t tab : TAB_WIDTH;
-        uint64_t loc : LOC_WIDTH;
-    };
-    Pair pair[NSTUFF];
-};
-
-template<size_t LOC_WIDTH, size_t NSTUFF, size_t NWORDS>
-union ExternHashed<0, LOC_WIDTH, NSTUFF, NWORDS>
-{
-    uint64_t hash[NWORDS];
-    struct Pair
-    {
-        uint64_t loc : LOC_WIDTH;
-    };
-    Pair pair[NSTUFF];
+    inline static size_t tab(const Hashed& h, size_t i)
+    { return (h.split[0].tab0 + i*h.split[0].tab1) & tab_mask; }
+    inline static size_t loc(const Hashed& h, size_t i)
+    { return (h.split[0].loc0 + i*h.split[0].loc1) & loc_mask; }
 };

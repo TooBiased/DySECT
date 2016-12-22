@@ -8,11 +8,11 @@ class CuckooTraits;
 
 template<class K, class D, class HF = std::hash<K>,
          class Conf = Config<> >
-class TrivGrowingMultiCuckoo
-    : public CuckooTraits<TrivGrowingMultiCuckoo<K,D,HF,Conf> >::Base_t
+class IndTableGrowMultiCuckoo
+    : public CuckooTraits<IndTableGrowMultiCuckoo<K,D,HF,Conf> >::Base_t
 {
 private:
-    using This_t         = TrivGrowingMultiCuckoo<K,D,HF,Conf>;
+    using This_t         = IndTableGrowMultiCuckoo<K,D,HF,Conf>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
     friend Base_t;
 
@@ -34,7 +34,7 @@ public:
 
     static constexpr double fac_div = double (1ull << (32 - ct_log(tl)));
 
-    TrivGrowingMultiCuckoo(size_t cap = 0      , double size_constraint = 1.1,
+    IndTableGrowMultiCuckoo(size_t cap = 0      , double size_constraint = 1.1,
                            size_t dis_steps = 0, size_t seed = 0)
         : Base_t(0, size_constraint, dis_steps, seed), beta((1.0+size_constraint)/2.0)
     {
@@ -51,10 +51,10 @@ public:
         grow_thresh = capacity / beta;
     }
 
-    TrivGrowingMultiCuckoo(const TrivGrowingMultiCuckoo&) = delete;
-    TrivGrowingMultiCuckoo& operator=(const TrivGrowingMultiCuckoo&) = delete;
+    IndTableGrowMultiCuckoo(const IndTableGrowMultiCuckoo&) = delete;
+    IndTableGrowMultiCuckoo& operator=(const IndTableGrowMultiCuckoo&) = delete;
 
-    TrivGrowingMultiCuckoo(TrivGrowingMultiCuckoo&& rhs)
+    IndTableGrowMultiCuckoo(IndTableGrowMultiCuckoo&& rhs)
         : Base_t(std::move(rhs)), beta(rhs.beta),
           grow_thresh(rhs.grow_thresh), lsize(rhs.lsize), factor(rhs.factor)
     {
@@ -64,7 +64,7 @@ public:
         }
     }
 
-    TrivGrowingMultiCuckoo& operator=(TrivGrowingMultiCuckoo&& rhs)
+    IndTableGrowMultiCuckoo& operator=(IndTableGrowMultiCuckoo&& rhs)
     {
         Base_t::operator=(std::move(rhs));
         beta        = rhs.beta;
@@ -157,10 +157,10 @@ private:
 };
 
 template<class K, class D, class HF, class Conf>
-class CuckooTraits<TrivGrowingMultiCuckoo<K,D,HF,Conf> >
+class CuckooTraits<IndTableGrowMultiCuckoo<K,D,HF,Conf> >
 {
 public:
-    using Specialized_t  = TrivGrowingMultiCuckoo<K,D,HF,Conf>;
+    using Specialized_t  = IndTableGrowMultiCuckoo<K,D,HF,Conf>;
     using Base_t         = CuckooMultiBase<Specialized_t>;
     using Key            = K;
     using Data           = D;

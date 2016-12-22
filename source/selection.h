@@ -143,8 +143,8 @@ struct Chooser
         //     return executeDT<Functor, Hist, Displacer,   64> (c, std::forward<Types>(param)...);
         // case 128:
         //     return executeDT<Functor, Hist, Displacer,  128> (c, std::forward<Types>(param)...);
-        // case 256:
-        //     return executeDT<Functor, Hist, Displacer,  256> (c, std::forward<Types>(param)...);
+        case 256:
+            return executeDT<Functor, Hist, Displacer,  256> (c, std::forward<Types>(param)...);
         // case 512:
         //     return executeDT<Functor, Hist, Displacer,  512> (c, std::forward<Types>(param)...);
         // case 1024:
@@ -152,9 +152,9 @@ struct Chooser
         // case 2048:
         //     return executeDT<Functor, Hist, Displacer, 2048> (c, std::forward<Types>(param)...);
         default:
-               constexpr auto ttl = Config<>::tl;
-        //     std::cout << "ERROR: unknown TL value (use "
-        //               << ttl << ")" << std::endl;
+            constexpr auto ttl = Config<>::tl;
+            std::cout << "ERROR: unknown TL value (use "
+                      << ttl << ")" << std::endl;
             return executeDT<Functor, Hist, Displacer, ttl>  (c, std::forward<Types>(param)...);
         }
     }
@@ -166,20 +166,20 @@ struct Chooser
         auto bs = c.intArg("-bs", Config<>::bs);
         switch (bs)
         {
-        // case 4:
-        //     return executeDTB<Functor, Hist, Displacer, TL,  4> (c, std::forward<Types>(param)...);
+        case 4:
+            return executeDTB<Functor, Hist, Displacer, TL,  4> (c, std::forward<Types>(param)...);
         // case 6:
         //     return executeDTB<Functor, Hist, Displacer, TL,  6> (c, std::forward<Types>(param)...);
-        // case 8:
-        //     return executeDTB<Functor, Hist, Displacer, TL,  8> (c, std::forward<Types>(param)...);
+        case 8:
+            return executeDTB<Functor, Hist, Displacer, TL,  8> (c, std::forward<Types>(param)...);
         // case 12:
         //     return executeDTB<Functor, Hist, Displacer, TL, 12> (c, std::forward<Types>(param)...);
         // case 16:
         //     return executeDTB<Functor, Hist, Displacer, TL, 16> (c, std::forward<Types>(param)...);
         default:
             constexpr auto tbs = Config<>::bs;
-        //     std::cout << "ERROR: unknown BS value (use "
-        //               << tbs << ")" << std::endl;
+            std::cout << "ERROR: unknown BS value (use "
+                      << tbs << ")" << std::endl;
             return executeDTB<Functor, Hist, Displacer, TL, tbs> (c, std::forward<Types>(param)...);
         }
     }
@@ -188,9 +188,36 @@ struct Chooser
              template<class> class Displacer, size_t TL, size_t BS,
              class ... Types>
     inline static typename std::result_of<Functor<Config<> >(Types&& ...)>::type
-    executeDTB(CommandLine&, Types&& ... param)
+    executeDTB(CommandLine& c, Types&& ... param)
     {
-        Functor<Config<BS,2,TL,Displacer,Hist> > f;
+        auto nh = c.intArg("-nh", Config<>::nh);
+        switch (nh)
+        {
+        case 2:
+            return executeDTBN<Functor, Hist, Displacer, TL, BS, 2>
+                (c, std::forward<Types>(param)...);
+        case 3:
+            return executeDTBN<Functor, Hist, Displacer, TL, BS, 3>
+                (c, std::forward<Types>(param)...);
+        // case 4:
+        //     return executeDTBN<Functor, Hist, Displacer, TL, BS, 4>
+        //         (c, std::forward<Types>(param)...);
+        default:
+            constexpr auto tnh = Config<>::nh;
+            std::cout << "ERROR: unknown nh value (use "
+                      << tnh << ")" << std::endl;
+            return executeDTBN<Functor, Hist, Displacer, TL, BS, tnh>
+                (c, std::forward<Types>(param)...);
+        }
+    }
+
+    template<template<class> class Functor, class Hist,
+             template<class> class Displacer, size_t TL, size_t BS, size_t NH,
+             class ... Types>
+    inline static typename std::result_of<Functor<Config<> >(Types&& ...)>::type
+    executeDTBN(CommandLine&, Types&& ... param)
+    {
+        Functor<Config<BS,NH,TL,Displacer,Hist> > f;
         return f(std::forward<Types>(param)...);
     }
 #endif

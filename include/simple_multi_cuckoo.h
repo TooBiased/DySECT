@@ -21,7 +21,7 @@ private:
     //using HashSplitter_t = typename CuckooTraits<This_t>::HashSplitter_t;
     using Hasher_t       = typename CuckooTraits<This_t>::Hasher_t;
     using Hashed_t       = typename Hasher_t::Hashed_t;
-    using LocExtractor_t = typename Hasher_t::template LocExtractor<nh>;
+    using Ext            = typename Hasher_t::Extractor_t;
 
 public:
     using Key            = typename CuckooTraits<This_t>::Key;
@@ -64,7 +64,7 @@ private:
 
     inline Bucket_t* getBucket(Hashed_t h, size_t i) const
     {
-        size_t l = LocExtractor_t::loc(h,i) * factor;
+        size_t l = Ext::loc(h,i) * factor;
         return &(table[l]);
     }
 };
@@ -75,29 +75,16 @@ template<class K, class D, class HF,
 class CuckooTraits<SimpleMultiCuckoo<K,D,HF,Conf> >
 {
 public:
-    using Specialized_t  = SimpleMultiCuckoo<K,D,HF,Conf>;
-    using Base_t         = CuckooMultiBase<Specialized_t>;
-    using Key            = K;
-    using Data           = D;
-    //using HashFct_t      = HF;
-    using Hasher_t       = Hasher<K, HF, 0, 32, 2, 1>;
-    using Config_t       = Conf;
+    using Specialized_t = SimpleMultiCuckoo<K,D,HF,Conf>;
+    using Base_t        = CuckooMultiBase<Specialized_t>;
+    using Key           = K;
+    using Data          = D;
+    using Config_t      = Conf;
 
     static constexpr size_t tl = 1;
     static constexpr size_t bs = Conf::bs;
     static constexpr size_t nh = Conf::nh;
 
-    using Bucket_t       = Bucket<K,D,bs>;
-
-    /*
-    union HashSplitter_t
-    {
-        uint64_t hash;
-        struct
-        {
-            uint64_t loc1 : 32;
-            uint64_t loc2 : 32;
-        };
-    };
-    */
+    using Hasher_t      = Hasher<K, HF, 0, nh, true, true>;
+    using Bucket_t      = Bucket<K,D,bs>;
 };

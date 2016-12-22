@@ -42,7 +42,7 @@ public:
     static constexpr size_t* hist  = nullptr;
 };
 
-template<size_t BS = 8, size_t NH = 2, size_t TL = 128,
+template<size_t BS = 8, size_t NH = 2, size_t TL = 256,
          template <class> class DisStrat = dstrat_triv,
          class HistCount = hist_count>
 struct Config

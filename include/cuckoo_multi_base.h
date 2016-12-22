@@ -21,11 +21,14 @@ public:
     using Base_t         = CuckooMultiBase<T>;
     using Key            = ... ;
     using Data           = ... ;
-    using Bucket_t       = Bucket<Key,Data,bs>;
-
     using Config_t       = CuckooConfig<...>;
 
+    static constexpr size_t tl = ... ;
+    static constexpr size_t bs = ... ;
+    static constexpr size_t nh = ... ;
+
     union Hasher_t = Hasher<Key, HashFct, ...>;
+    using Bucket_t       = Bucket<Key,Data,bs>;
 };*/
 
 
@@ -138,11 +141,12 @@ inline bool CuckooMultiBase<SCuckoo>::insert(std::pair<Key, Data> t)
 
     size_t maxi = 0;
     int maxv = p[0];
-    if (maxv < 0) return false;
+    if (p[0] < 0) return false;
+
     //Seperated from top part to allow pipelining
     for (size_t i = 1; i < nh; ++i)
     {
-        if (maxv < 0) return false;
+        if (p[i] < 0) return false;
         if (p[i] > maxv) { maxi = i; maxv = p[i]; }
     }
 
@@ -155,7 +159,6 @@ inline bool CuckooMultiBase<SCuckoo>::insert(std::pair<Key, Data> t)
     }
     else
     {
-        // no space => displace stuff
         r = displacer.insert(t, hash);
     }
 

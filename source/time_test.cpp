@@ -31,6 +31,7 @@ struct Test
         print(out, "alpha" , 5);
         print(out, "bsize" , 5);
         print(out, "ntabl" , 5);
+        print(out, "nhash" , 5);
         print(out, "cap"   , 9);
         print(out, "n_pre" , 9);
         print(out, "n_main", 9);
@@ -43,7 +44,7 @@ struct Test
     }
 
     inline void print_timing(std::ostream& out, size_t i,
-                             double alpha, size_t bs  , size_t tl,
+                             double alpha, size_t bs  , size_t tl, size_t nh,
                              size_t cap  , size_t pre , size_t n ,
                              double d_pre, double d_in, double d_fn,
                              size_t unsucc, size_t lost_elem)
@@ -52,6 +53,7 @@ struct Test
         print(out, alpha    , 5);
         print(out, bs       , 5);
         print(out, tl       , 5);
+        print(out, nh       , 5);
         print(out, cap      , 9);
         print(out, pre      , 9);
         print(out, n        , 9);
@@ -63,7 +65,8 @@ struct Test
         out << std::endl;
     }
 
-    int operator()(size_t it, size_t n, size_t pre,  size_t cap, size_t steps, double alpha, std::string name)
+    int operator()(size_t it, size_t n, size_t pre,  size_t cap, size_t steps,
+                   double alpha, std::string name)
     {
         constexpr size_t range = (1ull<<63) -1;
 
@@ -77,7 +80,8 @@ struct Test
             keys[i] = dis(re);
         }
 
-        std::ofstream file(name + ".time", std::ofstream::out | std::ofstream::app);
+        std::ofstream file(name + ".time",
+                           std::ofstream::out | std::ofstream::app);
         print_headline(file);
 
         for (size_t i = 0; i < it; ++i)
@@ -114,8 +118,9 @@ struct Test
             double d_in  = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()/1000.;
             double d_fn  = std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count()/1000.;
 
-            print_timing(file, i, alpha, Config::bs, Config::tl, cap, pre, n,
-                         d_pre, d_in, d_fn, errors, n - errors -count);
+            print_timing(file, i, alpha, Config::bs, Config::tl, Config::nh,
+                         cap, pre, n, d_pre, d_in, d_fn,
+                         errors, n - errors -count);
         }
 
         delete[] keys;

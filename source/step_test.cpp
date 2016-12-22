@@ -23,6 +23,7 @@ struct Test
     using Grows  = GrowingCuckoo<size_t, size_t, HASHFCT, Config>;
     using Simple = SimpleCuckoo <size_t, size_t, HASHFCT, Config>;
     using Hom2Lvl= Hom2LvlCuckoo<size_t, size_t, HASHFCT, Config>;
+    using MGrow  =
 
     template <class Table>
     void print_hist(Table& table, size_t lvl, std::string name)

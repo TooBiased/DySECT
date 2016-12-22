@@ -5,50 +5,48 @@ cp ../build/in/* .
 cp ../build/time/* .
 
 n=100000000
-nt=30000000
-nh=50000000
-ns=70000000
-steps=512
+#nt=30000000
+#nh=50000000
+#ns=70000000
+steps=200
 
-echo "Step_all"
+# echo "Step_all"
 # ./step_all -bfs -n 50000000 -cap 10000000 -out 18_11/steps_all
 
-# echo "Grows"
-# for dis in bfs #rwalk rwalkcyc
-# do
-#    for tl in 256 #128 256 512 # 64 128 256 512 1024 2048
-#    do
-#         for bs in 4 6 12 16
-#         do
-#             for cap in 1 $nh $n
-#             do
-#                 for alpha in 1.05 1.1 1.15 1.2 1.25
-#                 do
-#                     ./time_grows -n $n    -pre 0     -cap $cap -steps $steps -alpha $alpha -tl $tl -bs $bs -${dis} \
-#                                  -out 18_11/grows_${dis}
-#                 done
-#             done
-#         done
-#     done
-# done
-
-
-
-for tab in cuckoo #trivgrow # hom2lvl
+echo "Grows"
+for dis in bfs
 do
-    echo "type: $tab"
-    for dis in bfs
-    do
-        for tl in 256
+   for tl in 256
+   do
+        for bs in 8
         do
-            for bs in 4 6 # 8
-           do
-                for cap in $n
+            for cap in 1 $n
+            do
+                for alpha in 1.02 1.05 1.1 1.2
                 do
-                    for alpha in 1.05 1.1 1.15 1.2 1.25
+                    ./time_grows -n $n    -pre 0     -cap $cap -steps $steps -alpha $alpha -tl $tl -bs $bs -${dis} \
+                                 -out 22_12/grows_${dis}
+                done
+            done
+        done
+    done
+done
+
+echo "MultiGrow"
+for dis in bfs
+do
+   for tl in 256
+   do
+        for bs in 4 8
+        do
+            for nh in 2 3
+            do
+                for cap in 1 $n
+                do
+                    for alpha in 1.02 1.05 1.1 1.2
                     do
-                        ./time_${tab} -n $n -pre 0 -cap $cap -steps $steps -alpha $alpha -tl $tl -bs $bs -${dis} \
-                                      -out 22_11/${tab}_${dis}
+                        ./time_multigrow -n $n    -pre 0  -nh $nh   -cap $cap -steps $steps -alpha $alpha -tl $tl -bs $bs -${dis} \
+                                     -out 22_12/grows_${dis}
                     done
                 done
             done
@@ -56,57 +54,97 @@ do
     done
 done
 
+for tab in multisimple
+do
+    echo "type: $tab"
+    for dis in bfs
+    do
+        for tl in 256
+        do
+            for bs in 4 8
+           do
+                for nh in 2 3
+                do
+                    for alpha in 1.02 1.05 1.1 1.2
+                    do
+                        ./time_${tab} -n $n -nh $nh -pre 0 -cap $cap -steps $steps -alpha $alpha -tl $tl -bs $bs -${dis} \
+                                      -out 22_12/${tab}_${dis}
+                    done
+                done
+            done
+        done
+    done
+done
+
+for tab in cuckoo hom2lvl
+do
+    echo "type: $tab"
+    for dis in bfs
+    do
+        for tl in 256
+        do
+            for bs in 4 8
+           do
+                for cap in $n
+                do
+                    for alpha in 1.02 1.05 1.1 1.2
+                    do
+                        ./time_${tab} -n $n -pre 0 -cap $cap -steps $steps -alpha $alpha -tl $tl -bs $bs -${dis} \
+                                      -out 22_12/${tab}_${dis}
+                    done
+                done
+            done
+        done
+    done
+done
+
+echo "Linprob"
+for cap in 1 $n
+do
+    ./time_linprob -n $n -pre 0 -cap $cap -steps $steps -bfs \
+               -out 22_12/linprob
+done
+
+echo "Spaceprob"
+for alpha in 1.02 1.05 1.1 1.2
+do
+    ./time_spaceprob -n $n  -pre 0  -cap $n  -alpha $alpha  -steps $steps -bfs \
+                   -out 22_12/spaceprob
+done
+
+echo "Hopscotch"
+for cap in 1 $n
+do
+    for alpha in 1.02 1.05 1.1 1.2
+    do
+        ./time_spacehopscotch -n $n  -pre 0  -cap $cap  -alpha $alpha  -steps $steps -bfs \
+                   -out 22_12/spacehopscotch
+    done
+done
 
 
-# echo "Linprob"
-# for cap in 1 $nh $n
-# do
-#     ./time_linprob -n $n -pre 0 -cap $cap -steps $steps -bfs \
-#                -out 18_11/linprob
-# done
 
-# echo "Spaceprob"
-# for alpha in 1.1 1.15 1.2 1.25
-# do
-#     ./time_spaceprob -n $n  -pre 0  -cap $n  -alpha $alpha  -steps $steps -bfs \
-#                    -out 18_11/spaceprob
-# done
+### VARIABLE NR. OF ELEMENTS ############################################
 
-# echo "Hopscotch"
-# for cap in 1 $nh $n
-# do
-#     for alpha in 1.1 1.15 1.2 1.25
-#     do
-#         # ./time_hopscotch -n $n  -pre 0  -cap $cap  -alpha $alpha  -steps $steps -bfs \
-#         #                  -out 18_11/hopscotch
-#         ./time_spacehopscotch -n $n  -pre 0  -cap $cap  -alpha $alpha  -steps $steps -bfs \
-#                    -out 22_11/spacehopscotch
-#     done
-# done
+echo "Variable Nr"
+for t in 10000000 25000000 50000000 75000000 100000000 1250000000 150000000
+do
+    for alpha in 1.02 1.05 1.1 1.2
+    do
+         ./time_grows     -bfs -n $t -pre 0 -cap 1 -steps $steps -alpha $alpha \
+                          -out 22_12/grows_incr_bfs
+         ./time_hopscotch -bfs -n $t -pre 0 -cap 1 -steps $steps -alpha $alpha \
+                          -out 22_12/hopscotch_incr
+        ./time_spacehopscotch -bfs -n $t -pre 0 -cap 1 -steps $steps -alpha $alpha \
+                          -out 22_12/hopscotch_incr
+        ./time_trivgrow   -bfs -n $t -pre 0 -cap 1 -steps $steps -alpha $alpha \
+                          -out 22_12trivgrow_incr_bfs
+    done
+    ./time_linprob -bfs -n $t -pre 0 -cap 1 -steps $steps \
+                   -out 22_12/linprob_incr
+done
 
-
-
-# # ### VARIABLE NR. OF ELEMENTS ############################################
-
-# echo "Variable Nr"
-# for t in 10000000 25000000 50000000 75000000 100000000 1250000000 150000000
-# do
-#     for alpha in 1.1 1.15 1.2 1.25
-#     do
-#         # ./time_grows     -bfs -n $t -pre 0 -cap 1 -steps $steps -alpha $alpha \
-#         #                  -out 18_11/grows_incr_bfs
-#         # ./time_hopscotch -bfs -n $t -pre 0 -cap 1 -steps $steps -alpha $alpha \
-#         #                  -out 18_11/hopscotch_incr
-#         ./time_spacehopscotch -bfs -n $t -pre 0 -cap 1 -steps $steps -alpha $alpha \
-#                               -out 22_11/hopscotch_incr
-#         ./time_trivgrow    -bfs -n $t -pre 0 -cap 1 -steps $steps -alpha $alpha \
-#                            -out 22_11/trivgrow_incr_bfs
-#     done
-#     # ./time_linprob -bfs -n $t -pre 0 -cap 1 -steps $steps \
-#     #                -out 18_11/linprob_incr
-# done
-
-# ### DISPLACEMENT MEASUREMENTS ##################################################
+### DISPLACEMENT MEASUREMENTS ##################################################
 
 # echo "Displacement Measurements"
 # echo "Grows"

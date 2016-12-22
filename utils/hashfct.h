@@ -26,11 +26,20 @@
 #define HASHFCT crc_hasher
 struct crc_hasher
 {
-    static const size_t significant_digits = 64;
+    crc_hasher(size_t seed = 12923598712359872066ull)
+        : seed0(seed), seed1(seed*7467732452331123588ull)
+    { }
 
-    inline uint64_t operator()(const uint64_t& k) const {
-        return uint64_t( __builtin_ia32_crc32di(1329235987123598723ull, k)
-                      | (__builtin_ia32_crc32di(1383568923875084501ull, k) << 32));
+    static const size_t significant_digits = 64;
+    //const
+    size_t seed0;
+    //const
+    size_t seed1;
+
+    inline uint64_t operator()(const uint64_t& k) const
+    {
+        return uint64_t(   __builtin_ia32_crc32di(k, seed0)
+                        | (__builtin_ia32_crc32di(k, seed1) << 32));
     }
 };
 #endif //CRC
@@ -40,55 +49,59 @@ struct crc_hasher
 #define HASHFCT murmur2_hasher
 struct murmur2_hasher
 {
-    static const size_t significant_digits = 64;
+    murmur2_hasher(size_t s = 1203989050u) : seed(s) { }
+
+    static constexpr size_t significant_digits = 64;
+    //const
+    size_t seed;
 
     inline uint64_t MurmurHash64A ( const void * key, int len, unsigned int seed ) const
     {
-	const uint64_t m = 0xc6a4a7935bd1e995;
-	const int r = 47;
+        const uint64_t m = 0xc6a4a7935bd1e995;
+        const int r = 47;
 
-	uint64_t h = seed ^ (len * m);
+        uint64_t h = seed ^ (len * m);
 
-	const uint64_t * data = (const uint64_t *)key;
-	const uint64_t * end = data + (len/8);
+        const uint64_t * data = (const uint64_t *)key;
+        const uint64_t * end = data + (len/8);
 
-	while(data != end)
-	{
-		uint64_t k = *data++;
+        while(data != end)
+        {
+            uint64_t k = *data++;
 
-		k *= m;
-		k ^= k >> r;
-		k *= m;
+            k *= m;
+            k ^= k >> r;
+            k *= m;
 
-		h ^= k;
-		h *= m;
-	}
+            h ^= k;
+            h *= m;
+        }
 
-	const unsigned char * data2 = (const unsigned char*)data;
+        const unsigned char * data2 = (const unsigned char*)data;
 
-	switch(len & 7)
-	{
-	case 7: h ^= uint64_t(data2[6]) << 48;
-	case 6: h ^= uint64_t(data2[5]) << 40;
-	case 5: h ^= uint64_t(data2[4]) << 32;
-	case 4: h ^= uint64_t(data2[3]) << 24;
-	case 3: h ^= uint64_t(data2[2]) << 16;
-	case 2: h ^= uint64_t(data2[1]) << 8;
-	case 1: h ^= uint64_t(data2[0]);
+        switch(len & 7)
+        {
+        case 7: h ^= uint64_t(data2[6]) << 48;
+        case 6: h ^= uint64_t(data2[5]) << 40;
+        case 5: h ^= uint64_t(data2[4]) << 32;
+        case 4: h ^= uint64_t(data2[3]) << 24;
+        case 3: h ^= uint64_t(data2[2]) << 16;
+        case 2: h ^= uint64_t(data2[1]) << 8;
+        case 1: h ^= uint64_t(data2[0]);
 	        h *= m;
-	};
+        };
 
-	h ^= h >> r;
-	h *= m;
-	h ^= h >> r;
+        h ^= h >> r;
+        h *= m;
+        h ^= h >> r;
 
-	return h;
+        return h;
     }
 
     inline uint64_t operator()(const uint64_t k) const
     {
         auto local = k;
-        return MurmurHash64A(&local, 8, 12039890u);
+        return MurmurHash64A(&local, 8, seed);
     }
 };
 #endif // MURMUR2
@@ -100,14 +113,18 @@ struct murmur2_hasher
 #define HASHFCT murmur3_hasher
 struct murmur3_hasher
 {
-    static const size_t significant_digits = 64;
+    murmur3_hasher(size_t s = 1203989050u) : seed(s) { }
+
+    static constexpr size_t significant_digits = 64;
+    //const
+    uint seed;
 
     inline uint64_t operator()(const uint64_t k) const
     {
         uint64_t local = k;
         uint64_t target[2];
 
-        MurmurHash3_x64_128 (&local, 8, 12039890u, target);
+        MurmurHash3_x64_128 (&local, 8, seed, target);
 
         return target[0];
     }
@@ -122,12 +139,16 @@ struct murmur3_hasher
 #define HASHFCT xx_hasher
 struct xx_hasher
 {
-    static const size_t significant_digits = 64;
+    xx_hasher(size_t s = 13358259232739045019ull) : seed(s) { }
+
+    static constexpr size_t significant_digits = 64;
+    //const
+    size_t seed;
 
     inline uint64_t operator()(const uint64_t k) const
     {
         auto local = k;
-        return XXH64 (&local, 8, 1383568923875084501ull);
+        return XXH64 (&local, 8, seed);
     }
 };
 #endif // XXHASH

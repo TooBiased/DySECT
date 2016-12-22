@@ -41,7 +41,7 @@ endif()
 
 #### HASH TABLES ###############################################################
 
-set(HASH_TABLES_LIST "grows;cuckoo;hom2lvl;trivgrow;linprob;spaceprob;multisimple;multigrow;multitriv")
+set(HASH_TABLES_LIST "grows;cuckoo;hom2lvl;trivgrow;linprob;spaceprob;multisimple;multigrow;multitriv;multihom2lvl")
 
 find_package(tslHopscotch)
 if (TSLHOPSCOTCH_FOUND)
