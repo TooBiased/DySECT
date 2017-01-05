@@ -6,7 +6,7 @@
 #include <random>
 
 template<class Parent>
-class dstrat_multi_rwalk_cyclic
+class dstrat_rwalk_cyclic
 {
 public:
     using Key          = typename Parent::Key;
@@ -21,11 +21,11 @@ public:
     std::mt19937 re;
     const size_t steps;
 
-    dstrat_multi_rwalk_cyclic(Parent_t& parent, size_t steps=256, size_t seed=30982391937209388ull)
+    dstrat_rwalk_cyclic(Parent_t& parent, size_t steps=256, size_t seed=30982391937209388ull)
         : tab(parent), re(seed), steps(steps)
     { }
 
-    dstrat_multi_rwalk_cyclic(Parent_t& parent, dstrat_multi_rwalk_cyclic&& rhs)
+    dstrat_rwalk_cyclic(Parent_t& parent, dstrat_rwalk_cyclic&& rhs)
         : tab(parent), re(std::move(rhs.re)), steps(rhs.steps)
     { }
 

@@ -8,7 +8,7 @@
 
 
 template<class Parent> // think about spezialization if nh = 2
-class dstrat_multi_rwalk
+class dstrat_rwalk_anticycle
 {
 public:
     using Key            = typename Parent::Key;
@@ -23,11 +23,11 @@ public:
 
     static constexpr size_t nh = Parent::nh;
 
-    dstrat_multi_rwalk(Parent_t& parent, size_t steps=256, size_t seed=30982391937209388ull)
+    dstrat_rwalk_anticycle(Parent_t& parent, size_t steps=256, size_t seed=30982391937209388ull)
         : tab(parent), re(seed), steps(steps)
     { }
 
-    dstrat_multi_rwalk(Parent_t& parent, dstrat_multi_rwalk&& rhs)
+    dstrat_rwalk_anticycle(Parent_t& parent, dstrat_rwalk_anticycle&& rhs)
         : tab(parent), re(std::move(rhs.re)), steps(rhs.steps)
     { }
 

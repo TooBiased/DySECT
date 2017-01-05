@@ -1,18 +1,18 @@
 #pragma once
 
 #include <cmath>
-#include "cuckoo_multi_base.h"
+#include "cuckoo_base.h"
 
 template<class T>
 class CuckooTraits;
 
 template<class K, class D, class HF = std::hash<K>,
          class Conf = Config<> >
-class IndTableGrowMultiCuckoo
-    : public CuckooTraits<IndTableGrowMultiCuckoo<K,D,HF,Conf> >::Base_t
+class CuckooIndependent2L
+    : public CuckooTraits<CuckooIndependent2L<K,D,HF,Conf> >::Base_t
 {
 private:
-    using This_t         = IndTableGrowMultiCuckoo<K,D,HF,Conf>;
+    using This_t         = CuckooIndependent2L<K,D,HF,Conf>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
     friend Base_t;
 
@@ -34,7 +34,7 @@ public:
 
     static constexpr double fac_div = double (1ull << (32 - ct_log(tl)));
 
-    IndTableGrowMultiCuckoo(size_t cap = 0      , double size_constraint = 1.1,
+    CuckooIndependent2L(size_t cap = 0      , double size_constraint = 1.1,
                            size_t dis_steps = 0, size_t seed = 0)
         : Base_t(0, size_constraint, dis_steps, seed), beta((1.0+size_constraint)/2.0)
     {
@@ -55,10 +55,10 @@ public:
         capacity    = bs * tl * lsize;
     }
 
-    IndTableGrowMultiCuckoo(const IndTableGrowMultiCuckoo&) = delete;
-    IndTableGrowMultiCuckoo& operator=(const IndTableGrowMultiCuckoo&) = delete;
+    CuckooIndependent2L(const CuckooIndependent2L&) = delete;
+    CuckooIndependent2L& operator=(const CuckooIndependent2L&) = delete;
 
-    IndTableGrowMultiCuckoo(IndTableGrowMultiCuckoo&& rhs)
+    CuckooIndependent2L(CuckooIndependent2L&& rhs)
         : Base_t(std::move(rhs)), beta(rhs.beta)
     {
         for (size_t i = 0; i < tl; ++i)
@@ -71,7 +71,7 @@ public:
         }
     }
 
-    IndTableGrowMultiCuckoo& operator=(IndTableGrowMultiCuckoo&& rhs)
+    CuckooIndependent2L& operator=(CuckooIndependent2L&& rhs)
     {
         Base_t::operator=(std::move(rhs));
         beta            = rhs.beta;
@@ -156,7 +156,7 @@ private:
                 {
                     if (i == size_t(Ext::loc(hash, ti) * cfactor))
                     {
-                        target[Ext::loc(hash, ti) * nfactor].insert(e.first, e.second);
+                        if (! target[Ext::loc(hash, ti) * nfactor].insert(e.first, e.second)) std::cout << "!" << std::flush;
                         //bla = true;
                         break;
                     }
@@ -201,10 +201,10 @@ public:
 };
 
 template<class K, class D, class HF, class Conf>
-class CuckooTraits<IndTableGrowMultiCuckoo<K,D,HF,Conf> >
+class CuckooTraits<CuckooIndependent2L<K,D,HF,Conf> >
 {
 public:
-    using Specialized_t  = IndTableGrowMultiCuckoo<K,D,HF,Conf>;
+    using Specialized_t  = CuckooIndependent2L<K,D,HF,Conf>;
     using Base_t         = CuckooMultiBase<Specialized_t>;
     using Key            = K;
     using Data           = D;

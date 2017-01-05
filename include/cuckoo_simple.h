@@ -1,13 +1,13 @@
 #pragma once
 
-#include "cuckoo_multi_base.h"
+#include "cuckoo_base.h"
 
 template<class K, class D, class HF = std::hash<K>,
          class Conf = Config<> >
-class SimpleMultiCuckoo : public CuckooTraits<SimpleMultiCuckoo<K,D,HF,Conf> >::Base_t
+class CuckooSimple : public CuckooTraits<CuckooSimple<K,D,HF,Conf> >::Base_t
 {
 private:
-    using This_t         = SimpleMultiCuckoo<K,D,HF,Conf>;
+    using This_t         = CuckooSimple<K,D,HF,Conf>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
     friend Base_t;
 
@@ -18,7 +18,6 @@ public:
 
 private:
     using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
-    //using HashSplitter_t = typename CuckooTraits<This_t>::HashSplitter_t;
     using Hasher_t       = typename CuckooTraits<This_t>::Hasher_t;
     using Hashed_t       = typename Hasher_t::Hashed_t;
     using Ext            = typename Hasher_t::Extractor_t;
@@ -28,7 +27,7 @@ public:
     using Data           = typename CuckooTraits<This_t>::Data;
 
 
-    SimpleMultiCuckoo(size_t cap = 0      , double size_constraint = 1.1,
+    CuckooSimple(size_t cap = 0      , double size_constraint = 1.1,
                       size_t dis_steps = 0, size_t seed = 0)
         : Base_t(std::max(size_t((cap*size_constraint)/bs)*bs, bs), size_constraint,
                  dis_steps, seed),
@@ -36,11 +35,11 @@ public:
           table(new Bucket_t[n_buckets])
     { }
 
-    SimpleMultiCuckoo(const SimpleMultiCuckoo&) = delete;
-    SimpleMultiCuckoo& operator=(const SimpleMultiCuckoo&) = delete;
+    CuckooSimple(const CuckooSimple&) = delete;
+    CuckooSimple& operator=(const CuckooSimple&) = delete;
 
-    SimpleMultiCuckoo(SimpleMultiCuckoo&&) = default;
-    SimpleMultiCuckoo& operator=(SimpleMultiCuckoo&&) = default;
+    CuckooSimple(CuckooSimple&&) = default;
+    CuckooSimple& operator=(CuckooSimple&&) = default;
 
     std::pair<size_t, Bucket_t*> getTable(size_t i)
     {
@@ -72,10 +71,10 @@ private:
 
 template<class K, class D, class HF,
          class Conf>
-class CuckooTraits<SimpleMultiCuckoo<K,D,HF,Conf> >
+class CuckooTraits<CuckooSimple<K,D,HF,Conf> >
 {
 public:
-    using Specialized_t = SimpleMultiCuckoo<K,D,HF,Conf>;
+    using Specialized_t = CuckooSimple<K,D,HF,Conf>;
     using Base_t        = CuckooMultiBase<Specialized_t>;
     using Key           = K;
     using Data          = D;

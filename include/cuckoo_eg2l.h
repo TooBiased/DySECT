@@ -1,17 +1,17 @@
 #pragma once
 
 #include <cmath>
-#include "cuckoo_multi_base.h"
+#include "cuckoo_base.h"
 
 template<class T>
 class CuckooTraits;
 
 template<class K, class D, class HF = std::hash<K>,
          class Conf = Config<> >
-class GrowingMultiCuckoo : public CuckooTraits<GrowingMultiCuckoo<K,D,HF,Conf> >::Base_t
+class CuckooEG2L : public CuckooTraits<CuckooEG2L<K,D,HF,Conf> >::Base_t
 {
 private:
-    using This_t         = GrowingMultiCuckoo<K,D,HF,Conf>;
+    using This_t         = CuckooEG2L<K,D,HF,Conf>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
     friend Base_t;
 
@@ -30,7 +30,7 @@ public:
     using Key            = typename CuckooTraits<This_t>::Key;
     using Data           = typename CuckooTraits<This_t>::Data;
 
-    GrowingMultiCuckoo(size_t cap = 0      , double size_constraint = 1.1,
+    CuckooEG2L(size_t cap = 0      , double size_constraint = 1.1,
                        size_t dis_steps = 0, size_t seed = 0)
         : Base_t(0, size_constraint, dis_steps, seed)
     {
@@ -60,10 +60,10 @@ public:
         grow_thresh = std::ceil((capacity + grow_amount*bs)/alpha);
     }
 
-    GrowingMultiCuckoo(const GrowingMultiCuckoo&) = delete;
-    GrowingMultiCuckoo& operator=(const GrowingMultiCuckoo&) = delete;
+    CuckooEG2L(const CuckooEG2L&) = delete;
+    CuckooEG2L& operator=(const CuckooEG2L&) = delete;
 
-    GrowingMultiCuckoo(GrowingMultiCuckoo&& rhs)
+    CuckooEG2L(CuckooEG2L&& rhs)
         : Base_t(std::move(rhs)),
           grow_table(rhs.grow_table),
           grow_amount(rhs.grow_amount),
@@ -76,7 +76,7 @@ public:
         }
     }
 
-    GrowingMultiCuckoo& operator=(GrowingMultiCuckoo&& rhs)
+    CuckooEG2L& operator=(CuckooEG2L&& rhs)
     {
         Base_t::operator=(std::move(rhs));
 
@@ -175,10 +175,10 @@ private:
 
 template<class K, class D, class HF,
          class Conf>
-class CuckooTraits<GrowingMultiCuckoo<K,D,HF,Conf> >
+class CuckooTraits<CuckooEG2L<K,D,HF,Conf> >
 {
 public:
-    using Specialized_t  = GrowingMultiCuckoo<K,D,HF,Conf>;
+    using Specialized_t  = CuckooEG2L<K,D,HF,Conf>;
     using Base_t         = CuckooMultiBase<Specialized_t>;
     using Key            = K;
     using Data           = D;

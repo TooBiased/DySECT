@@ -2,16 +2,16 @@
 
 #include "include/config.h"
 
-#if (!CUCKOO         && \
-     !GROWC          && \
-     !HOM2LVL        && \
-     !TRIVGROW       && \
-     !LINPROB        && \
-     !SPACEPROB      && \
-     !HOPSCOTCH      && \
+#if (!CSIMPLE         && \
+     !CEG2L           && \
+     !CHOMOGENEOUS2L  && \
+     !CINDEPENDENT2L  && \
+     !LINPROB         && \
+     !SPACEPROB       && \
+     !HOPSCOTCH       && \
      !SPACEHOPSCOTCH)
-#warning WARNING: No table chosen using! GROWC
-#define GROWC
+#warning WARNING: No table chosen using! CEG2L
+#define CEG2L
 #endif // NO HASHTYPE DEFINED => GROWS
 
 #ifdef LINPROB
@@ -38,32 +38,32 @@
 #define  HASHTYPE SpaceHopscotch
 #endif
 
-#ifdef CUCKOO
+#ifdef CSIMPLE
 #define MULTI
-#include "include/simple_multi_cuckoo.h"
-#define HASHTYPE SimpleMultiCuckoo
+#include "include/cuckoo_simple.h"
+#define HASHTYPE CuckooSimple
 #endif
 
-#ifdef GROWC
+#ifdef CEG2L
 #define MULTI
-#include "include/growing_multi_cuckoo.h"
-#define HASHTYPE GrowingMultiCuckoo
+#include "include/cuckoo_eg2l.h"
+#define HASHTYPE CuckooEG2L
 #endif
 
-#ifdef HOM2LVL
+#ifdef CHOMOGENEOUS2L
 #define MULTI
-#include "include/hom_2lvl_multi_cuckoo.h"
-#define HASHTYPE Hom2LvlMultiCuckoo
+#include "include/cuckoo_homogeneous2l.h"
+#define HASHTYPE CuckooHomogeneous2L
 #endif
 
-#ifdef TRIVGROW
+#ifdef CINDEPENDENT2L
 #define MULTI
-#include "include/impr_triv_multi_cuckoo.h"
-#define HASHTYPE IndTableGrowMultiCuckoo
+#include "include/cuckoo_independent2l.h"
+#define HASHTYPE CuckooIndependent2L
 #endif
 
 #ifdef MULTI
-#include "include/multistrategies/summary.h"
+#include "include/displacement_strategies/summary.h"
 #endif // MULTI
 
 #include "utils/commandline.h"

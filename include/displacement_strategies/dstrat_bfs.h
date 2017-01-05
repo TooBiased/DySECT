@@ -6,7 +6,7 @@
 #include <tuple>
 
 template<class Parent>
-class dstrat_multi_bfs
+class dstrat_bfs
 {
 public:
     using Key            = typename Parent::Key;
@@ -21,13 +21,13 @@ public:
     const size_t steps;
     static constexpr size_t nh = Parent_t::nh;
 
-    dstrat_multi_bfs(Parent& parent, size_t steps = 256, size_t = 0)
+    dstrat_bfs(Parent& parent, size_t steps = 256, size_t = 0)
         : tab(parent), steps(steps+1)
     {
         /* parameter is for symmetry with "rwalk" therefore unused*/
     }
 
-    dstrat_multi_bfs(Parent& parent, dstrat_multi_bfs&& rhs)
+    dstrat_bfs(Parent& parent, dstrat_bfs&& rhs)
         : tab(parent), steps(rhs.steps)
     { }
 
