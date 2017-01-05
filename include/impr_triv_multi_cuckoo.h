@@ -38,17 +38,18 @@ public:
                            size_t dis_steps = 0, size_t seed = 0)
         : Base_t(0, size_constraint, dis_steps, seed), beta((1.0+size_constraint)/2.0)
     {
-        lsize  = std::floor(cap * size_constraint / double(tl*bs));
-        lsize  = std::max(lsize, 1ul);
-        factor = double(lsize)/fac_div;
-        grow_thresh = capacity / beta;
+        size_t lsize  = std::floor(cap * size_constraint / double(tl*bs));
+        lsize  = std::max(lsize, 256ul);
+        double factor = double(lsize)/fac_div;
+        size_t grow_thresh = double(lsize) / beta;
 
         for (size_t i = 0; i < tl; ++i)
         {
-            llt[i] = std::make_unique<Bucket_t[]>(lsize);
-            lls[i] = lsize;
-            llg[i] = grow_thresh;
-            llf[i] = factor;
+            ll_tab[i]    = std::make_unique<Bucket_t[]>(lsize);
+            ll_size[i]   = lsize;
+            ll_elem[i]   = 0;
+            ll_thresh[i] = grow_thresh;
+            ll_factor[i] = factor;
         }
 
         capacity    = bs * tl * lsize;
@@ -58,40 +59,37 @@ public:
     IndTableGrowMultiCuckoo& operator=(const IndTableGrowMultiCuckoo&) = delete;
 
     IndTableGrowMultiCuckoo(IndTableGrowMultiCuckoo&& rhs)
-        : Base_t(std::move(rhs)), beta(rhs.beta),
-          grow_thresh(rhs.grow_thresh), lsize(rhs.lsize), factor(rhs.factor)
+        : Base_t(std::move(rhs)), beta(rhs.beta)
     {
         for (size_t i = 0; i < tl; ++i)
         {
-            llt[i] = std::move(rhs.llt[i]);
-            llt[i] = rhs.llt[i]);
-            lls[i] = rhs.lls[i]);
-            llg[i] = rhs.llg[i]);
-            llf[i] = rhs.llf[i]);
+            ll_tab[i]    = std::move(rhs.ll_tab[i]);
+            ll_size[i]   = rhs.ll_size[i];
+            ll_elem[i]   = rhs.ll_elem[i];
+            ll_thresh[i] = rhs.ll_thresh[i];
+            ll_factor[i] = rhs.ll_factor[i];
         }
     }
 
     IndTableGrowMultiCuckoo& operator=(IndTableGrowMultiCuckoo&& rhs)
     {
         Base_t::operator=(std::move(rhs));
-        beta        = rhs.beta;
-        grow_thresh = rhs.grow_thresh;
-        lsize       = rhs.lsize;
-        factor      = rhs.factor;
+        beta            = rhs.beta;
 
         for (size_t i = 0; i < tl; ++i)
         {
-            std::swap(llt[i], rhs.llt[i]);
-            std::swap(lls[i], rhs.lls[i]);
-            std::swap(llg[i], rhs.llg[i]);
-            std::swap(llf[i], rhs.llf[i]);
+            std::swap(ll_tab[i]   , rhs.ll_tab[i]);
+            std::swap(ll_size[i]  , rhs.ll_size[i]);
+            std::swap(ll_elem[i]  , rhs.ll_elem[i]);
+            std::swap(ll_thresh[i], rhs.ll_thresh[i]);
+            std::swap(ll_factor[i], rhs.ll_factor[i]);
         }
         return *this;
     }
 
     std::pair<size_t, Bucket_t*> getTable(size_t i)
     {
-        return (i < tl) ? std::make_pair(lsize, llt[i].get())
+        return (i < tl) ? std::make_pair(ll_size[i], ll_tab[i].get())
                         : std::make_pair(0,nullptr);
     }
 
@@ -101,16 +99,13 @@ public:
 private:
     using Base_t::alpha;
     double beta;
-    size_t grow_thresh;
     using Base_t::hasher;
 
-    size_t lsize;
-    double factor;
-    std::unique_ptr<Bucket_t[]> llt[tl];
-
-    size_t     lls[tl];
-    size_t     llg[tl];
-    double     llf[tl];
+    std::unique_ptr<Bucket_t[]> ll_tab[tl];
+    size_t     ll_size  [tl];
+    size_t     ll_elem  [tl];
+    size_t     ll_thresh[tl];
+    double     ll_factor[tl];
 
     inline void getBuckets(Hashed_t h, Bucket_t** mem) const
     {
@@ -121,54 +116,52 @@ private:
     inline Bucket_t* getBucket (Hashed_t h, size_t i) const
     {
         size_t tab = Ext::tab(h,0);
-        return &(llt[tab][Ext::loc(h,i)*llf[tab]]);
+        return &(ll_tab[tab][Ext::loc(h,i)*ll_factor[tab]]);
     }
 
-    inline void inc_n()
+    inline void grow(size_t tab)
     {
-        if ( ++n > grow_thresh ) grow();
-    }
+        size_t nsize   = std::floor(double(ll_elem[tab]) * alpha / double(bs));
+        nsize          = std::max(nsize, ll_size[tab]+1);
+        //size_t nsize   = ll_size[tab] << 1;
+        capacity      += nsize - ll_size[tab];
+        double nfactor = double(nsize)      / fac_div;
+        size_t nthresh = double(bs * nsize) / beta;
 
-    inline void grow()
-    {
-        size_t nsize   = std::floor(double(n) * alpha / double(tl*bs));
-        nsize = std::max(nsize, lsize+1);
-        double nfactor = double(nsize)/fac_div;
+        auto ntable = std::make_unique<Bucket_t[]>(nsize);
+        migrate(tab, ntable, nfactor);
 
-        size_t f_grow_thresh = (bs * tl * lsize)/beta;
-        for (size_t i = 0; i < tl; ++i)
-        {
-            auto ntable = std::make_unique<Bucket_t[]>(nsize);
-            migrate(i, ntable, nfactor);
-            llt[i] = std::move(ntable);
-            llf[i] = nfactor;
-            llg[i] = f_grow_thresh;
-        }
-
-        lsize       = nsize;
-        factor      = nfactor;
-        capacity    = bs * tl * lsize;
-        grow_thresh = capacity / beta;
+        ll_tab[tab]    = std::move(ntable);
+        ll_size[tab]   = nsize;
+        ll_factor[tab] = nfactor;
+        ll_thresh[tab] = nthresh;
     }
 
     inline void migrate(size_t tab, std::unique_ptr<Bucket_t[]>& target, double nfactor)
     {
-        for (size_t i = 0; i < lsize; ++i)
+        size_t csize   = ll_size[tab];
+        double cfactor = ll_factor[tab];
+        for (size_t i = 0; i < csize; ++i)
         {
-            Bucket_t* curr = &(llt[tab][i]);
+            Bucket_t& curr = ll_tab[tab][i];
+
             for (size_t j = 0; j < bs; ++j)
             {
-                auto e    = curr->elements[j];
+                auto e    = curr.elements[j];
                 if (! e.first) break;
                 auto hash = hasher(e.first);
 
+                //bool bla = false;
                 for (size_t ti = 0; ti < nh; ++ti)
                 {
-                    if (i == Ext::loc(hash, ti) * factor)
+                    if (i == size_t(Ext::loc(hash, ti) * cfactor))
                     {
                         target[Ext::loc(hash, ti) * nfactor].insert(e.first, e.second);
+                        //bla = true;
+                        break;
                     }
                 }
+                //if (!bla) std::cout << "!" << std::flush;
             }
         }
     }
@@ -187,8 +180,8 @@ public:
         size_t ttl = Ext::tab(hash, 0);
         if (Base_t::insert(t))
         {
-            auto currsize = ++lls[ttl];
-            if (currsize > llg[ttl]) ; //potentially grow the single table
+            auto currsize = ++ll_elem[ttl];
+            if (currsize > ll_thresh[ttl]) grow(ttl); //potentially grow the single table
             return true;
         }
         return false;
@@ -198,9 +191,9 @@ public:
     {
         auto hash = hasher(k);
         size_t ttl = Ext::tab(hash, 0);
-        if (Base_t::remove(t))
+        if (Base_t::remove(k))
         {
-            lls[ttl]++;
+            ll_elem[ttl]--;
             return true;
         }
         return false;

@@ -13,7 +13,8 @@
      !MULTISIMPLE    && \
      !MULTIGROW      && \
      !MULTIHOM2LVL   && \
-     !MULTITRIV      )
+     !MULTITRIV      && \
+     !MULTIIMPROV)
 #define GROWS
 #endif // NO HASHTYPE DEFINED => GROWS
 
@@ -88,6 +89,12 @@
 #define MULTI
 #include "include/triv_growing_multi_cuckoo.h"
 #define HASHTYPE TrivGrowingMultiCuckoo
+#endif
+
+#ifdef MULTIIMPROV
+#define MULTI
+#include "include/impr_triv_multi_cuckoo.h"
+#define HASHTYPE IndTableGrowMultiCuckoo
 #endif
 
 #ifdef MULTI

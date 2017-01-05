@@ -33,6 +33,9 @@ public:
 
     inline bool expand(BFSQueue& q, size_t index)
     {
+        //bool overwatch = false;
+        //if (std::get<0>(q[0]) == 480139307921249140) overwatch = true;
+        //if (overwatch) std::cout << "!" << std::endl;
         Bucket_t* b = std::get<2>(q[index]);
 
         for (size_t i = 0; i < tab.bs && q.size() < steps; ++i)
@@ -47,28 +50,11 @@ public:
             {
                 if (ptr[ti] != b)
                 {
+                    //if (overwatch) std::cout << i << " " << ti << std::endl;
                     q.emplace_back(k, index, ptr[ti]);
                     if (ptr[ti]->space()) return true;
                 }
             }
-
-            // Bucket_t* b1 = tab.getBucket1(hash);
-            // Bucket_t* b2 = tab.getBucket2(hash);
-
-            // if        (b == b1)
-            // {
-            //     q.emplace_back(k, index, b2);
-            //     if (b2->space()) return true;
-            // }
-            // else if (b == b2)
-            // {
-            //     q.emplace_back(k, index, b1);
-            //     if (b1->space()) return true;
-            // }
-            // else
-            // {
-            //     std::cout << "unexpectedly in wrong bucket?" << std::endl;
-            // }
         }
         return false;
     }
@@ -89,23 +75,26 @@ public:
             std::tie(k2,prev2,b2) = bq[prev1];
 
             auto pop = b2->pop(k1);
-            if (!pop.first)
-            {
-                std::cout << "serious issue with rollBack " << k1
-                          << " pop " << pop.first << " " << pop.second << std::endl;
-                return false;
-            }
-            if (!b1->insert(k1, pop.second))
-            {
-                std::cout << "even more serious issue with rollBack" << std::endl;
-                return false;
-            }
+            // if (!pop.first)
+            // {
+            //     std::cout << "serious issue with rollBack " << k1 << " from " << b2
+            //               << " pop " << pop.first << " " << pop.second << std::endl;
+
+            //     return false;
+            // }
+            // if (!
+            b1->insert(k1, pop.second); //)
+            // {
+            //     std::cout << "even more serious issue with rollBack" << std::endl;
+            //     return false;
+            // }
 
             k1 = k2; prev1 = prev2; b1 = b2;
         }
 
-        if (! b1->insert(t) )
-        {   std::cout << "failed final insert" << std::endl; return false; }
+        // if (!
+        b1->insert(t); //)
+        // {   std::cout << "failed final insert" << std::endl; return false; }
 
         return true;
     }
@@ -113,21 +102,47 @@ public:
     inline int insert(std::pair<Key,Data> t, Hashed_t hash)
     {
         BFSQueue  bq;
-        //Bucket_t* b1 = tab.getBucket1(hash);
-        //Bucket_t* b2 = tab.getBucket2(hash);
 
         Bucket_t* b[nh];
         tab.getBuckets(hash, b);
+
         for (size_t i = 0; i < nh; ++i)
         {
             bq.push_back(std::tuple<Key, int, Bucket_t*>(t.first, -1, b[i]));
-
         }
-        //bq.push_back(std::tuple<Key, int, Bucket_t*>(t.first, -1, b1));
-        //bq.push_back(std::tuple<Key, int, Bucket_t*>(t.first, -1, b2));
 
         for (size_t i = 0; i < steps; ++i)
         {
+            /*
+            if (i >= bq.size())
+            {
+                std::cout << "WTF" << std::endl;
+                for (size_t i = 0; i < bq.size(); ++i)
+                {
+                    Key k;
+                    int p;
+                    Bucket_t* b;
+                    std::tie(k,p,b) =  bq[i];
+                    std::cout << "| " << k << " | " << p << " | " << b << " |" << std::endl;
+                }
+                for (size_t i = 0; i < nh; ++i)
+                {
+                    for (size_t j = 0; j < tab.bs; ++j)
+                    {
+                        Key k = b[i]->get(j).first;
+                        Bucket_t* b2[nh];
+                        tab.getBuckets(tab.hasher(k), b2);
+                        std::cout << "| k " << k;
+                        for (size_t z = 0; z < nh; ++z)
+                        {
+                            std::cout << " | " << b2[z];
+                        }
+                        std::cout << " |" << std::endl;
+                    }
+                }
+            }
+            else
+            */
             if (expand(bq, i))
             {
                 return (rollBackDisplacements(t, bq)) ? bq.size()-nh : -1;
