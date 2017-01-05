@@ -1,9 +1,9 @@
 //#include "include/spacegrow.h"
 #include "selection.h"
 
-#include "include/strategies/dstrat_bfs.h"
-#include "include/strategies/dstrat_rwalk.h"
-#include "include/strategies/dstrat_rwalk_cyclic.h"
+// #include "include/strategies/dstrat_bfs.h"
+// #include "include/strategies/dstrat_rwalk.h"
+// #include "include/strategies/dstrat_rwalk_cyclic.h"
 
 #include "utils/hashfct.h"
 #include "utils/commandline.h"

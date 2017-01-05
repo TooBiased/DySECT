@@ -32,29 +32,27 @@ public:
 
     Hom2LvlMultiCuckoo(size_t cap = 0      , double size_constraint = 1.1,
                        size_t dis_steps = 0, size_t seed = 0)
-        : Base_t(0, size_constraint, dis_steps, seed)
+        : Base_t(0, size_constraint, dis_steps, seed),
+          ll_size(std::floor(double(cap) * size_constraint / double(tl*bs)))
     {
-        size_t l2size = std::floor(double(cap) * size_constraint / double(tl*bs));
-
         for (size_t i = 0; i < tl; ++i)
         {
-            llt[i] = std::make_unique<Bucket_t[]>(l2size);
+            ll_table[i] = std::make_unique<Bucket_t[]>(ll_size);
         }
 
-        capacity    = tl * l2size * bs;
-        factor      = double(l2size) / double(1ull << 32 - ct_log(tl));
+        capacity    = tl * ll_size * bs;
+        factor      = double(ll_size) / double(1ull << (32 - ct_log(tl)));
     }
 
     Hom2LvlMultiCuckoo(const Hom2LvlMultiCuckoo&) = delete;
     Hom2LvlMultiCuckoo& operator=(const Hom2LvlMultiCuckoo&) = delete;
 
     Hom2LvlMultiCuckoo(Hom2LvlMultiCuckoo&& rhs)
-        : Base_t(std::move(rhs))
+        : Base_t(std::move(rhs)), factor(rhs.factor), ll_size(rhs.ll_size)
     {
         for (size_t i = 0; i < tl; ++i)
         {
-            llb[i] = rhs.llb[i];
-            llt[i] = std::move(rhs.llt[i]);
+            ll_table[i] = std::move(rhs.ll_table[i]);
         }
     }
 
@@ -62,17 +60,19 @@ public:
     {
         Base_t::operator=(std::move(rhs));
 
+        factor = rhs.factor;
+        ll_size= rhs.ll_size;
+
         for (size_t i = 0; i < tl; ++i)
         {
-            std::swap(factor, rhs.factor);
-            std::swap(llt[i], rhs.llt[i]);
+            std::swap(ll_table[i], rhs.ll_table[i]);
         }
         return *this;
     }
 
     std::pair<size_t, Bucket_t*> getTable(size_t i)
     {
-        return (i < tl) ? std::make_pair(llb[i], llt[i].get())
+        return (i < tl) ? std::make_pair(ll_size, ll_table[i].get())
                         : std::make_pair(0,nullptr);
     }
 
@@ -80,7 +80,8 @@ public:
 
 private:
     double                      factor;
-    std::unique_ptr<Bucket_t[]> llt[tl];
+    size_t                      ll_size;
+    std::unique_ptr<Bucket_t[]> ll_table[tl];
 
     inline void getBuckets(Hashed_t h, Bucket_t** mem) const
     {
@@ -91,7 +92,7 @@ private:
     inline Bucket_t* getBucket(Hashed_t h, size_t i) const
     {
         size_t tab = Ext::tab(h,i);
-        return &(llt[tab][Ext::loc(h,i) * factor);
+        return &(ll_table[tab][Ext::loc(h,i) * factor]);
     }
 };
 

@@ -41,7 +41,7 @@ endif()
 
 #### HASH TABLES ###############################################################
 
-set(HASH_TABLES_LIST "grows;cuckoo;hom2lvl;trivgrow;linprob;spaceprob;multisimple;multigrow;multitriv;multihom2lvl;multiimprov")
+set(HASH_TABLES_LIST "growc;cuckoo;hom2lvl;trivgrow;linprob;spaceprob")
 
 find_package(tslHopscotch)
 if (TSLHOPSCOTCH_FOUND)
@@ -51,8 +51,10 @@ endif()
 
 #### THE ONE STEP GROW EXECUTABLE ##############################################
 
-add_executable(step_all source/step_test.cpp)
-target_compile_definitions(step_all PRIVATE -D GROWS -D ${GROWS_HASHFCT})
+#Currently not up to date due to multichange + ... time
+
+#add_executable(step_all source/step_test.cpp)
+#target_compile_definitions(step_all PRIVATE -D GROWS -D ${GROWS_HASHFCT})
 
 
 #### CONSTRUCT EXECUTABLE ######################################################

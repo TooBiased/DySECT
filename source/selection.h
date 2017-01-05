@@ -3,45 +3,16 @@
 #include "include/config.h"
 
 #if (!CUCKOO         && \
-     !GROWS          && \
+     !GROWC          && \
      !HOM2LVL        && \
      !TRIVGROW       && \
      !LINPROB        && \
      !SPACEPROB      && \
      !HOPSCOTCH      && \
-     !SPACEHOPSCOTCH && \
-     !MULTISIMPLE    && \
-     !MULTIGROW      && \
-     !MULTIHOM2LVL   && \
-     !MULTITRIV      && \
-     !MULTIIMPROV)
-#define GROWS
+     !SPACEHOPSCOTCH)
+#warning WARNING: No table chosen using! GROWC
+#define GROWC
 #endif // NO HASHTYPE DEFINED => GROWS
-
-
-#ifdef GROWS
-#define SINGLE
-#include "include/growing_cuckoo.h"
-#define  HASHTYPE GrowingCuckoo
-#endif // GROWS
-
-#ifdef CUCKOO
-#define SINGLE
-#include "include/simple_cuckoo.h"
-#define  HASHTYPE SimpleCuckoo
-#endif // CUCKOO
-
-#ifdef HOM2LVL
-#define SINGLE
-#include "include/hom_2lvl_cuckoo.h"
-#define  HASHTYPE Hom2LvlCuckoo
-#endif // HOM2LVL
-
-#ifdef TRIVGROW
-#define SINGLE
-#include "include/triv_growing_cuckoo.h"
-#define  HASHTYPE TrivGrowingCuckoo
-#endif // TRIV_GROW
 
 #ifdef LINPROB
 #define NONCUCKOO
@@ -67,31 +38,25 @@
 #define  HASHTYPE SpaceHopscotch
 #endif
 
-#ifdef MULTISIMPLE
+#ifdef CUCKOO
 #define MULTI
 #include "include/simple_multi_cuckoo.h"
 #define HASHTYPE SimpleMultiCuckoo
 #endif
 
-#ifdef MULTIGROW
+#ifdef GROWC
 #define MULTI
 #include "include/growing_multi_cuckoo.h"
 #define HASHTYPE GrowingMultiCuckoo
 #endif
 
-#ifdef MULTIHOM2LVL
+#ifdef HOM2LVL
 #define MULTI
 #include "include/hom_2lvl_multi_cuckoo.h"
 #define HASHTYPE Hom2LvlMultiCuckoo
 #endif
 
-#ifdef MULTITRIV
-#define MULTI
-#include "include/triv_growing_multi_cuckoo.h"
-#define HASHTYPE TrivGrowingMultiCuckoo
-#endif
-
-#ifdef MULTIIMPROV
+#ifdef TRIVGROW
 #define MULTI
 #include "include/impr_triv_multi_cuckoo.h"
 #define HASHTYPE IndTableGrowMultiCuckoo
@@ -100,9 +65,6 @@
 #ifdef MULTI
 #include "include/multistrategies/summary.h"
 #endif // MULTI
-#ifdef SINGLE
-#include "include/strategies/summary.h"
-#endif // SINGLE
 
 #include "utils/commandline.h"
 
