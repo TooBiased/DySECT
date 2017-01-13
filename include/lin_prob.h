@@ -9,23 +9,23 @@
 #include "bucket.h"
 
 template <class T>
-class CuckooTraits;
+class LinProbTraits;
 
 template<class SpLinProb>
 class LinProbBase
 {
 public:
-    using Key      = typename CuckooTraits<SpLinProb>::Key;
-    using Data     = typename CuckooTraits<SpLinProb>::Data;
+    using Key      = typename LinProbTraits<SpLinProb>::Key;
+    using Data     = typename LinProbTraits<SpLinProb>::Data;
     using FRet     = std::pair<bool, Data>;
 
 private:
     using This_t         = LinProbBase<SpLinProb>;
-    using Specialized_t  = typename CuckooTraits<SpLinProb>::Specialized_t;
+    using Specialized_t  = typename LinProbTraits<SpLinProb>::Specialized_t;
     using Bucket_t       = Bucket<Key,Data,1>;
     using Cell_t   = std::pair<Key,Data>;
-    using HashFct_t      = typename CuckooTraits<SpLinProb>::HashFct_t;
-    using HistCount_t    = typename CuckooTraits<SpLinProb>::Config_t::HistCount_t;
+    using HashFct_t      = typename LinProbTraits<SpLinProb>::HashFct_t;
+    using HistCount_t    = typename LinProbTraits<SpLinProb>::Config_t::HistCount_t;
 
     friend Specialized_t;
 
@@ -63,13 +63,15 @@ public:
     bool insert(Key k, Data d);
     bool insert(std::pair<Key,Data> t);
     FRet find  (Key k) const;
-    bool remove(Key k);
+    bool remove(Key k) { return false; }
 
     /*** some functions for easier load visualization (not in final product) **/
     std::pair<size_t, Bucket_t*> getTable(size_t)
     { return std::make_pair(0, nullptr); }
     void clearHist()
     { for (size_t i = 0; i < hcounter.steps; ++i) hcounter.hist[i] = 0; }
+    inline static void print_init_header(std::ostream&) {}
+    inline static void print_init_data  (std::ostream&) {}
 
     /*** members that should become private at some point *********************/
     size_t     n;
@@ -78,9 +80,6 @@ public:
     HashFct_t  hasher;
     HistCount_t  hcounter;
     std::unique_ptr<Cell_t[]> table;
-
-    static constexpr size_t bs = 0;
-    static constexpr size_t tl = 0;
 
 private:
     /*** static polymorph functions *******************************************/
@@ -140,57 +139,20 @@ LinProbBase<SpLinProb>::find(Key k) const
     return std::make_pair(false, 0);
 }
 
-template<class SpLinProb>
-inline bool LinProbBase<SpLinProb>::remove(Key k)
-{
-    /*
-    auto ind = hash(k);
-    size_t i = ind;
-    while (true)
-    {
-        auto temp = table[i];
-        if ( temp.first == 0 )
-        {
-            return false;
-        }
-        else if ( temp.first == k )
-        {
-            auto i2 = i+1;
-            while (true)
-            {
-                auto temp2 = table[static_cast<SpLinProb*>(this)->mod(i2)];
-                if (temp2.first == 0)
-                    break;
-                else if (before(hash(temp2.first), i))
-                {
-                    table[i & bitmask] = temp2;
-                    i                  = i2;
-                }
-                i2++;
-            }
-            table[i & bitmask] = Cell_t(0, 0);
-        }
-
-        ++i;
-    }
-    */
-    return false;
-}
-
 
 template <class K, class D, class HF = std::hash<K>,
           class Conf = Config<> >
-class FastLinProb : public CuckooTraits<FastLinProb<K,D,HF,Conf> >::Base_t
+class FastLinProb : public LinProbTraits<FastLinProb<K,D,HF,Conf> >::Base_t
 {
 private:
     using This_t = FastLinProb<K,D,HF,Conf>;
-    using Base_t = typename CuckooTraits<This_t>::Base_t;
+    using Base_t = typename LinProbTraits<This_t>::Base_t;
 
     friend Base_t;
 
 public:
-    using Key    = typename CuckooTraits<This_t>::Key;
-    using Data   = typename CuckooTraits<This_t>::Data;
+    using Key    = typename LinProbTraits<This_t>::Key;
+    using Data   = typename LinProbTraits<This_t>::Data;
 
     static constexpr size_t bs = 0;
     static constexpr size_t tl = 0;
@@ -256,7 +218,7 @@ private:
 
 
 template<class K, class D, class HF, class Conf>
-class CuckooTraits<FastLinProb<K,D,HF,Conf> >
+class LinProbTraits<FastLinProb<K,D,HF,Conf> >
 {
 public:
     using Specialized_t = FastLinProb<K,D,HF,Conf>;
@@ -270,25 +232,22 @@ public:
 
 template <class K, class D, class HF = std::hash<K>,
           class Conf = Config<> >
-class SpaceLinProb : public CuckooTraits<SpaceLinProb<K,D,HF,Conf> >::Base_t
+class SpaceLinProb : public LinProbTraits<SpaceLinProb<K,D,HF,Conf> >::Base_t
 {
 private:
     using This_t = SpaceLinProb<K,D,HF,Conf>;
-    using Base_t = typename CuckooTraits<This_t>::Base_t;
+    using Base_t = typename LinProbTraits<This_t>::Base_t;
 
     friend Base_t;
 
 public:
-    using Key    = typename CuckooTraits<This_t>::Key;
-    using Data   = typename CuckooTraits<This_t>::Data;
-
-    static constexpr size_t bs = 0;
-    static constexpr size_t tl = 0;
+    using Key    = typename LinProbTraits<This_t>::Key;
+    using Data   = typename LinProbTraits<This_t>::Data;
 
     SpaceLinProb(size_t cap = 0      , double size_constraint = 1.1,
                  size_t dis_steps = 0, size_t /*seed*/ = 0)
         : Base_t(cap*size_constraint, dis_steps)
-    { }
+        { }
 
     SpaceLinProb(const SpaceLinProb&) = delete;
     SpaceLinProb& operator=(const SpaceLinProb&) = delete;
@@ -296,6 +255,7 @@ public:
     SpaceLinProb(SpaceLinProb&& rhs)  = default;
     SpaceLinProb& operator=(SpaceLinProb&& ) = default;
 
+    /* SHOULD CHANGE THIS TO THE MULTIPLY BY DOUBLE FACTOR VARIANT */
     inline size_t index(size_t i) const { return i % capacity; }
     inline size_t mod(size_t i)   const { return i % capacity; }
 
@@ -305,7 +265,7 @@ private:
 
 
 template<class K, class D, class HF, class Conf>
-class CuckooTraits<SpaceLinProb<K,D,HF,Conf> >
+class LinProbTraits<SpaceLinProb<K,D,HF,Conf> >
 {
 public:
     using Specialized_t = SpaceLinProb<K,D,HF,Conf>;

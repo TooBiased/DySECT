@@ -3,6 +3,7 @@
 #include <memory>
 #include <iostream>
 #include <tuple>
+#include <ratio>
 
 template <class Parent>
 class dstrat_triv
@@ -54,5 +55,19 @@ struct Config
     template <class T>
     using DisStrat_temp = DisStrat<T>;
 
+    using HistCount_t = HistCount;
+};
+
+template<size_t NS = 32, typename GRat = std::ratio<2,1> >
+struct HopscotchConfig
+{
+    static constexpr size_t NeighborSize = NS;
+    static constexpr double GrowRatio_d  = double(GRat::num)/double(GRat::den);
+    using GrowRatio = GRat;
+};
+
+template<class HistCount = no_hist_count>
+struct TrivConfig
+{
     using HistCount_t = HistCount;
 };

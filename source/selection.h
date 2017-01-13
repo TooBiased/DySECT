@@ -15,13 +15,13 @@
 #endif // NO HASHTYPE DEFINED => GROWS
 
 #ifdef LINPROB
-#define NONCUCKOO
+#define TRIV_CONFIG
 #include "include/lin_prob.h"
 #define  HASHTYPE FastLinProb
 #endif // LINPROB
 
 #ifdef SPACEPROB
-#define NONCUCKOO
+#define TRIV_CONFIG
 #include "include/lin_prob.h"
 #define  HASHTYPE SpaceLinProb
 #endif
@@ -33,7 +33,7 @@
 #endif
 
 #ifdef SPACEHOPSCOTCH
-#define NONCUCKOO
+#define HOPSCOTCH_CONFIG
 #include "include/hopscotch.h"
 #define  HASHTYPE SpaceHopscotch
 #endif
@@ -68,13 +68,13 @@
 
 #include "utils/commandline.h"
 
-#ifndef NONCUCKOO
-#define NORMAL
+#ifdef NONCUCKOO
+#define QUICK_MULTI
 #endif  // NONCUCKOO
 
 struct Chooser
 {
-#ifndef NORMAL
+#if defined QUICK_MULTI
     template<template<class> class Functor, class Hist,
              class ... Types>
     inline static typename std::result_of<Functor<Config<> >(Types&& ...)>::type
@@ -83,8 +83,7 @@ struct Chooser
         Functor<Config<> > f;
         return f(std::forward<Types>(param)...);
     }
-#else
-
+#elif defined MULTI
     template<template<class> class Functor, class Hist,
              class ... Types>
     inline static typename std::result_of<Functor<Config<> >(Types&& ...)>::type
@@ -188,6 +187,83 @@ struct Chooser
     {
         Functor<Config<BS,NH,TL,Displacer,Hist> > f;
         return f(std::forward<Types>(param)...);
+    }
+
+#elif defined HOPSCOTCH_CONFIG
+    template<template<class> class Functor, class Hist, class ... Types>
+    inline static typename std::result_of<Functor<HopscotchConfig<> >(Types&& ...)>::type
+    execute(CommandLine& c, Types&& ... param)
+    {
+        auto ns = c.intArg("-ns", HopscotchConfig<>::NeighborSize);
+        switch (ns)
+        {
+        case 8:
+            return executeN<Functor, 8>(c, std::forward<Types>(param)...);
+        case 16:
+            return executeN<Functor,12>(c, std::forward<Types>(param)...);
+        case 24:
+            return executeN<Functor,24>(c, std::forward<Types>(param)...);
+        case 32:
+            return executeN<Functor,32>(c, std::forward<Types>(param)...);
+        default:
+            constexpr auto tns = HopscotchConfig<>::NeighborSize;
+            std::cout << "ERROR: unknown ns value (use "
+                      << tns << ")" << std::endl;
+            return executeN<Functor,tns>(c, std::forward<Types>(param)...);
+        }
+    }
+
+    template<template<class> class Functor, size_t NS, class ... Types>
+    inline static typename std::result_of<Functor<HopscotchConfig<> >(Types&& ...)>::type
+    executeN(CommandLine& c, Types&& ... param)
+    {
+        double ratio = c.doubleArg("-rat", HopscotchConfig<>::GrowRatio_d);
+        if (ratio == 1.1)
+        {
+            return executeNR<Functor, NS, std::ratio<11,10> >
+                (std::forward<Types>(param)...);
+        }
+        else if (ratio == 1.15)
+        {
+            return executeNR<Functor, NS, std::ratio<23,20> >
+                (std::forward<Types>(param)...);
+        }
+        else if (ratio == 1.2)
+        {
+            return executeNR<Functor, NS, std::ratio<12,10> >
+                (std::forward<Types>(param)...);
+        }
+
+        std::cout << "ERROR: unknown grow ratio (rat) use "
+                  << HopscotchConfig<>::GrowRatio_d << std::endl;
+        return executeNR<Functor, NS, typename HopscotchConfig<>::GrowRatio>
+            (std::forward<Types>(param)...);
+    }
+
+    template<template<class> class Functor, size_t NS, class GRat, class ... Types>
+    inline static typename std::result_of<Functor<HopscotchConfig<> >(Types&& ...)>::type
+    executeNR(Types&& ... param)
+    {
+        Functor<HopscotchConfig<NS,GRat> > f;
+        return f(std::forward<Types>(param)...);
+    }
+
+#elif defined TRIV_CONFIG
+    template<template<class> class Functor, class Hist,
+             class ... Types>
+    inline static typename std::result_of<Functor<Config<> >(Types&& ...)>::type
+    execute(CommandLine&, Types&& ... param)
+    {
+        Functor<TrivConfig<Hist> > f;
+        return f(std::forward<Types>(param)...);
+    }
+
+#else
+
+    template<template<class> class Functor, class Hist, class ... Types>
+    inline static void execute(CommandLine&, Types&& ...)
+    {
+        std::cout << "some precompiler shit is broken" << std::endl;
     }
 #endif
 };

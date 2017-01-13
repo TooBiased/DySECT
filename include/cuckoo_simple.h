@@ -31,7 +31,9 @@ public:
                       size_t dis_steps = 0, size_t seed = 0)
         : Base_t(std::max(size_t((cap*size_constraint)/bs)*bs, bs), size_constraint,
                  dis_steps, seed),
-          n_buckets(std::max(size_t((cap*size_constraint)/bs), 1ul)), factor(double(n_buckets)/double(1ull<<32)),
+          beta((size_constraint + 1.)/2.), thresh(cap*beta),
+          n_buckets(std::max(size_t((cap*size_constraint)/bs), 1ul)),
+          factor(double(n_buckets)/double(1ull<<32)),
           table(new Bucket_t[n_buckets])
     { }
 
@@ -47,11 +49,21 @@ public:
                      : std::make_pair(0,nullptr);
     }
 
+
+    using Base_t::insert;
 private:
+    using Base_t::n;
+    using Base_t::capacity;
+    using Base_t::alpha;
+    double beta;
+    size_t thresh;
+    using Base_t::hasher;
+
     size_t n_buckets;
     double factor;
     std::unique_ptr<Bucket_t[]> table;
-    static constexpr size_t u32bitset = (1ull<<32) -1;
+    std::vector<std::pair<Key, Data> > grow_buffer;
+
 
     inline void getBuckets(Hashed_t h, Bucket_t** mem) const
     {
@@ -65,6 +77,64 @@ private:
     {
         size_t l = Ext::loc(h,i) * factor;
         return &(table[l]);
+    }
+
+    inline void inc_n()
+    {
+        if (++n > thresh) grow();
+    }
+
+    inline void grow()
+    {
+        size_t nsize = double(n) * alpha / double(bs);
+        nsize        = std::max(nsize, n+1);
+        capacity     = nsize*bs;
+        double nfactor = double(nsize)/double(1ull << 32);
+        size_t nthresh = n * beta;
+
+        auto ntable = std::make_unique<Bucket_t[]>(nsize);
+        migrate(ntable, nfactor);
+        if (grow_buffer.size()) finalize_grow();
+
+        n_buckets = nsize;
+        table     = std::move(ntable);
+        thresh    = nthresh;
+        factor    = nfactor;
+    }
+
+    inline void migrate(std::unique_ptr<Bucket_t[]>& target, double nfactor)
+    {
+        for (size_t i = 0; i < n_buckets; ++i)
+        {
+            Bucket_t& curr = table[i];
+
+            for (size_t j = 0; j < bs; ++j)
+            {
+                auto e = curr.elements[j];
+                if (! e.first) break;
+                auto hash = hasher(e.first);
+                for (size_t ti = 0; ti < nh; ++ti)
+                {
+                    if (i == size_t(Ext::loc(hash, i)*factor))
+                    {
+                        if (! target[Ext::loc(hash, ti) * nfactor].insert(e.first, e.second))
+                            grow_buffer.push_back(e);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    inline void finalize_grow()
+    {
+        size_t temp = n;
+        for (auto& e : grow_buffer)
+        {
+            insert(e);
+        }
+        n = temp;
+        grow_buffer.clear();
     }
 };
 

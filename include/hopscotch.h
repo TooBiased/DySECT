@@ -56,6 +56,7 @@ private:
 
 public:
     /*** for symmetry with my implementation **********************************/
+
     using HistCount_t = typename Conf::HistCount_t;
     using Bucket_t    = Bucket<K,D,1>;
     HistCount_t hcounter;
@@ -65,14 +66,21 @@ public:
 
     std::pair<size_t, Bucket_t*> getTable(size_t) { return std::make_pair(0ul, nullptr); }
     void clearHist() { }
+
+    /* VISUALISATION **********************************************************/
+
+
 };
 
 
-template<class K, class D, class HF = std::hash<K>, class Conf = Config<> >
+
+
+template<class K, class D, class HF = std::hash<K>, class Conf = HopscotchConfig<> >
 class SpaceHopscotch
 {
 private:
-    using Table_t = tsl::hopscotch_map<K,D,HF, std::equal_to<K>, std::allocator<std::pair<K,D> >, 32, std::ratio<5,4> >;
+    using Table_t = tsl::hopscotch_map<K,D,HF, std::equal_to<K>, std::allocator<std::pair<K,D> >,
+                                       Conf::NeighborSize, typename Conf::GrowRatio>;
     // template<class Key,
     //          class T,
     //          class Hash = std::hash<Key>,
@@ -89,7 +97,7 @@ public:
 
     SpaceHopscotch(size_t cap = 0, double size_constraint = 1.1,
               size_t /*dis_steps*/ = 0, size_t /*seed*/ = 0)
-        : table(cap*size_constraint), hcounter(0)
+        : table(cap*size_constraint)
     { }
 
     SpaceHopscotch(const SpaceHopscotch&) = delete;
@@ -107,10 +115,10 @@ public:
     {
         auto it = table.find(k);
         return std::make_pair((it!=table.end()), it->second);
-    } //correct
+    }
     bool remove(Key k)
     {
-        return false;
+        return erase(k);
     }
 
 private:
@@ -118,6 +126,7 @@ private:
 
 public:
     /*** for symmetry with my implementation **********************************/
+    /*
     using HistCount_t = typename Conf::HistCount_t;
     using Bucket_t    = Bucket<K,D,1>;
     HistCount_t hcounter;
@@ -127,4 +136,20 @@ public:
 
     std::pair<size_t, Bucket_t*> getTable(size_t) { return std::make_pair(0ul, nullptr); }
     void clearHist() { }
+    */
+
+    /* VISUALISATION **********************************************************/
+    inline static void print_init_header(std::ostream& out)
+    {
+        out.width(6); out << "nghb";
+        out.width(6); out << "grat";
+        out << std::flush;
+    }
+    inline static void print_init_data  (std::ostream& out)
+    {
+        out.width(6); out << Conf::NeighborSize;
+        out.width(6); out << Conf::GrowRatio_d;
+        out << std::flush;
+    }
+
 };

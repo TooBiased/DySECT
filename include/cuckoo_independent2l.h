@@ -106,6 +106,7 @@ private:
     size_t     ll_elem  [tl];
     size_t     ll_thresh[tl];
     double     ll_factor[tl];
+    std::vector<std::pair<Key, Data> > grow_buffer;
 
     inline void getBuckets(Hashed_t h, Bucket_t** mem) const
     {
@@ -126,10 +127,12 @@ private:
         //size_t nsize   = ll_size[tab] << 1;
         capacity      += nsize - ll_size[tab];
         double nfactor = double(nsize)      / fac_div;
-        size_t nthresh = double(bs * nsize) / beta;
+        size_t nthresh = ll_elem[tab] * beta;
 
         auto ntable = std::make_unique<Bucket_t[]>(nsize);
         migrate(tab, ntable, nfactor);
+
+        if (grow_buffer.size()) finalize_grow();
 
         ll_tab[tab]    = std::move(ntable);
         ll_size[tab]   = nsize;
@@ -156,7 +159,8 @@ private:
                 {
                     if (i == size_t(Ext::loc(hash, ti) * cfactor))
                     {
-                        if (! target[Ext::loc(hash, ti) * nfactor].insert(e.first, e.second)) std::cout << "!" << std::flush;
+                        if (! target[Ext::loc(hash, ti) * nfactor].insert(e))
+                            grow_buffer.push_back(e);
                         //bla = true;
                         break;
                     }
@@ -164,6 +168,17 @@ private:
                 //if (!bla) std::cout << "!" << std::flush;
             }
         }
+    }
+
+    inline void finalize_grow()
+    {
+        size_t temp = n;
+        for (auto& e : grow_buffer)
+        {
+            Base_t::insert(e);
+        }
+        n = temp;
+        grow_buffer.clear();
     }
 
 public:

@@ -41,15 +41,17 @@ endif()
 
 #### HASH TABLES ###############################################################
 
-set(HASH_TABLES_LIST "ceg2l;csimple;chomogeneous2l;cindependent2l;linprob;spaceprob")
+set(HASH_TABLES_LIST "ceg2l;csimple;chomogeneous2l;cindependent2l")
+set(NON_CUCKOO_LIST  "linprob;spaceprob")
 
 find_package(tslHopscotch)
 if (TSLHOPSCOTCH_FOUND)
   include_directories(${TSLHOPSCOTCH_INCLUDE_DIRS})
-  set(HASH_TABLES_LIST "${HASH_TABLES_LIST};hopscotch;spacehopscotch")
+  set(NON_CUCKOO_LIST "${NON_CUCKOO_LIST};hopscotch;spacehopscotch")
 endif()
 
 #### THE ONE STEP GROW EXECUTABLE ##############################################
+include_directories("/home/maier/RANDOM/malloc_count/")
 
 #Currently not up to date due to multichange + ... time
 
@@ -57,11 +59,23 @@ endif()
 #target_compile_definitions(step_all PRIVATE -D GROWS -D ${GROWS_HASHFCT})
 
 
+
 #### CONSTRUCT EXECUTABLE ######################################################
+#add_library(mallocc /home/maier/RANDOM/malloc_count/malloc_count.c)
 
 foreach(t in time)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${t})
   foreach(h ${HASH_TABLES_LIST})  #grows cuckoo hom2lvl triv_grow linprob)
+    string(TOUPPER ${h} h_uc)
+    add_executable(${t}_${h} source/${t}_test.cpp)
+    #add_dependencies(${t}_${h} mallocc)
+    target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${GROWS_HASHFCT} -D MALLOC_COUNT)
+  endforeach()
+endforeach()
+
+foreach(t time)
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${t})
+  foreach(h ${NON_CUCKOO_LIST})
     string(TOUPPER ${h} h_uc)
     add_executable(${t}_${h} source/${t}_test.cpp)
     target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${GROWS_HASHFCT})

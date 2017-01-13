@@ -87,6 +87,20 @@ public:
     { return static_cast<Specialized_t*>(this)->getTable(i); }
     void clearHist()
     { for (size_t i = 0; i < hcounter.steps; ++i) hcounter.hist[i] = 0; }
+    inline static void print_init_header(std::ostream& out)
+    {
+        out.width(5); out << "bsize";
+        out.width(5); out << "ntabl";
+        out.width(5); out << "nhash";
+        out << std::flush;
+    }
+    inline static void print_init_data(std::ostream& out)
+    {
+        out.width(5); out << bs;
+        out.width(5); out << tl;
+        out.width(5); out << nh;
+        out << std::flush;
+    }
 
     /*** members that should become private at some point *********************/
     size_t       n;

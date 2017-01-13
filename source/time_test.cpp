@@ -8,6 +8,10 @@
 #include "utils/hashfct.h"
 #include "utils/commandline.h"
 
+#ifdef MALLOC_COUNT
+#include "malloc_count.c"
+#endif
+
 #include <random>
 #include <iostream>
 #include <fstream>
@@ -29,9 +33,10 @@ struct Test
     {
         print(out, "# it"  , 4);
         print(out, "alpha" , 5);
-        print(out, "bsize" , 5);
-        print(out, "ntabl" , 5);
-        print(out, "nhash" , 5);
+        Table::print_init_header(out);
+        //print(out, "bsize" , 5);
+        //print(out, "ntabl" , 5);
+        //print(out, "nhash" , 5);
         print(out, "cap"   , 9);
         print(out, "n_pre" , 9);
         print(out, "n_main", 9);
@@ -40,20 +45,24 @@ struct Test
         print(out, "t_find", 8);
         print(out, "unsucc", 6);
         print(out, "lost"  , 6);
+        #ifdef MALLOC_COUNT
+        print(out, "space" , 14);
+        #endif
         out << std::endl;
     }
 
     inline void print_timing(std::ostream& out, size_t i,
-                             double alpha, size_t bs  , size_t tl, size_t nh,
+                             double alpha,
                              size_t cap  , size_t pre , size_t n ,
                              double d_pre, double d_in, double d_fn,
                              size_t unsucc, size_t lost_elem)
     {
         print(out, i        , 4);
         print(out, alpha    , 5);
-        print(out, bs       , 5);
-        print(out, tl       , 5);
-        print(out, nh       , 5);
+        Table::print_init_data(out);
+        //print(out, bs       , 5);
+        //print(out, tl       , 5);
+        //print(out, nh       , 5);
         print(out, cap      , 9);
         print(out, pre      , 9);
         print(out, n        , 9);
@@ -62,6 +71,9 @@ struct Test
         print(out, d_fn     , 8);
         print(out, unsucc   , 6);
         print(out, lost_elem, 6);
+        #ifdef MALLOC_COUNT
+        print(out, malloc_count_current() - 8*(n+pre), 14);
+        #endif
         out << std::endl;
     }
 
@@ -118,8 +130,7 @@ struct Test
             double d_in  = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()/1000.;
             double d_fn  = std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count()/1000.;
 
-            print_timing(file, i, alpha, Config::bs, Config::tl, Config::nh,
-                         cap, pre, n, d_pre, d_in, d_fn,
+            print_timing(file, i, alpha, cap, pre, n, d_pre, d_in, d_fn,
                          errors, n - errors -count);
         }
 

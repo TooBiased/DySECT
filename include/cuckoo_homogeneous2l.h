@@ -90,13 +90,16 @@ public:
     using Base_t::alpha;
     using Base_t::capacity;
     using Base_t::hasher;
+    using Base_t::insert;
 
 private:
     size_t                      ll_size;
     double                      beta;
     size_t                      thresh;
     double                      factor;
+
     std::unique_ptr<Bucket_t[]> ll_table[tl];
+    std::vector<std::pair<Key, Data> > grow_buffer;
 
     inline void getBuckets(Hashed_t h, Bucket_t** mem) const
     {
@@ -131,6 +134,8 @@ private:
             ll_table[i] = std::move(ntable);
         }
 
+        if (grow_buffer.size()) finalize_grow();
+
         ll_size  = nll_size;
         factor   = nfactor;
         capacity = ll_size*tl*bs;
@@ -156,11 +161,23 @@ private:
                     if ((ind == Ext::tab(hash,ti)) &&
                         (i   == size_t(Ext::loc(hash, ti)*factor)))
                     {
-                        target[Ext::loc(hash,ti) * tfactor].insert(element);
+                        if (!target[Ext::loc(hash,ti) * tfactor].insert(element))
+                            grow_buffer.push_back(element);
                     }
                 }
             }
         }
+    }
+
+    inline void finalize_grow()
+    {
+        size_t temp = n;
+        for (auto& e : grow_buffer)
+        {
+            insert(e);
+        }
+        n = temp;
+        grow_buffer.clear();
     }
 };
 
