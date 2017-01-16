@@ -48,7 +48,7 @@ public:
     } //correct
     bool remove(Key k)
     {
-        return false;
+        return erase(k);
     }
 
 private:
@@ -68,7 +68,10 @@ public:
     void clearHist() { }
 
     /* VISUALISATION **********************************************************/
-
+    static void print_init_header(std::ostream&)
+        { }
+    static void print_init_data(std::ostream&)
+        { }
 
 };
 

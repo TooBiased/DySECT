@@ -200,7 +200,7 @@ struct Chooser
         case 8:
             return executeN<Functor, 8>(c, std::forward<Types>(param)...);
         case 16:
-            return executeN<Functor,12>(c, std::forward<Types>(param)...);
+            return executeN<Functor,16>(c, std::forward<Types>(param)...);
         case 24:
             return executeN<Functor,24>(c, std::forward<Types>(param)...);
         case 32:
@@ -218,17 +218,18 @@ struct Chooser
     executeN(CommandLine& c, Types&& ... param)
     {
         double ratio = c.doubleArg("-rat", HopscotchConfig<>::GrowRatio_d);
-        if (ratio == 1.1)
+        std::cout << ratio << std::endl;
+        if (ratio < 1.101)
         {
             return executeNR<Functor, NS, std::ratio<11,10> >
                 (std::forward<Types>(param)...);
         }
-        else if (ratio == 1.15)
+        else if (ratio < 1.1501)
         {
             return executeNR<Functor, NS, std::ratio<23,20> >
                 (std::forward<Types>(param)...);
         }
-        else if (ratio == 1.2)
+        else if (ratio < 1.201)
         {
             return executeNR<Functor, NS, std::ratio<12,10> >
                 (std::forward<Types>(param)...);

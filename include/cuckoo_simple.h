@@ -26,16 +26,23 @@ public:
     using Key            = typename CuckooTraits<This_t>::Key;
     using Data           = typename CuckooTraits<This_t>::Data;
 
+    static constexpr size_t comp_n_bucket(size_t n, double constraint)
+    {
+        return std::max(size_t(1024), size_t((double(n)*constraint)/double(bs)));
+    }
 
     CuckooSimple(size_t cap = 0      , double size_constraint = 1.1,
-                      size_t dis_steps = 0, size_t seed = 0)
-        : Base_t(std::max(size_t((cap*size_constraint)/bs)*bs, bs), size_constraint,
+                 size_t dis_steps = 0, size_t seed = 0)
+        : Base_t(comp_n_bucket(cap,size_constraint)*bs, size_constraint,
                  dis_steps, seed),
-          beta((size_constraint + 1.)/2.), thresh(cap*beta),
-          n_buckets(std::max(size_t((cap*size_constraint)/bs), 1ul)),
+          beta((size_constraint + 1.)/2.), thresh(std::max(1024*bs, cap)*beta),
+          n_buckets(comp_n_bucket(cap, size_constraint)),
           factor(double(n_buckets)/double(1ull<<32)),
           table(new Bucket_t[n_buckets])
-    { }
+    {
+        //std::cout <<  "cap:"     << capacity << " buck:" << n_buckets
+        //          << " thresh:" << thresh   << " beta:" << beta << std::endl;
+    }
 
     CuckooSimple(const CuckooSimple&) = delete;
     CuckooSimple& operator=(const CuckooSimple&) = delete;
@@ -51,8 +58,8 @@ public:
 
 
     using Base_t::insert;
-private:
     using Base_t::n;
+private:
     using Base_t::capacity;
     using Base_t::alpha;
     double beta;
@@ -86,20 +93,23 @@ private:
 
     inline void grow()
     {
-        size_t nsize = double(n) * alpha / double(bs);
-        nsize        = std::max(nsize, n+1);
+        if (grow_buffer.size()) return;
+        size_t nsize = comp_n_bucket(n, alpha);
+        nsize        = std::max(nsize, n_buckets+1);
         capacity     = nsize*bs;
         double nfactor = double(nsize)/double(1ull << 32);
         size_t nthresh = n * beta;
 
+        //std::cout << n << " " << n_buckets << " -> " << nsize << std::endl;
+
         auto ntable = std::make_unique<Bucket_t[]>(nsize);
         migrate(ntable, nfactor);
-        if (grow_buffer.size()) finalize_grow();
 
         n_buckets = nsize;
         table     = std::move(ntable);
         thresh    = nthresh;
         factor    = nfactor;
+        if (grow_buffer.size()) finalize_grow();
     }
 
     inline void migrate(std::unique_ptr<Bucket_t[]>& target, double nfactor)
@@ -115,10 +125,12 @@ private:
                 auto hash = hasher(e.first);
                 for (size_t ti = 0; ti < nh; ++ti)
                 {
-                    if (i == size_t(Ext::loc(hash, i)*factor))
+                    if (i == size_t(Ext::loc(hash, ti)*factor))
                     {
                         if (! target[Ext::loc(hash, ti) * nfactor].insert(e.first, e.second))
+                        {
                             grow_buffer.push_back(e);
+                        }
                         break;
                     }
                 }

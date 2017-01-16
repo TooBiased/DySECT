@@ -34,15 +34,16 @@ public:
                        size_t dis_steps = 0, size_t seed = 0)
         : Base_t(0, size_constraint, dis_steps, seed),
           ll_size(std::floor(double(cap) * size_constraint / double(tl*bs))),
-          beta((size_constraint+1.)/2.), thresh(double(cap)*beta),
+          beta((size_constraint+1.)/2.), thresh(),
           factor(double(ll_size)/double(1ull << (32-ct_log(tl))))
     {
-        std::cout << beta << std::endl;
         for (size_t i = 0; i < tl; ++i)
         {
             ll_table[i] = std::make_unique<Bucket_t[]>(ll_size);
         }
         capacity    = tl * ll_size * bs;
+        thresh      = double(capacity) / beta;
+
         //factor      = double(ll_size) / double(1ull << (32 - ct_log(tl)));
     }
 
@@ -77,7 +78,6 @@ public:
 
     ~CuckooHomogeneous2L()
     {
-        std::cout << n << std::endl;
     }
 
     std::pair<size_t, Bucket_t*> getTable(size_t i)
@@ -122,10 +122,8 @@ private:
     void grow()
     {
         size_t nll_size = std::floor(double(n)*alpha / double(tl*bs));
-        //size_t nll_size = ll_size << 1;
         nll_size = std::max(nll_size, ll_size+1);
         double nfactor  = double(nll_size)/double(1ull << (32-ct_log(tl)));
-        std::cout << ll_size << "->" << nll_size << " *" << 1./nfactor << std::endl;
 
         for (size_t i = 0; i < tl; ++i)
         {
@@ -134,12 +132,11 @@ private:
             ll_table[i] = std::move(ntable);
         }
 
-        if (grow_buffer.size()) finalize_grow();
-
         ll_size  = nll_size;
         factor   = nfactor;
         capacity = ll_size*tl*bs;
         thresh   = double(n)*beta;
+        if (grow_buffer.size()) finalize_grow();
     }
 
     inline void migrate(size_t ind, std::unique_ptr<Bucket_t[]>& target, double tfactor)

@@ -122,6 +122,8 @@ private:
 
     inline void grow(size_t tab)
     {
+        //TODO make this prettier
+        if (grow_buffer.size()) return;
         size_t nsize   = std::floor(double(ll_elem[tab]) * alpha / double(bs));
         nsize          = std::max(nsize, ll_size[tab]+1);
         //size_t nsize   = ll_size[tab] << 1;
@@ -132,12 +134,12 @@ private:
         auto ntable = std::make_unique<Bucket_t[]>(nsize);
         migrate(tab, ntable, nfactor);
 
-        if (grow_buffer.size()) finalize_grow();
-
         ll_tab[tab]    = std::move(ntable);
         ll_size[tab]   = nsize;
         ll_factor[tab] = nfactor;
         ll_thresh[tab] = nthresh;
+        if (grow_buffer.size()) finalize_grow();
+
     }
 
     inline void migrate(size_t tab, std::unique_ptr<Bucket_t[]>& target, double nfactor)

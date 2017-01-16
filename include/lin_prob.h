@@ -63,7 +63,7 @@ public:
     bool insert(Key k, Data d);
     bool insert(std::pair<Key,Data> t);
     FRet find  (Key k) const;
-    bool remove(Key k) { return false; }
+    bool remove(Key k);// { return false; }
 
     /*** some functions for easier load visualization (not in final product) **/
     std::pair<size_t, Bucket_t*> getTable(size_t)
@@ -83,6 +83,9 @@ public:
 
 private:
     /*** static polymorph functions *******************************************/
+    inline size_t h(Key k) const
+    { return static_cast<const Specialized_t*>(this)->index(hasher(k)); }
+    void propagate_remove(size_t origin);
     inline void inc_n() { ++n; }
     inline void dec_n() { --n; }
 };
@@ -99,7 +102,7 @@ inline bool LinProbBase<SpLinProb>::insert(Key k, Data d)
 template<class SpLinProb>
 inline bool LinProbBase<SpLinProb>::insert(std::pair<Key, Data> t)
 {
-    auto ind = static_cast<const Specialized_t*>(this)->index(hasher(t.first));
+    auto ind = h(t.first);
 
     for (size_t i = ind; ; ++i)
     {
@@ -120,7 +123,7 @@ template<class SpLinProb>
 inline typename LinProbBase<SpLinProb>::FRet
 LinProbBase<SpLinProb>::find(Key k) const
 {
-    auto ind = static_cast<const Specialized_t*>(this)->index(hasher(k));
+    auto ind = h(k);
 
     for (size_t i = ind; ; ++i)
     {
@@ -139,6 +142,48 @@ LinProbBase<SpLinProb>::find(Key k) const
     return std::make_pair(false, 0);
 }
 
+template<class SpLinProb>
+inline bool LinProbBase<SpLinProb>::remove(Key k)
+{
+    auto ind = h(k);
+
+    for (size_t i = ind; ; ++i)
+    {
+        size_t ti = static_cast<const SpLinProb*>(this)->mod(i);
+        auto temp = table[ti];
+
+        if ( temp.first == 0 )
+        {
+            break;
+        }
+        else if ( temp.first == k )
+        {
+            dec_n();
+            table[ti] = std::make_pair(0,0);
+            propagate_remove(ti);
+            return true;
+        }
+    }
+    return false;
+}
+
+template<class SpLinProb>
+inline void LinProbBase<SpLinProb>::propagate_remove(size_t origin)
+{
+    size_t tempn = n;
+    n = 0;
+    for (size_t i = origin+1; ; ++i)
+    {
+        size_t ti = static_cast<const SpLinProb*>(this)->mod(i);
+        auto temp = table[ti];
+
+        if (temp.first == 0) break;
+
+        table[ti] = std::make_pair(0,0);
+        insert(temp);
+    }
+    n = tempn;
+}
 
 template <class K, class D, class HF = std::hash<K>,
           class Conf = Config<> >
@@ -246,8 +291,12 @@ public:
 
     SpaceLinProb(size_t cap = 0      , double size_constraint = 1.1,
                  size_t dis_steps = 0, size_t /*seed*/ = 0)
-        : Base_t(cap*size_constraint, dis_steps)
-        { }
+        : Base_t(0, dis_steps), alpha(size_constraint), beta((alpha+1.)/2.)
+    {
+        size_t c = std::max(cap, size_t(2048));
+        init(c*alpha);
+        thresh = c*beta;
+    }
 
     SpaceLinProb(const SpaceLinProb&) = delete;
     SpaceLinProb& operator=(const SpaceLinProb&) = delete;
@@ -260,7 +309,37 @@ public:
     inline size_t mod(size_t i)   const { return i % capacity; }
 
 private:
+    inline void grow()
+    {
+        std::cout << "g" << std::flush;
+        //auto nsize  = n*alpha;
+        auto ntable = This_t(n, alpha, steps);
+
+        for (size_t i = 0; i < capacity; ++i)
+        {
+            auto temp = table[i];
+            if (temp.first)
+            {
+                ntable.insert(temp);
+            }
+        }
+
+        std::swap(capacity   , ntable.capacity);
+        std::swap(table      , ntable.table);
+        std::swap(thresh     , ntable.thresh);
+    }
+
+    inline void inc_n() { ++n; if (n > thresh) grow(); }
+
     using Base_t::capacity;
+    using Base_t::n;
+    using Base_t::table;
+    using Base_t::steps;
+    double alpha;
+    double beta;
+    size_t thresh;
+
+    using Base_t::init;
 };
 
 

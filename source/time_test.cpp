@@ -9,7 +9,7 @@
 #include "utils/commandline.h"
 
 #ifdef MALLOC_COUNT
-#include "malloc_count.c"
+#include "malloc_count.h"
 #endif
 
 #include <random>
@@ -42,7 +42,8 @@ struct Test
         print(out, "n_main", 9);
         print(out, "t_pre" , 8);
         print(out, "t_in"  , 8);
-        print(out, "t_find", 8);
+        print(out, "t_find+", 8);
+        print(out, "t_find-", 8);
         print(out, "unsucc", 6);
         print(out, "lost"  , 6);
         #ifdef MALLOC_COUNT
@@ -54,7 +55,7 @@ struct Test
     inline void print_timing(std::ostream& out, size_t i,
                              double alpha,
                              size_t cap  , size_t pre , size_t n ,
-                             double d_pre, double d_in, double d_fn,
+                             double d_pre, double d_in, double d_fn, double d_fn2,
                              size_t unsucc, size_t lost_elem)
     {
         print(out, i        , 4);
@@ -69,10 +70,11 @@ struct Test
         print(out, d_pre    , 8);
         print(out, d_in     , 8);
         print(out, d_fn     , 8);
+        print(out, d_fn2    , 8);
         print(out, unsucc   , 6);
         print(out, lost_elem, 6);
         #ifdef MALLOC_COUNT
-        print(out, malloc_count_current() - 8*(n+pre), 14);
+        print(out, malloc_count_current() - 8*(2*n+pre), 14);
         #endif
         out << std::endl;
     }
@@ -82,12 +84,12 @@ struct Test
     {
         constexpr size_t range = (1ull<<63) -1;
 
-        size_t* keys = new size_t[n+pre];
+        size_t* keys = new size_t[2*n+pre];
 
         std::uniform_int_distribution<uint64_t> dis(1,range);
         std::mt19937_64 re;
 
-        for (size_t i = 0; i < n+pre; ++i)
+        for (size_t i = 0; i < 2*n+pre; ++i)
         {
             keys[i] = dis(re);
         }
@@ -98,14 +100,15 @@ struct Test
 
         for (size_t i = 0; i < it; ++i)
         {
-            auto errors = 0;
+            auto pre_errors = 0;
+            auto in_errors = 0;
 
             Table table(cap, alpha, steps);
 
             auto t0 = std::chrono::high_resolution_clock::now();
             for (size_t i = 0; i < pre; ++i)
             {
-                table.insert(keys[i], i);
+                if (!table.insert(keys[i], i)) ++pre_errors;
             }
 
             auto t1 = std::chrono::high_resolution_clock::now();
@@ -113,7 +116,8 @@ struct Test
             {
                 if (!table.insert(keys[i], i))
                 {
-                    ++errors;
+                    //std::cout << table.n << " " << std::flush;
+                    ++in_errors;
                 }
             }
 
@@ -125,13 +129,23 @@ struct Test
                 if (e.first && (e.second == i)) count++;
             }
             auto t3 = std::chrono::high_resolution_clock::now();
+            auto fin_errors = 0;
+            for (size_t i = pre+n; i < pre+2*n; ++i)
+            {
+                auto e = table.find(keys[i]);
+                if (e.first) fin_errors++;
+            }
+            auto t4 = std::chrono::high_resolution_clock::now();
 
             double d_pre = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count()/1000.;
             double d_in  = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()/1000.;
             double d_fn  = std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count()/1000.;
+            double d_fn2 = std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count()/1000.;
 
-            print_timing(file, i, alpha, cap, pre, n, d_pre, d_in, d_fn,
-                         errors, n - errors -count);
+            if (pre_errors) file << "PREINSERTION ERRORS" << std::endl;
+            if (fin_errors) file << "FIND ERRORS" << std::endl;
+            print_timing(file, i, alpha, cap, pre, n, d_pre, d_in, d_fn, d_fn2,
+                         in_errors, n - in_errors -count);
         }
 
         delete[] keys;

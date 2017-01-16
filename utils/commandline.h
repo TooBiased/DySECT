@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <tuple>
+#include <clocale>
 
 
 /*
@@ -21,7 +22,7 @@ public:
     {
         return p.second;
     }
-    
+
     operator bool() const
     {
         return p.first;
@@ -32,16 +33,17 @@ public:
 
 class CommandLine
 {
-public:    
+public:
     CommandLine(int argn, char** argc)
     {
+        std::setlocale(LC_ALL, "en_US.UTF-8");
         for (size_t i = 0; i < size_t(argn); ++i)
         {
             params.emplace_back(argc[i]);
             flags .push_back   (ParamCodes::unused);
         }
     }
-    
+
     std::string strArg(const std::string& name, const std::string def = "")
     {
         auto ind = findName(name);
@@ -85,7 +87,7 @@ public:
                       << std::endl;
         }
         return def;
-        
+
     }
 
     double doubleArg(const std::string& name, double def = 0.)
