@@ -77,12 +77,10 @@ inline bool Bucket<K,D,BS>::remove(Key k)
     {
         if (elements[i].first == k)
         {
-            for (size_t j = i+1; j < BS; ++j)
-            {
-                if (elements[j].first) { elements[i] = elements[j]; i = j; }
-                else break;
-            }
-            elements[i] = std::make_pair(Key(), Data());
+            size_t j = BS-1;
+            for ( ; !elements[j].first; --j ) { }
+            elements[i] = elements[j];
+            elements[j] = std::make_pair(Key(), Data());
             return true;
         }
         else if (! elements[i].first)

@@ -31,65 +31,66 @@ struct Test
 
     inline void print_headline(std::ostream& out)
     {
-        print(out, "# it"  , 4);
-        print(out, "alpha" , 5);
+        print(out, "# it"   , 4);
+        print(out, "alpha"  , 5);
         Table::print_init_header(out);
-        //print(out, "bsize" , 5);
-        //print(out, "ntabl" , 5);
-        //print(out, "nhash" , 5);
-        print(out, "cap"   , 9);
-        print(out, "n_pre" , 9);
-        print(out, "n_main", 9);
-        print(out, "t_pre" , 8);
-        print(out, "t_in"  , 8);
+        print(out, "cap"    , 9);
+        print(out, "n_0"  , 9);
+        print(out, "n_full" , 9);
+        print(out, "t_in0"  , 8);
+        print(out, "t_in1"  , 8);
         print(out, "t_find+", 8);
         print(out, "t_find-", 8);
-        print(out, "unsucc", 6);
-        print(out, "lost"  , 6);
+        print(out, "in_err" , 6);
+        print(out, "fi_err" , 6);
         #ifdef MALLOC_COUNT
-        print(out, "space" , 14);
+        print(out, "memory" , 14);
         #endif
         out << std::endl;
     }
 
-    inline void print_timing(std::ostream& out, size_t i,
+    inline void print_timing(std::ostream& out,
+                             size_t i,
                              double alpha,
-                             size_t cap  , size_t pre , size_t n ,
-                             double d_pre, double d_in, double d_fn, double d_fn2,
-                             size_t unsucc, size_t lost_elem)
+                             size_t cap  ,
+                             size_t n0 ,
+                             size_t n ,
+                             double d_in0,
+                             double d_in1,
+                             double d_fn0,
+                             double d_fn1,
+                             size_t in_err,
+                             size_t fi_err)
     {
-        print(out, i        , 4);
-        print(out, alpha    , 5);
+        print(out, i     , 4);
+        print(out, alpha , 5);
         Table::print_init_data(out);
-        //print(out, bs       , 5);
-        //print(out, tl       , 5);
-        //print(out, nh       , 5);
-        print(out, cap      , 9);
-        print(out, pre      , 9);
-        print(out, n        , 9);
-        print(out, d_pre    , 8);
-        print(out, d_in     , 8);
-        print(out, d_fn     , 8);
-        print(out, d_fn2    , 8);
-        print(out, unsucc   , 6);
-        print(out, lost_elem, 6);
+        print(out, cap   , 9);
+        print(out, n0    , 9);
+        print(out, n     , 9);
+        print(out, d_in0 , 8);
+        print(out, d_in1 , 8);
+        print(out, d_fn0 , 8);
+        print(out, d_fn1 , 8);
+        print(out, in_err, 6);
+        print(out, fi_err, 6);
         #ifdef MALLOC_COUNT
-        print(out, malloc_count_current() - 8*(2*n+pre), 14);
+        print(out, malloc_count_current() - 8*2*n, 14);
         #endif
         out << std::endl;
     }
 
-    int operator()(size_t it, size_t n, size_t pre,  size_t cap, size_t steps,
+    int operator()(size_t it, size_t n, size_t n0,  size_t cap, size_t steps,
                    double alpha, std::string name)
     {
         constexpr size_t range = (1ull<<63) -1;
 
-        size_t* keys = new size_t[2*n+pre];
+        size_t* keys = new size_t[2*n];
 
         std::uniform_int_distribution<uint64_t> dis(1,range);
         std::mt19937_64 re;
 
-        for (size_t i = 0; i < 2*n+pre; ++i)
+        for (size_t i = 0; i < 2*n; ++i)
         {
             keys[i] = dis(re);
         }
@@ -100,52 +101,46 @@ struct Test
 
         for (size_t i = 0; i < it; ++i)
         {
-            auto pre_errors = 0;
-            auto in_errors = 0;
-
             Table table(cap, alpha, steps);
 
+            auto in_errors = 0ull;
+            auto fin_errors = 0ull;
+
             auto t0 = std::chrono::high_resolution_clock::now();
-            for (size_t i = 0; i < pre; ++i)
+            for (size_t i = 0; i < n0; ++i)
             {
-                if (!table.insert(keys[i], i)) ++pre_errors;
+                if (!table.insert(keys[i], i)) ++in_errors;
             }
 
             auto t1 = std::chrono::high_resolution_clock::now();
-            for (size_t i = pre; i < pre + n; ++i)
+            for (size_t i = n0; i < n; ++i)
             {
-                if (!table.insert(keys[i], i))
-                {
-                    //std::cout << table.n << " " << std::flush;
-                    ++in_errors;
-                }
+                if (!table.insert(keys[i], i)) ++in_errors;
             }
 
             auto t2 = std::chrono::high_resolution_clock::now();
-            auto count = 0;
-            for (size_t i = pre; i < pre + n; ++i)
+            for (size_t i = 0; i < n; ++i)
             {
                 auto e = table.find(keys[i]);
-                if (e.first && (e.second == i)) count++;
+                if (!e.first || (e.second != i))
+                    fin_errors++;
             }
             auto t3 = std::chrono::high_resolution_clock::now();
-            auto fin_errors = 0;
-            for (size_t i = pre+n; i < pre+2*n; ++i)
+            for (size_t i = n; i < 2*n; ++i)
             {
                 auto e = table.find(keys[i]);
-                if (e.first) fin_errors++;
+                if (e.first && (keys[e.second] != keys[i]))
+                    fin_errors++;
             }
             auto t4 = std::chrono::high_resolution_clock::now();
 
-            double d_pre = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count()/1000.;
-            double d_in  = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()/1000.;
-            double d_fn  = std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count()/1000.;
-            double d_fn2 = std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count()/1000.;
+            double d_in0 = std::chrono::duration_cast<std::chrono::microseconds> (t1 - t0).count()/1000.;
+            double d_in1 = std::chrono::duration_cast<std::chrono::microseconds> (t2 - t1).count()/1000.;
+            double d_fn0 = std::chrono::duration_cast<std::chrono::microseconds> (t3 - t2).count()/1000.;
+            double d_fn1 = std::chrono::duration_cast<std::chrono::microseconds> (t4 - t3).count()/1000.;
 
-            if (pre_errors) file << "PREINSERTION ERRORS" << std::endl;
-            if (fin_errors) file << "FIND ERRORS" << std::endl;
-            print_timing(file, i, alpha, cap, pre, n, d_pre, d_in, d_fn, d_fn2,
-                         in_errors, n - in_errors -count);
+            print_timing(file, i, alpha, cap, n0, n, d_in0, d_in1, d_fn0, d_fn1,
+                         in_errors, fin_errors);
         }
 
         delete[] keys;
@@ -158,12 +153,13 @@ int main(int argn, char** argc)
 {
     CommandLine c(argn, argc);
     const size_t      it    = c.intArg("-it"   , 5);
-    const size_t      pre   = c.intArg("-pre"  , 1000000);
-    const size_t      n     = c.intArg("-n"    , 1000000);
-    const size_t      cap   = c.intArg("-cap"  , pre + n);
+    const size_t      n     = c.intArg("-n"    , 2000000);
+    const size_t      n0    = c.intArg("-pre"  , n/2);
+    if (n0 > n) std::cout << "n0 has to be smaller than n! set n = n0 = " << n0 << std::endl;
+    const size_t      cap   = c.intArg("-cap"  , n);
     const size_t      steps = c.intArg("-steps", 512);
     const std::string name  = c.strArg("-out"  , "temp");
     const double      alpha = c.doubleArg("-alpha", 1.1);
 
-    return Chooser::execute<Test,no_hist_count> (c, it, n, pre, cap, steps, alpha, name);
+    return Chooser::execute<Test,no_hist_count> (c, it, n, n0, cap, steps, alpha, name);
 }

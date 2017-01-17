@@ -89,16 +89,16 @@ public:
     { for (size_t i = 0; i < hcounter.steps; ++i) hcounter.hist[i] = 0; }
     inline static void print_init_header(std::ostream& out)
     {
-        out.width(5); out << "bsize";
-        out.width(5); out << "ntabl";
-        out.width(5); out << "nhash";
+        out.width(6); out << "bsize";
+        out.width(6); out << "ntabl";
+        out.width(6); out << "nhash";
         out << std::flush;
     }
     inline static void print_init_data(std::ostream& out)
     {
-        out.width(5); out << bs;
-        out.width(5); out << tl;
-        out.width(5); out << nh;
+        out.width(6); out << bs;
+        out.width(6); out << tl;
+        out.width(6); out << nh;
         out << std::flush;
     }
 

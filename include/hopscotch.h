@@ -48,7 +48,7 @@ public:
     } //correct
     bool remove(Key k)
     {
-        return erase(k);
+        return table.erase(k);
     }
 
 private:
@@ -69,9 +69,9 @@ public:
 
     /* VISUALISATION **********************************************************/
     static void print_init_header(std::ostream&)
-        { }
+    { }
     static void print_init_data(std::ostream&)
-        { }
+    { }
 
 };
 
@@ -121,7 +121,7 @@ public:
     }
     bool remove(Key k)
     {
-        return erase(k);
+        return table.erase(k);
     }
 
 private:

@@ -92,6 +92,7 @@ public:
 
     double doubleArg(const std::string& name, double def = 0.)
     {
+        std::setlocale(LC_ALL, "en_US.UTF-8");
         auto ind = findName(name);
         if (ind+1 < params.size())
         {

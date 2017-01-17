@@ -217,7 +217,7 @@ struct Chooser
     inline static typename std::result_of<Functor<HopscotchConfig<> >(Types&& ...)>::type
     executeN(CommandLine& c, Types&& ... param)
     {
-        double ratio = c.doubleArg("-rat", HopscotchConfig<>::GrowRatio_d);
+        double ratio = c.doubleArg("-alpha", HopscotchConfig<>::GrowRatio_d);
         std::cout << ratio << std::endl;
         if (ratio < 1.101)
         {
@@ -235,7 +235,7 @@ struct Chooser
                 (std::forward<Types>(param)...);
         }
 
-        std::cout << "ERROR: unknown grow ratio (rat) use "
+        std::cout << "ERROR: unknown grow ratio (alpha) use "
                   << HopscotchConfig<>::GrowRatio_d << std::endl;
         return executeNR<Functor, NS, typename HopscotchConfig<>::GrowRatio>
             (std::forward<Types>(param)...);
