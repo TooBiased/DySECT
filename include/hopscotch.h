@@ -146,12 +146,14 @@ public:
     {
         out.width(6); out << "nghb";
         out.width(6); out << "grat";
+        out.width(9); out << "f_cap";
         out << std::flush;
     }
-    inline static void print_init_data  (std::ostream& out)
+    inline void print_init_data  (std::ostream& out)
     {
         out.width(6); out << Conf::NeighborSize;
         out.width(6); out << Conf::GrowRatio_d;
+        out.width(9); out << table.bucket_count();
         out << std::flush;
     }
 

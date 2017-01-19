@@ -8,6 +8,7 @@
      !CINDEPENDENT2L  && \
      !LINPROB         && \
      !SPACEPROB       && \
+     !ROBINPROB       && \
      !HOPSCOTCH       && \
      !SPACEHOPSCOTCH)
 #warning WARNING: No table chosen using! CEG2L
@@ -24,6 +25,12 @@
 #define TRIV_CONFIG
 #include "include/lin_prob.h"
 #define  HASHTYPE SpaceLinProb
+#endif
+
+#ifdef ROBINPROB
+#define TRIV_CONFIG
+#include "include/lin_prob.h"
+#define  HASHTYPE RobinProb
 #endif
 
 #ifdef HOPSCOTCH
@@ -205,6 +212,9 @@ struct Chooser
             return executeN<Functor,24>(c, std::forward<Types>(param)...);
         case 32:
             return executeN<Functor,32>(c, std::forward<Types>(param)...);
+        case 62:
+        case 64:
+            return executeN<Functor,62>(c, std::forward<Types>(param)...);
         default:
             constexpr auto tns = HopscotchConfig<>::NeighborSize;
             std::cout << "ERROR: unknown ns value (use "
@@ -218,7 +228,6 @@ struct Chooser
     executeN(CommandLine& c, Types&& ... param)
     {
         double ratio = c.doubleArg("-alpha", HopscotchConfig<>::GrowRatio_d);
-        std::cout << ratio << std::endl;
         if (ratio < 1.101)
         {
             return executeNR<Functor, NS, std::ratio<11,10> >

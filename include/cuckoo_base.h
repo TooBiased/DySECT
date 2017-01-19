@@ -92,13 +92,15 @@ public:
         out.width(6); out << "bsize";
         out.width(6); out << "ntabl";
         out.width(6); out << "nhash";
+        out.width(9); out << "f_cap";
         out << std::flush;
     }
-    inline static void print_init_data(std::ostream& out)
+    inline void print_init_data(std::ostream& out)
     {
         out.width(6); out << bs;
         out.width(6); out << tl;
         out.width(6); out << nh;
+        out.width(9); out << capacity;
         out << std::flush;
     }
 

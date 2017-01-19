@@ -58,7 +58,7 @@ struct Config
     using HistCount_t = HistCount;
 };
 
-template<size_t NS = 32, typename GRat = std::ratio<11,10> >
+template<size_t NS = 62, typename GRat = std::ratio<11,10> >
 struct HopscotchConfig
 {
     static constexpr size_t NeighborSize = NS;

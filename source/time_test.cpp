@@ -44,7 +44,7 @@ struct Test
         print(out, "in_err" , 6);
         print(out, "fi_err" , 6);
         #ifdef MALLOC_COUNT
-        print(out, "memory" , 14);
+        print(out, "memory" , 7);
         #endif
         out << std::endl;
     }
@@ -60,11 +60,12 @@ struct Test
                              double d_fn0,
                              double d_fn1,
                              size_t in_err,
-                             size_t fi_err)
+                             size_t fi_err,
+                             Table& table)
     {
         print(out, i     , 4);
         print(out, alpha , 5);
-        Table::print_init_data(out);
+        table.print_init_data(out);
         print(out, cap   , 9);
         print(out, n0    , 9);
         print(out, n     , 9);
@@ -75,7 +76,7 @@ struct Test
         print(out, in_err, 6);
         print(out, fi_err, 6);
         #ifdef MALLOC_COUNT
-        print(out, malloc_count_current() - 8*2*n, 14);
+        print(out, double(malloc_count_current())/double(8*2*n)-1., 7);
         #endif
         out << std::endl;
     }
@@ -95,9 +96,13 @@ struct Test
             keys[i] = dis(re);
         }
 
-        std::ofstream file(name + ".time",
-                           std::ofstream::out | std::ofstream::app);
-        print_headline(file);
+        std::ostream* file;
+        if (name == "") file = &(std::cout);
+        else file = new std::ofstream(name + ".time",
+                                      std::ofstream::out | std::ofstream::app);
+        //std::ofstream file(name + ".time",
+        //                   std::ofstream::out | std::ofstream::app);
+        print_headline(*file);
 
         for (size_t i = 0; i < it; ++i)
         {
@@ -139,8 +144,8 @@ struct Test
             double d_fn0 = std::chrono::duration_cast<std::chrono::microseconds> (t3 - t2).count()/1000.;
             double d_fn1 = std::chrono::duration_cast<std::chrono::microseconds> (t4 - t3).count()/1000.;
 
-            print_timing(file, i, alpha, cap, n0, n, d_in0, d_in1, d_fn0, d_fn1,
-                         in_errors, fin_errors);
+            print_timing(*file, i, alpha, cap, n0, n, d_in0, d_in1, d_fn0, d_fn1,
+                         in_errors, fin_errors, table);
         }
 
         delete[] keys;
@@ -158,7 +163,7 @@ int main(int argn, char** argc)
     if (n0 > n) std::cout << "n0 has to be smaller than n! set n = n0 = " << n0 << std::endl;
     const size_t      cap   = c.intArg("-cap"  , n);
     const size_t      steps = c.intArg("-steps", 512);
-    const std::string name  = c.strArg("-out"  , "temp");
+    const std::string name  = c.strArg("-out"  , "");
     const double      alpha = c.doubleArg("-alpha", 1.1);
 
     return Chooser::execute<Test,no_hist_count> (c, it, n, n0, cap, steps, alpha, name);
