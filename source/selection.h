@@ -29,7 +29,7 @@
 
 #ifdef ROBINPROB
 #define TRIV_CONFIG
-#include "include/lin_prob.h"
+#include "include/robin_prob.h"
 #define  HASHTYPE RobinProb
 #endif
 
