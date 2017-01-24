@@ -9,6 +9,7 @@
      !LINPROB         && \
      !SPACEPROB       && \
      !ROBINPROB       && \
+     !HOPPROB         && \
      !HOPSCOTCH       && \
      !SPACEHOPSCOTCH)
 #warning WARNING: No table chosen using! CEG2L
@@ -17,20 +18,26 @@
 
 #ifdef LINPROB
 #define TRIV_CONFIG
-#include "include/lin_prob.h"
+#include "include/prob_simple.h"
 #define  HASHTYPE FastLinProb
 #endif // LINPROB
 
 #ifdef SPACEPROB
 #define TRIV_CONFIG
-#include "include/lin_prob.h"
+#include "include/prob_simple.h"
 #define  HASHTYPE SpaceLinProb
 #endif
 
 #ifdef ROBINPROB
 #define TRIV_CONFIG
-#include "include/robin_prob.h"
+#include "include/prob_robin.h"
 #define  HASHTYPE RobinProb
+#endif
+
+#ifdef HOPPROB
+#define TRIV_CONFIG
+#include "include/prob_hops.h"
+#define  HASHTYPE HopsProb
 #endif
 
 #ifdef HOPSCOTCH

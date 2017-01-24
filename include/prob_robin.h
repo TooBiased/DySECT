@@ -1,32 +1,27 @@
 #pragma once
 
-#include "lin_prob.h"
+#include "prob_base.h"
 
 template <class K, class D, class HF = std::hash<K>,
           class Conf = Config<> >
-class RobinProb : public LinProbTraits<RobinProb<K,D,HF,Conf> >::Base_t
+class RobinProb : public ProbTraits<RobinProb<K,D,HF,Conf> >::Base_t
 {
 private:
     using This_t = RobinProb<K,D,HF,Conf>;
-    using Base_t = typename LinProbTraits<This_t>::Base_t;
+    using Base_t = typename ProbTraits<This_t>::Base_t;
 
     friend Base_t;
 
 public:
-    using Key    = typename LinProbTraits<This_t>::Key;
-    using Data   = typename LinProbTraits<This_t>::Data;
+    using Key    = typename ProbTraits<This_t>::Key;
+    using Data   = typename ProbTraits<This_t>::Data;
 
     RobinProb(size_t cap = 0      , double size_constraint = 1.1,
-                 size_t dis_steps = 0, size_t /*seed*/ = 0)
-        : Base_t(0, dis_steps), alpha(size_constraint), beta((alpha+1.)/2.),
+              size_t /*dis_steps*/ = 0, size_t /*seed*/ = 0)
+        : Base_t(cap, size_constraint),
           pdistance(0)
     {
-        size_t c = std::max(cap, size_t(2048));
-        thresh = (c-300)*beta;
-
-        c = size_t(double(c)*alpha);
-        init(c);
-        factor = double(c-300)/double(1ull << 32);
+        factor = double(capacity-300)/double(1ull << 32);
     }
 
     RobinProb(const RobinProb&) = delete;
@@ -37,59 +32,57 @@ public:
 
     /* SHOULD CHANGE THIS TO THE MULTIPLY BY DOUBLE FACTOR VARIANT */
     inline size_t index (size_t i) const
-    {
-        return double(bitmask & i) * factor;
-    }
+    { return double(bitmask & i) * factor; }
     inline double dindex(size_t i) const
-    {
-        return double(bitmask & i) * factor;
-    }
-    inline size_t mod(size_t i)   const  { return i; } //i%capacity; }
+    { return double(bitmask & i) * factor; }
+    inline size_t mod(size_t i)    const
+    { return i; }
 
 private:
     inline void grow()
     {
-        auto ntable = This_t(n, alpha, steps);
+        auto ntable = This_t(n, alpha);
 
-        ntable.migrate(*this);
+        size_t tn = n;
+        size_t tdistance = ntable.migrate(*this);
 
-        std::swap(capacity , ntable.capacity);
-        std::swap(table    , ntable.table);
-        std::swap(thresh   , ntable.thresh);
-        //std::swap(pdistance, ntable.pdistance);
-        std::swap(factor   , ntable.factor);
+        (*this) = std::move(ntable);
+
+        n         = tn;
+        pdistance = tdistance;
     }
 
-    inline void migrate(This_t& source)
+    inline size_t migrate(This_t& source)
     {
+        size_t distance   = 0;
         size_t target_pos = 0;
         for (size_t i = 0; i < source.capacity; ++i)
         {
             auto current = source.table[i];
             if (!current.first) continue;
             auto hash = h(current.first);
-            target_pos = std::max(hash, target_pos);
+            if (target_pos > hash)
+                distance   = std::max<size_t>(distance, target_pos - hash);
+            else
+                target_pos = hash;
             table[target_pos++] = current;
         }
-
+        return distance;
     }
 
-    inline void inc_n() { ++n; if (n > thresh) grow(); }
-
-    using Base_t::capacity;
+    using Base_t::alpha;
     using Base_t::n;
-    using Base_t::table;
-    using Base_t::steps;
+    using Base_t::capacity;
     using Base_t::hasher;
+    using Base_t::table;
+
     using Base_t::h;
+    using Base_t::inc_n;
+
     static constexpr size_t bitmask = (1ull << 32) - 1;
-    double alpha;
-    double beta;
-    size_t thresh;
     size_t pdistance;
     double factor;
 
-    using Base_t::init;
 public:
     //specialized functions because of Robin Hood Hashing
     inline bool insert(Key k, Data d)
@@ -113,14 +106,14 @@ public:
                 if (i == capacity - 1) return false;
                 table[ti] = current;
                 inc_n();
-                pdistance = std::max<int>(pdistance, i-ind);
+                pdistance = std::max<size_t>(pdistance, i-size_t(ind));
                 return true;
             }
             double tind = dindex(hasher(temp.first));
             if ( tind > ind )
             {
                 std::swap(table[ti], current);
-                pdistance = std::max<int>(pdistance, i-ind);
+                pdistance = std::max<int>(pdistance, i-size_t(ind));
                 ind = tind;
             }
         }
@@ -204,11 +197,11 @@ public:
 
 
 template<class K, class D, class HF, class Conf>
-class LinProbTraits<RobinProb<K,D,HF,Conf> >
+class ProbTraits<RobinProb<K,D,HF,Conf> >
 {
 public:
     using Specialized_t = RobinProb<K,D,HF,Conf>;
-    using Base_t        = LinProbBase<Specialized_t>;
+    using Base_t        = ProbBase<Specialized_t>;
     using Key           = K;
     using Data          = D;
     using HashFct_t     = HF;
