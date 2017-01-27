@@ -35,7 +35,7 @@
 #endif
 
 #ifdef HOPPROB
-#define TRIV_CONFIG
+#define HOPSCOTCH_CONFIG
 #include "include/prob_hops.h"
 #define  HASHTYPE HopsProb
 #endif
@@ -60,6 +60,7 @@
 
 #ifdef CEG2L
 #define MULTI
+//#define QUICK_MULTI
 #include "include/cuckoo_eg2l.h"
 #define HASHTYPE CuckooEG2L
 #endif
@@ -94,7 +95,7 @@ struct Chooser
     inline static typename std::result_of<Functor<Config<> >(Types&& ...)>::type
     execute(CommandLine&, Types&& ... param)
     {
-        Functor<Config<> > f;
+        Functor<Config<8,3,256,DisBFS> > f;
         return f(std::forward<Types>(param)...);
     }
 #elif defined MULTI
@@ -211,6 +212,8 @@ struct Chooser
         auto ns = c.intArg("-ns", HopscotchConfig<>::NeighborSize);
         switch (ns)
         {
+        case 64:
+            return executeN<Functor,64>(c, std::forward<Types>(param)...);
         case 8:
             return executeN<Functor, 8>(c, std::forward<Types>(param)...);
         case 16:
@@ -220,7 +223,6 @@ struct Chooser
         case 32:
             return executeN<Functor,32>(c, std::forward<Types>(param)...);
         case 62:
-        case 64:
             return executeN<Functor,62>(c, std::forward<Types>(param)...);
         default:
             constexpr auto tns = HopscotchConfig<>::NeighborSize;

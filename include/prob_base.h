@@ -25,7 +25,7 @@ private:
     using Bucket_t       = Bucket<Key,Data,1>;
     using Cell_t   = std::pair<Key,Data>;
     using HashFct_t      = typename ProbTraits<SpProb>::HashFct_t;
-    using HistCount_t    = typename ProbTraits<SpProb>::Config_t::HistCount_t;
+    //using HistCount_t    = typename ProbTraits<SpProb>::Config_t::HistCount_t;
 
     friend Specialized_t;
 
@@ -52,9 +52,9 @@ public:
     bool remove(Key k);// { return false; }
 
     inline static void print_init_header(std::ostream& out)
-    { out.width(9); out << "f_cap"  << std::flush;}
+    { out.width(9); out << "f_cap"  << " " <<  std::flush;}
     inline void print_init_data  (std::ostream& out)
-    { out.width(9); out << capacity << std::flush;}
+    { out.width(9); out << capacity << " " << std::flush;}
 
     /*** members that should become private at some point *********************/
     double     alpha;

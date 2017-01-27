@@ -82,6 +82,8 @@ template<class K, class D, class HF = std::hash<K>, class Conf = HopscotchConfig
 class SpaceHopscotch
 {
 private:
+    static constexpr size_t nh_size = (Conf::NeighborSize <= 62) ?
+                                          Conf::NeighborSize : 62;
     using Table_t = tsl::hopscotch_map<K,D,HF, std::equal_to<K>, std::allocator<std::pair<K,D> >,
                                        Conf::NeighborSize, typename Conf::GrowRatio>;
     // template<class Key,

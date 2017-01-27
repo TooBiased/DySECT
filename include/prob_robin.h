@@ -184,14 +184,14 @@ public:
 
     inline static void print_init_header(std::ostream& out)
     {
-        out.width(9); out  << "f_cap";
-        out.width(5); out  << "pdis" << std::flush;
+        out.width(5); out  << "pdis" << " ";
+        Base_t::print_init_header(out);
     }
 
     inline        void print_init_data  (std::ostream& out)
     {
-        out.width(9);  out << capacity;
-        out.width(5);  out << pdistance << std::flush;
+        out.width(5);  out << pdistance << " ";
+        Base_t::print_init_data(out);
     }
 };
 
