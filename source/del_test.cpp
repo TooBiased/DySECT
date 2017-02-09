@@ -124,6 +124,12 @@ struct Test
                 auto e = table.find(keys[i]);
                 if (!e.first) ++fin_errors;
             }
+
+            for (size_t i = n; i < win+n; ++i)
+            {
+                if (!table.remove(keys[i])) ++del_errors;
+            }
+
             auto t3 = std::chrono::high_resolution_clock::now();
 
             double d_win  = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count()/1000.;

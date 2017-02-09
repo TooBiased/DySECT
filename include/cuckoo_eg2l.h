@@ -57,7 +57,8 @@ public:
         }
 
         capacity    = (grow_table+tl) * grow_amount * bs;
-        grow_thresh = std::ceil((capacity + grow_amount*bs)/alpha);
+        grow_thresh = std::ceil((capacity + 2*grow_amount*bs)/alpha);
+        shrnk_thresh= 0; // ensures no shrinking until grown at least once
     }
 
     CuckooEG2L(const CuckooEG2L&) = delete;
@@ -67,7 +68,8 @@ public:
         : Base_t(std::move(rhs)),
           grow_table(rhs.grow_table),
           grow_amount(rhs.grow_amount),
-          grow_thresh(rhs.grow_thresh)
+          grow_thresh(rhs.grow_thresh),
+          shrnk_thresh(rhs.shrnk_thresh)
     {
         for (size_t i = 0; i < tl; ++i)
         {
@@ -83,6 +85,7 @@ public:
         std::swap(grow_table , rhs.grow_table );
         std::swap(grow_amount, rhs.grow_amount);
         std::swap(grow_thresh, rhs.grow_thresh);
+        std::swap(shrnk_thresh,rhs.shrnk_thresh);
 
         for (size_t i = 0; i < tl; ++i)
         {
@@ -111,6 +114,7 @@ private:
     size_t grow_table;
     size_t grow_amount;
     size_t grow_thresh;
+    size_t shrnk_thresh;
 
 
     static constexpr size_t tl_bitmask = tl - 1;
@@ -134,25 +138,41 @@ private:
         if (n > grow_thresh) grow();
     }
 
+    inline void dec_n()
+    {
+        --n;
+        if (n < shrnk_thresh) shrink();
+    }
+
     inline void grow()
     {
         size_t nsize = grow_amount << 1;
         auto   ntab  = std::make_unique<Bucket_t[]>(nsize);
-        migrate(grow_table, ntab, nsize-1);
+        migrate_grw(grow_table, ntab);
 
         llb[grow_table] = nsize-1;
         llt[grow_table] = std::move(ntab);
 
-        capacity += grow_amount * bs;
+        capacity    += grow_amount * bs;
         if (++grow_table == tl) { grow_table = 0; grow_amount <<= 1; }
-        grow_thresh = std::ceil((capacity + grow_amount*bs)/alpha);
+        grow_thresh  = std::ceil((capacity + 2*grow_amount*bs)/alpha);
+        shrnk_thresh = std::ceil((capacity - 2*grow_amount*bs)/alpha);
     }
 
-    inline void migrate(size_t tab, std::unique_ptr<Bucket_t[]>& target, size_t bitmask)
+    inline void migrate_grw(size_t tab, std::unique_ptr<Bucket_t[]>& target)
     {
-        for (size_t i = 0; i <= llb[tab]; ++i)
+        size_t bold = llb[tab];
+        size_t flag = bold+1;
+
+        for (size_t i = 0; i < flag; ++i)
         {
             Bucket_t* curr = &(llt[tab][i]);
+
+            size_t    tj0  = 0;
+            Bucket_t* tar0 = &(target[i]);
+            size_t    tj1  = 0;
+            Bucket_t* tar1 = &(target[i+flag]);
+
             for (size_t j = 0; j < bs; ++j)
             {
                 auto e    = curr->elements[j];
@@ -161,16 +181,103 @@ private:
 
                 for (size_t ti = 0; ti < nh; ++ti)
                 {
-                    if ( Ext::tab(hash, ti)             == tab &&
-                        (Ext::loc(hash, ti) & llb[tab]) == i)
+                    size_t loc = Ext::loc(hash, ti);
+                    if ( Ext::tab(hash, ti) == tab &&
+                        (loc & bold) == i)
                     {
-                        target[Ext::loc(hash, ti) & bitmask].insert(e.first, e.second);
+                        if (loc & flag) tar1->elements[tj1++] = e;
+                        else            tar0->elements[tj0++] = e;
                         break;
                     }
                 }
             }
         }
     }
+
+    inline void shrink()
+    {
+        if (grow_table) { grow_table--; }
+        else            { grow_table = tl-1; grow_amount >>= 1; }
+        auto ntab = std::make_unique<Bucket_t[]>(grow_amount);
+        std::vector<std::pair<Key, Data> > buffer;
+
+        migrate_shrnk( grow_table, ntab, buffer );
+
+        llb[grow_table] = grow_amount-1;
+        llt[grow_table] = std::move(ntab);
+
+        finish_shrnk(buffer);
+
+        capacity    -= grow_amount * bs;
+        grow_thresh  = std::ceil((capacity + 2*grow_amount*bs)/alpha);
+        shrnk_thresh = std::ceil((capacity - 2*grow_amount*bs)/alpha);
+        if (grow_amount == 1 && !grow_table) shrnk_thresh = 0;
+    }
+
+    inline void migrate_shrnk(size_t tab, std::unique_ptr<Bucket_t[]>& target,
+                              std::vector<std::pair<Key, Data> >& buffer)
+    {
+        size_t bnew = llb[tab] >> 1;
+        size_t flag = bnew + 1;
+
+        for (size_t i = 0; i <= bnew; ++i)
+        {
+            Bucket_t* curr  = &(llt[tab][i]);
+            Bucket_t* curr1 = &(llt[tab][i+flag]);
+            Bucket_t* targ  = &(target[i]);
+            size_t ind = 0;
+            for (size_t j = 0; j < bs; ++j)
+            {
+                auto e = curr->elements[j];
+                if (! e.first) break;
+                auto hash = hasher(e.first);
+
+                for (size_t ti = 0; ti < nh; ++ti)
+                {
+                    if ( Ext::tab(hash, ti)  == tab &&
+                        (Ext::loc(hash, ti) & bnew) == i)
+                    {
+                        targ->elements[ind++] = e;
+                        break;
+                    }
+                }
+            }
+
+            for (size_t j = 0; j < bs; ++j)
+            {
+                auto e = curr1->elements[j];
+                if (! e.first)
+                { break; }
+                else if (ind >= bs)
+                { buffer.push_back(e); }
+                else
+                {
+                    auto hash = hasher(e.first);
+                    for (size_t ti = 0; ti < nh; ++ti)
+                    {
+                        if ( Ext::tab(hash, ti)  == tab &&
+                             (Ext::loc(hash, ti) & bnew) == i)
+                        {
+                            targ->elements[ind++] = e;
+                            break;
+                        }
+                    }
+                }
+            }
+
+        }
+    }
+
+    inline void finish_shrnk(std::vector<std::pair<Key, Data> >& buffer)
+    {
+        size_t bla = 0;
+        n -= buffer.size();
+        for (auto& e : buffer)
+        {
+            bla += (Base_t::insert(e)) ? 1: 0;
+        }
+    }
+
 };
 
 template<class K, class D, class HF,

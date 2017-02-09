@@ -27,6 +27,7 @@ inline void print(std::ostream& out, const T& t, size_t w)
 template<class Config>
 struct Test
 {
+    //using Table = ProbIndependentBase<HASHTYPE<size_t, size_t, HASHFCT, Config> >;
     using Table = HASHTYPE<size_t, size_t, HASHFCT, Config>;
 
     inline void print_headline(std::ostream& out)
@@ -160,7 +161,7 @@ int main(int argn, char** argc)
     const size_t      it    = c.intArg("-it"   , 5);
     const size_t      n     = c.intArg("-n"    , 2000000);
     const size_t      n0    = c.intArg("-pre"  , n/2);
-    if (n0 > n) std::cout << "n0 has to be smaller than n! set n = n0 = " << n0 << std::endl;
+    if (n0 > n) std::cout << "n0 (pre) has to be smaller than n! set n = n0 = " << n0 << std::endl;
     const size_t      cap   = c.intArg("-cap"  , n);
     const size_t      steps = c.intArg("-steps", 512);
     const std::string name  = c.strArg("-out"  , "");
