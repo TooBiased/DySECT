@@ -44,18 +44,41 @@ public:
     AugmentData(size_t capacity)
     {
         auto glob_n_bytes = capacity*n_bytes+8-n_bytes;
+        //data = (uchar*) malloc(glob_n_bytes);
         data = std::make_unique<uchar[]>(glob_n_bytes);
+        //std::fill(data, data+glob_n_bytes, 0);
     }
+
+    AugmentData(const AugmentData&) = delete;
+    AugmentData& operator=(const AugmentData&) = delete;
+
+    AugmentData(AugmentData&& rhs) : data(nullptr)
+    {   std::swap(data, rhs.data); }
+    AugmentData& operator=(AugmentData&& rhs)
+    {   std::swap(data, rhs.data); return *this; }
+
+    /*
+    ~AugmentData()
+    {
+         if (data)
+         { free(data); }
+    }
+    */
 
     inline Accessor_t getAcc(size_t index)
     { return Accessor_t(reinterpret_cast<size_t*>(data.get() + index*n_bytes)); }
+
+    inline const Accessor_t getCAcc(size_t index) const
+    { return Accessor_t(reinterpret_cast<size_t*>(data.get() + index*n_bytes)); }
+
     inline size_t getNHood(size_t index) const
     {
-        size_t temp = *reinterpret_cast<size_t*>(data.get() + index*n_bytes);
+        size_t temp = *reinterpret_cast<const size_t*>(data.get() + index*n_bytes);
         return temp & bitmask;
     }
 
     std::unique_ptr<uchar[]> data;
+    //uchar* data;
 };
 
 
@@ -103,9 +126,13 @@ private:
         for (size_t i = 0; i < capacity; ++i)
         {
             auto current  = table[i];
-            ntable.insert(current);
+            if (current.first)
+                ntable.insert(current);
         }
 
+        //std::swap(table   , ntable.table);
+        //std::swap(nh_data.data , ntable.nh_data.data);
+        //std::swap(capacity, ntable.capacity);
         (*this) = std::move(ntable);
     }
 
@@ -161,8 +188,8 @@ public:
                     if (!successful) break;
                 }
                 table[ti] = t;
-                inc_n();
                 aug.set(ti-ind);
+                inc_n();
                 return true;
             }
         }
@@ -194,6 +221,8 @@ public:
     {
         auto ind = h(k);
         size_t bits = nh_data.getNHood(ind);
+        //auto   aug  = nh_data.getCAcc(ind);
+        //size_t bits = aug.getNHood();
 
         for (size_t i = ind; bits; ++i, bits>>=1)
         {
@@ -210,6 +239,8 @@ public:
     inline bool remove(Key k)
     {
         auto ind = h(k);
+        //auto   aug  = nh_data.getAcc(ind);
+        //size_t bits = aug.getNHood();
         size_t bits = nh_data.getNHood(ind);
 
         for (size_t i = ind; bits; ++i, bits>>=1)

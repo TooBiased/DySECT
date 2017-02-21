@@ -85,7 +85,7 @@ private:
     static constexpr size_t nh_size = (Conf::NeighborSize <= 62) ?
                                           Conf::NeighborSize : 62;
     using Table_t = tsl::hopscotch_map<K,D,HF, std::equal_to<K>, std::allocator<std::pair<K,D> >,
-                                       Conf::NeighborSize, typename Conf::GrowRatio>;
+                                       nh_size, typename Conf::GrowRatio>;
     // template<class Key,
     //          class T,
     //          class Hash = std::hash<Key>,
@@ -153,7 +153,7 @@ public:
     }
     inline void print_init_data  (std::ostream& out)
     {
-        out.width(6); out << Conf::NeighborSize;
+        out.width(6); out << nh_size;
         out.width(6); out << Conf::GrowRatio_d;
         out.width(9); out << table.bucket_count();
         out << std::flush;

@@ -41,12 +41,13 @@
 #endif
 
 #ifdef HOPSCOTCH
-#define NONCUCKOO
+#define TRIV_CONFIG //NONCUCKOO
 #include "include/hopscotch.h"
 #define  HASHTYPE Hopscotch
 #endif
 
 #ifdef SPACEHOPSCOTCH
+#define SPECIAL_HOPSCOTCH
 #define HOPSCOTCH_CONFIG
 #include "include/hopscotch.h"
 #define  HASHTYPE SpaceHopscotch
@@ -104,6 +105,8 @@ struct Chooser
     inline static typename std::result_of<Functor<Config<> >(Types&& ...)>::type
     execute(CommandLine& c, Types&& ... param)
     {
+        return executeD<Functor, Hist, DisBFS>     ( c, std::forward<Types>(param)...);
+        /*
         if      (c.boolArg("-bfs"))
             return executeD<Functor, Hist, DisBFS>     ( c, std::forward<Types>(param)...);
         else if (c.boolArg("-rwalk"))
@@ -113,6 +116,7 @@ struct Chooser
 
         std::cout << "ERROR: choose displacement Strategy (use triv)" << std::endl;
         return executeD<Functor, Hist, dstrat_triv>(c, std::forward<Types>(param)...);
+        */
     }
 
     template<template<class> class Functor, class Hist, template<class> class Displacer, class ... Types>
@@ -182,9 +186,9 @@ struct Chooser
         case 3:
             return executeDTBN<Functor, Hist, Displacer, TL, BS, 3>
                 (c, std::forward<Types>(param)...);
-        // case 4:
-        //     return executeDTBN<Functor, Hist, Displacer, TL, BS, 4>
-        //         (c, std::forward<Types>(param)...);
+        case 4:
+            return executeDTBN<Functor, Hist, Displacer, TL, BS, 4>
+                (c, std::forward<Types>(param)...);
         default:
             constexpr auto tnh = Config<>::nh;
             std::cout << "ERROR: unknown nh value (use "
@@ -234,8 +238,13 @@ struct Chooser
 
     template<template<class> class Functor, size_t NS, class ... Types>
     inline static typename std::result_of<Functor<HopscotchConfig<> >(Types&& ...)>::type
-    executeN(CommandLine& c, Types&& ... param)
+    executeN(CommandLine&
+    #ifdef SPECIAL_HOPSCOTCH
+             c
+    #endif
+             , Types&& ... param)
     {
+        #ifdef SPECIAL_HOPSCOTCH
         double ratio = c.doubleArg("-alpha", HopscotchConfig<>::GrowRatio_d);
         if (ratio < 1.101)
         {
@@ -257,6 +266,10 @@ struct Chooser
                   << HopscotchConfig<>::GrowRatio_d << std::endl;
         return executeNR<Functor, NS, typename HopscotchConfig<>::GrowRatio>
             (std::forward<Types>(param)...);
+        #else
+        return executeNR<Functor, NS, std::ratio<1,2> >
+            (std::forward<Types>(param)...);
+        #endif
     }
 
     template<template<class> class Functor, size_t NS, class GRat, class ... Types>

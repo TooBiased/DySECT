@@ -35,7 +35,7 @@ public:
     static constexpr double fac_div = double (1ull << (32 - ct_log(tl)));
 
     CuckooIndependent2L(size_t cap = 0      , double size_constraint = 1.1,
-                           size_t dis_steps = 0, size_t seed = 0)
+                        size_t dis_steps = 0, size_t seed = 0)
         : Base_t(0, size_constraint, dis_steps, seed), beta((1.0+size_constraint)/2.0)
     {
         size_t lsize  = std::floor(cap * size_constraint / double(tl*bs));
@@ -180,7 +180,9 @@ private:
             Base_t::insert(e);
         }
         n = temp;
-        grow_buffer.clear();
+        std::vector<std::pair<Key, Data> > ttemp;
+        std::swap(ttemp, grow_buffer);
+        //grow_buffer.clear();
     }
 
 public:

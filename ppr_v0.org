@@ -404,20 +404,21 @@ associated buckets.  For this to work, one has to use a hash function
 which generates $64\,$bits of "randomness".
 
 ** Shrinking
-In many use cases, shrinking is not necessary, it worsens performance
-by making the remaining table more dense.  Furthermore, it is unclear
-that the freed memory is actually necessary for other parts of the
-application.  If that memory is necessary, and shrinking is required,
-for example, when removed elements are reinserted into another
-data-structure (one grows the other shrinks).
+In many use cases, shrinking is not necessary.  It worsens performance
+by taking time for the migration and making the remaining table more
+dense.  Furthermore, it is unclear that the freed memory is actually
+necessary for other parts of the application.  If that memory is
+necessary, and shrinking is required, for example, when removed
+elements are reinserted into another data structure and global memory
+bounds are necessary (other data structures grow while the hash table
+shrinks).
 
 Shrinking can work similarly to growing. We replace a second level
-table with a smaller one, by migrating elements from one to the other.
-During this migration we join elements from two buckets into one.  It
-is possible for a bucket to overfill, therefore, we reinsert elements
-that do not fit in their respective bucket at the end of the
-migration.  This can be the case for at most half the migrated
-elements.
+table with one half its size, by migrating elements from one to the
+other.  During this migration we join elements from two buckets into
+one. Therefore, it is possible for a bucket to overfill.  We reinsert
+these elements at the end of the migration.  Obviously, this can only
+apply to at most half the migrated elements.
 
 # Triggering shrink operations
 When triggering the size reduction, one has to make sure that the
@@ -426,6 +427,16 @@ follow a shrink operation.  We propose to shrink one subtable when
 $\alpha*n < m-s'$ elements ($s'$ size of a large table, $m_{new} =
 m_{old} -s'/2$).
 
+Notice that the memory requirement actually increases during the
+operation itself.
+
+*** COMMENT interesting shrinking method
+Displace all elements from one subtable to the other subtables.
+Delete that subtable, and then maybe replace it with a newly allocated
+one (that would then be nearly empty).  One problem with this
+technique is that approx $n/tl^{k}$ elements are only associated with
+buckets, in this one table ($n/tl^2$ when using double hashing)!
+Those have to be stored in a vector/moved to the replacement table.
 
 *** COMMENT bla
 # There is an aggressivity parameter, which is used to regulate when to shrink the table.
@@ -439,6 +450,7 @@ causes a grow/shrink.
 
 * Experiments
 ** Comparison Implementations
+We try to compare these
 ** Hardware
 ** Tests
 *** Incremental Construction

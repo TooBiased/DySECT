@@ -28,14 +28,14 @@ public:
 
     static constexpr size_t comp_n_bucket(size_t n, double constraint)
     {
-        return std::max(size_t(1024), size_t((double(n)*constraint)/double(bs)));
+        return double(constraint * std::max<size_t>(256ull, n))/double(bs);
     }
 
     CuckooSimple(size_t cap = 0      , double size_constraint = 1.1,
                  size_t dis_steps = 0, size_t seed = 0)
         : Base_t(comp_n_bucket(cap,size_constraint)*bs, size_constraint,
                  dis_steps, seed),
-          beta((size_constraint + 1.)/2.), thresh(std::max(1024*bs, cap)*beta),
+          beta((size_constraint + 1.)/2.), thresh(beta*std::max<size_t>(256ull, cap)),
           n_buckets(comp_n_bucket(cap, size_constraint)),
           factor(double(n_buckets)/double(1ull<<32)),
           table(new Bucket_t[n_buckets])
@@ -146,7 +146,9 @@ private:
             insert(e);
         }
         n = temp;
-        grow_buffer.clear();
+        std::vector<std::pair<Key,Data> > tbuf;
+        //grow_buffer.clear();
+        std::swap(tbuf, grow_buffer);
     }
 };
 
