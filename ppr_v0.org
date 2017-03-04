@@ -1,4 +1,4 @@
-#+TITLE:    Space-Efficiently Dynamic: How to Grow Hash Tables without Doubling their Size
+#+TITLE:    A Novel Approach for Growing Space-Efficient Hash Tables: When doubling is too much!
 #+AUTHOR:   Tobias Maier
 #+EMAIL:    t.maier@kit.edu
 
@@ -31,7 +31,7 @@ conditions and circumstances is important and allows programmers to
 worry about different problems.
 
 One aspect which a lot of research focuses on is space efficiency.
-Modern space efficient hash tables work well up to loads of 90\% and
+Modern space efficient hash tables work well up to loads of 95\% and
 more. But for this to matter, programmers have to know similarly tight
 bounds to the absolute number of elements inserted into the table.
 This is typically not the case, one of the most ubiquitous use cases
