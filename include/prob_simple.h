@@ -120,6 +120,10 @@ public:
     inline size_t index(size_t i) const { return (bitmask & i)*factor; }
     inline size_t mod(size_t i)   const { return i; }
 
+    using Base_t::alpha;
+    using Base_t::n;
+    using Base_t::capacity;
+
 private:
     inline void grow()
     {
@@ -137,9 +141,6 @@ private:
         (*this) = std::move(ntable);
     }
 
-    using Base_t::alpha;
-    using Base_t::n;
-    using Base_t::capacity;
     using Base_t::table;
 
     double factor;
