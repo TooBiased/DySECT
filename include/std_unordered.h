@@ -8,7 +8,7 @@ class STDProb
 {
 private:
     using Table_t  = std::unordered_map<K,D,HF>;
-    using Iterator = typename Table_t::iterator;
+    using iterator = typename Table_t::iterator;
 
     Table_t table;
 
@@ -18,27 +18,30 @@ public:
 
     FastLinProb(size_t cap, double = 1.1, size_t = 0) : table(cap) {}
 
-    inline std::pair<Iterator, bool> insert(const std::pair<Key,Data> t)
+    inline std::pair<iterator, bool> insert(const std::pair<Key,Data> t)
     {
         return table.insert(t);
     }
 
-    inline std::pair<Iterator, bool> insert(const Key k, const Data d)
+    inline std::pair<iterator, bool> insert(const Key k, const Data d)
     {
         return table.insert(std::make_pair(k, d));
     }
 
-    inline Iterator find(const Key k)
+    inline iterator find(const Key k)
     {
         return table.find(k);
     }
 
-    inline bool remove(const Key k);
+    inline size_t erase(const Key k)
+    {
+        return table.erase(k);
+    }
 
     inline static void print_init_header(std::ostream& )
     { }
     inline void print_init_data(std::ostream& )
     { }
 
-    constexpr Iterator end() { return table.end(); }
+    constexpr iterator end() { return table.end(); }
 };

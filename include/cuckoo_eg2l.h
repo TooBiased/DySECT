@@ -111,17 +111,14 @@ public:
     using Base_t::n;
     using Base_t::alpha;
     using Base_t::capacity;
-
     using Base_t::hasher;
 
 private:
-    //size_t                      llb[tl];
     std::unique_ptr<Bucket_t[]> llt[tl];
 
     size_t n_large;
     size_t bits_small;
     size_t bits_large;
-    //size_t grow_amount;
     size_t grow_thresh;
     size_t shrnk_thresh;
 

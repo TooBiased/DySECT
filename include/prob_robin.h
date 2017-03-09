@@ -15,7 +15,8 @@ private:
 public:
     using Key      = typename ProbTraits<This_t>::Key;
     using Data     = typename ProbTraits<This_t>::Data;
-    using Iterator = typename Base_t::Iterator;
+    using iterator = typename Base_t::iterator;
+    using const_iterator = typename Base_t::const_iterator;
 
     RobinProb(size_t cap = 0      , double size_constraint = 1.1,
               size_t /*dis_steps*/ = 0, size_t /*seed*/ = 0)
@@ -31,6 +32,20 @@ public:
     RobinProb(RobinProb&& rhs)  = default;
     RobinProb& operator=(RobinProb&& ) = default;
 
+private:
+    using Base_t::alpha;
+    using Base_t::n;
+    using Base_t::capacity;
+    using Base_t::hasher;
+    using Base_t::table;
+    using Base_t::h;
+    using Base_t::inc_n;
+
+    static constexpr size_t bitmask = (1ull << 32) - 1;
+    size_t pdistance;
+    double factor;
+
+public:
     /* SHOULD CHANGE THIS TO THE MULTIPLY BY DOUBLE FACTOR VARIANT */
     inline size_t index (size_t i) const
     { return double(bitmask & i) * factor; }
@@ -38,6 +53,113 @@ public:
     { return double(bitmask & i) * factor; }
     inline size_t mod(size_t i)    const
     { return i; }
+
+    //specialized functions because of Robin Hood Hashing
+    inline std::pair<iterator, bool> insert(const Key& k, const Data& d)
+    {
+        return insert(std::make_pair(k,d));
+    }
+
+    inline std::pair<iterator, bool> insert(const std::pair<Key, Data>& t)
+    {
+        // using doubles makes the element order independent from the capacity
+        // thus growing gets even easier
+        double ind     = dindex(hasher(t.first));
+        auto   current = t;
+
+        for (size_t i = ind; ; ++i)
+        {
+            auto ti    = mod(i);
+            auto temp  = table[ti];
+
+            if ( temp.first == t.first )
+            {
+                return std::make_pair(iterator(&table[ti]), false);
+            }
+            if ( temp.first == 0 )
+            {
+                if (i == capacity - 1)
+                    return std::make_pair(Base_t::end(), false);
+                table[ti] = current;
+                inc_n();
+                pdistance = std::max<size_t>(pdistance, i-size_t(ind));
+                return std::make_pair(iterator(&table[ti]), true);
+            }
+            double tind = dindex(hasher(temp.first));
+            if ( tind > ind )
+            {
+                std::swap(table[ti], current);
+                pdistance = std::max<int>(pdistance, i-size_t(ind));
+                ind = tind;
+            }
+        }
+        return std::make_pair(Base_t::end(), false);
+    }
+
+    inline iterator find(const Key& k)
+    {
+        auto ind = h(k);
+
+        for (size_t i = ind; i <= ind+pdistance; ++i)
+        {
+            size_t ti = mod(i);
+            auto temp = table[ti];
+
+            if ( temp.first == 0 )
+            {
+                break;
+            }
+            else if ( temp.first == k )
+            {
+                return iterator(&table[ti]);
+            }
+        }
+        return Base_t::end();
+    }
+
+    inline const_iterator find(const Key& k) const
+    {
+        auto ind = h(k);
+
+        for (size_t i = ind; i <= ind+pdistance; ++i)
+        {
+            size_t ti = mod(i);
+            auto temp = table[ti];
+
+            if ( temp.first == 0 )
+            {
+                break;
+            }
+            else if ( temp.first == k )
+            {
+                return const_iterator(&table[ti]);
+            }
+        }
+        return Base_t::cend();
+    }
+
+    inline size_t erase(const Key& k)
+    {
+        auto ind = h(k);
+
+        for (size_t i = ind; i <= ind+pdistance ; ++i)
+        {
+            size_t ti = mod(i);
+            auto temp = table[ti];
+
+            if ( temp.first == 0 )
+            {
+                break;
+            }
+            else if ( temp.first == k )
+            {
+                Base_t::dec_n();
+                propagate_remove(ti);
+                return 1;
+            }
+        }
+        return 0;
+    }
 
 private:
     inline void grow()
@@ -71,106 +193,6 @@ private:
         return distance;
     }
 
-    using Base_t::alpha;
-    using Base_t::n;
-    using Base_t::capacity;
-    using Base_t::hasher;
-    using Base_t::table;
-
-    using Base_t::h;
-    using Base_t::inc_n;
-
-    static constexpr size_t bitmask = (1ull << 32) - 1;
-    size_t pdistance;
-    double factor;
-
-public:
-    //specialized functions because of Robin Hood Hashing
-    inline std::pair<Iterator, bool> insert(const Key k, const Data d)
-    {
-        return insert(std::make_pair(k,d));
-    }
-
-    inline std::pair<Iterator, bool> insert(const std::pair<Key, Data> t)
-    {
-        // using doubles makes the element order independent from the capacity
-        // thus growing gets even easier
-        double ind     = dindex(hasher(t.first));
-        auto   current = t;
-
-        for (size_t i = ind; ; ++i)
-        {
-            auto ti    = mod(i);
-            auto temp  = table[ti];
-
-            if ( temp.first == t.first )
-            {
-                return std::make_pair(Iterator(&table[ti]), false);
-            }
-            if ( temp.first == 0 )
-            {
-                if (i == capacity - 1)
-                    return std::make_pair(Base_t::end(), false);
-                table[ti] = current;
-                inc_n();
-                pdistance = std::max<size_t>(pdistance, i-size_t(ind));
-                return std::make_pair(Iterator(&table[ti]), true);
-            }
-            double tind = dindex(hasher(temp.first));
-            if ( tind > ind )
-            {
-                std::swap(table[ti], current);
-                pdistance = std::max<int>(pdistance, i-size_t(ind));
-                ind = tind;
-            }
-        }
-        return std::make_pair(Base_t::end(), false);
-    }
-
-    inline Iterator find(const Key k)
-    {
-        auto ind = h(k);
-
-        for (size_t i = ind; i <= ind+pdistance; ++i)
-        {
-            size_t ti = mod(i);
-            auto temp = table[ti];
-
-            if ( temp.first == 0 )
-            {
-                break;
-            }
-            else if ( temp.first == k )
-            {
-                return Iterator(&table[ti]);
-            }
-        }
-        return Base_t::end();
-    }
-
-    inline bool remove(const Key k)
-    {
-        auto ind = h(k);
-
-        for (size_t i = ind; i <= ind+pdistance ; ++i)
-        {
-            size_t ti = mod(i);
-            auto temp = table[ti];
-
-            if ( temp.first == 0 )
-            {
-                break;
-            }
-            else if ( temp.first == k )
-            {
-                Base_t::dec_n();
-                propagate_remove(ti);
-                return true;
-            }
-        }
-        return false;
-    }
-
     inline void propagate_remove(const size_t hole)
     {
         size_t thole = hole;
@@ -189,6 +211,7 @@ public:
         table[thole] = std::make_pair(0,0);
     }
 
+public:
     inline static void print_init_header(std::ostream& out)
     {
         out.width(5); out  << "pdis" << " ";

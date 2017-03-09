@@ -17,29 +17,30 @@ public:
     Bucket(const Bucket& rhs) = default;
     Bucket& operator=(const Bucket& rhs) = default;
 
-    bool   insert(Key k, Data d);
-    bool   insert(Pair_t t);
-    FRet   find  (Key k);
-    bool   remove(Key k);
-    FRet   pop   (Key k);
+    bool   insert(const Key& k, const Data& d);
+    bool   insert(const Pair_t& t);
+    FRet   find  (const Key& k);
+    bool   remove(const Key& k);
+    FRet   pop   (const Key& k);
 
-    int    probe (Key k);
+    int    probe (const Key& k);
 
     bool   space ();
-    Pair_t get(size_t i);
-    Pair_t replace(size_t i, std::pair<Key, Data> t);
+    Pair_t get(const size_t i);
+    Pair_t replace(const size_t i, const Pair_t& t);
 
 
-    Pair_t* insertPtr(Pair_t t);
-    Pair_t* findPtr(Key k);
-    std::pair<int, Pair_t*> probePtr(Key k);
+    Pair_t* insertPtr(const Pair_t& t);
+    const Pair_t* findPtr(const Key& k) const;
+    Pair_t* findPtr(const Key& k);
+    std::pair<int, Pair_t*> probePtr(const Key& k);
 
     Pair_t elements[BS];
 };
 
 
 template<class K, class D, size_t BS>
-inline bool Bucket<K,D,BS>::insert(Key k, Data d)
+inline bool Bucket<K,D,BS>::insert(const Key& k, const Data& d)
 {
     for (size_t i = 0; i < BS; ++i)
     {
@@ -54,7 +55,7 @@ inline bool Bucket<K,D,BS>::insert(Key k, Data d)
 }
 
 template<class K, class D, size_t BS>
-inline bool Bucket<K,D,BS>::insert(Pair_t t)
+inline bool Bucket<K,D,BS>::insert(const Pair_t& t)
 {
     for (size_t i = 0; i < BS; ++i)
     {
@@ -68,7 +69,7 @@ inline bool Bucket<K,D,BS>::insert(Pair_t t)
 }
 
 template<class K, class D, size_t BS>
-inline typename Bucket<K,D,BS>::FRet Bucket<K,D,BS>::find(Key k)
+inline typename Bucket<K,D,BS>::FRet Bucket<K,D,BS>::find(const Key& k)
 {
     for (size_t i = 0; i < BS; ++i)
     {
@@ -79,7 +80,7 @@ inline typename Bucket<K,D,BS>::FRet Bucket<K,D,BS>::find(Key k)
 }
 
 template<class K, class D, size_t BS>
-inline bool Bucket<K,D,BS>::remove(Key k)
+inline bool Bucket<K,D,BS>::remove(const Key& k)
 {
     for (size_t i = 0; i < BS; ++i)
     {
@@ -100,7 +101,7 @@ inline bool Bucket<K,D,BS>::remove(Key k)
 }
 
 template<class K, class D, size_t BS>
-inline typename Bucket<K,D,BS>::FRet Bucket<K,D,BS>::pop(Key k)
+inline typename Bucket<K,D,BS>::FRet Bucket<K,D,BS>::pop(const Key& k)
 {
     for (size_t i = 0; i < BS; ++i)
     {
@@ -124,7 +125,7 @@ inline typename Bucket<K,D,BS>::FRet Bucket<K,D,BS>::pop(Key k)
 }
 
 template<class K, class D, size_t BS>
-inline int Bucket<K,D,BS>::probe(Key k)
+inline int Bucket<K,D,BS>::probe(const Key& k)
 {
     for (size_t i = 0; i < BS; ++i)
     {
@@ -148,7 +149,7 @@ inline std::pair<K, D> Bucket<K,D,BS>::get(size_t i)
 }
 
 template<class K, class D, size_t BS>
-inline std::pair<K, D> Bucket<K,D,BS>::replace(size_t i, std::pair<K, D> newE)
+inline std::pair<K, D> Bucket<K,D,BS>::replace(size_t i, const Pair_t& newE)
 {
     auto temp = elements[i];
     elements[i] = newE;
@@ -157,7 +158,7 @@ inline std::pair<K, D> Bucket<K,D,BS>::replace(size_t i, std::pair<K, D> newE)
 
 
 template<class K, class D, size_t BS>
-inline std::pair<K,D>* Bucket<K,D,BS>::insertPtr(Pair_t t)
+inline std::pair<K,D>* Bucket<K,D,BS>::insertPtr(const Pair_t& t)
 {
     for (size_t i = 0; i < BS; ++i)
     {
@@ -171,7 +172,7 @@ inline std::pair<K,D>* Bucket<K,D,BS>::insertPtr(Pair_t t)
 }
 
 template<class K, class D, size_t BS>
-inline std::pair<K,D>* Bucket<K,D,BS>::findPtr(Key k)
+inline std::pair<K,D>* Bucket<K,D,BS>::findPtr(const Key& k)
 {
     for (size_t i = 0; i < BS; ++i)
     {
@@ -182,7 +183,18 @@ inline std::pair<K,D>* Bucket<K,D,BS>::findPtr(Key k)
 }
 
 template<class K, class D, size_t BS>
-inline std::pair<int, std::pair<K,D>*> Bucket<K,D,BS>::probePtr(Key k)
+inline const std::pair<K,D>* Bucket<K,D,BS>::findPtr(const Key& k) const
+{
+    for (size_t i = 0; i < BS; ++i)
+    {
+        if (!elements[i].first )      return nullptr;
+        if ( elements[i].first == k ) return &elements[i];
+    }
+    return nullptr;
+}
+
+template<class K, class D, size_t BS>
+inline std::pair<int, std::pair<K,D>*> Bucket<K,D,BS>::probePtr(const Key& k)
 {
     for (size_t i = 0; i < BS; ++i)
     {

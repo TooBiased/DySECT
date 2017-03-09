@@ -25,7 +25,8 @@ private:
 public:
     using Key  = K;
     using Data = D;
-    using Iterator = typename Table_t::iterator;
+    using iterator = typename Table_t::iterator;
+    using const_iterator = typename Table_t::const_iterator;
 
     Hopscotch(size_t cap = 0, double size_constraint = 1.1,
               size_t /*dis_steps*/ = 0, size_t /*seed*/ = 0)
@@ -38,26 +39,22 @@ public:
     Hopscotch(Hopscotch&&) = default;
     Hopscotch& operator=(Hopscotch&&) = default;
 
-    std::pair<Iterator,bool> insert(Key k, Data d)
-    {
-        return insert(std::make_pair(k,d));
-    }
-    std::pair<Iterator,bool> insert(std::pair<Key,Data> t)
-    {
-        // really stupid shit
-        auto ret = table.insert(t);
+    inline std::pair<iterator, bool> insert(const Key& k, const Data& d)
+    { return insert(std::make_pair(k,d)); }
+    inline std::pair<iterator, bool> insert(std::pair<Key,Data>& t)
+    { return table.insert(t); }
 
-        return table.insert(t);
-    }
-    Iterator find  (const Key k)
-    {
-        return table.find(k);
-        //return std::make_pair((it!=end(table)), it->second);
-    }
-    bool remove(Key k)
-    {
-        return table.erase(k);
-    }
+    inline iterator find(const Key& k)
+    { return table.find(k); }
+    inline const_iterator find(const Key& k) const
+    { return table.find(k); }
+    inline size_t erase(const Key& k)
+    { return table.erase(k); }
+
+    inline Data& at(const Key& k)             { return table.at(k); }
+    inline const Data& at(const Key& k) const { return table.at(k); }
+    inline Data& operator[](const Key& k)     { return table[k]; }
+    inline size_t count(const Key& k)   const { return table.count(k); }
 
 private:
     Table_t table;
@@ -98,27 +95,30 @@ public:
     using Data = D;
     using Pair_t = std::pair<Key,Data>;
 
-    //using Iterator = typename Table_t::iterator;
-    class Iterator : public IterNative_t
+    //using iterator = typename Table_t::iterator;
+    class iterator : public IterNative_t
     {
     public:
         using difference_type   = typename IterNative_t::difference_type;
-        using value_type = Pair_t;
-        using reference  = Pair_t&;
-        using pointer    = Pair_t*;
+        using value_type = std::<const Key,Data>;
+        using reference  = value_type&;
+        using pointer    = value_type*;
         using iterator_category = typename IterNative_t::iterator_category;
 
-        Iterator(const IterNative_t& rhs) : IterNative_t(rhs) { };
+        iterator(const IterNative_t& rhs) : IterNative_t(rhs) { };
 
         reference operator*() const
         {
-            return const_cast<reference>(IterNative_t::operator*());
+            return reinterpret_cast<reference>(
+                       const_cast<Pair_t&>(IterNative_t::operator*()));
         }
         pointer operator->() const
         {
-            return const_cast<pointer>(IterNative_t::operator->());
+            return reinterpret_cast<pointer>(
+                       const_cast<Pair_t*>(IterNative_t::operator->()));
         }
     };
+    using const_iterator = typename Table_t::const_iterator;
 
     SpaceHopscotch(size_t cap = 0, double size_constraint = 1.1,
               size_t /*dis_steps*/ = 0, size_t /*seed*/ = 0)
@@ -131,15 +131,22 @@ public:
     SpaceHopscotch(SpaceHopscotch&&) = default;
     SpaceHopscotch& operator=(SpaceHopscotch&&) = default;
 
-    inline std::pair<Iterator, bool> insert(const Key k, const Data d)
+    inline std::pair<iterator, bool> insert(const Key& k, const Data& d)
     { return insert(std::make_pair(k,d)); }
-    inline std::pair<Iterator, bool> insert(std::pair<Key,Data> t)
+    inline std::pair<iterator, bool> insert(std::pair<Key,Data>& t)
     { return table.insert(t); }
 
-    inline Iterator find(const Key k)
+    inline iterator find(const Key& k)
     { return table.find(k); }
-    inline bool remove(const Key k)
+    inline const_iterator find(const Key& k) const
+    { return table.find(k); }
+    inline size_t erase(const Key& k)
     { return table.erase(k); }
+
+    inline Data& at(const Key& k)             { return table.at(k); }
+    inline const Data& at(const Key& k) const { return table.at(k); }
+    inline Data& operator[](const Key& k)     { return table[k]; }
+    inline size_t count(const Key& k)   const { return table.count(k); }
 
 private:
     Table_t table;

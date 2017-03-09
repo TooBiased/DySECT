@@ -116,32 +116,29 @@ struct Test
             auto t0 = std::chrono::high_resolution_clock::now();
             for (size_t i = 0; i < n0; ++i)
             {
-                table.insert(keys[i], i);
-                //if (!table.insert(keys[i], i).second) ++in_errors;
+                if (!table.insert(keys[i], i).second) ++in_errors;
             }
 
             auto t1 = std::chrono::high_resolution_clock::now();
             for (size_t i = n0; i < n; ++i)
             {
-                table.insert(keys[i], i);
-                //if (!table.insert(keys[i], i).second) ++in_errors;
+                if (!table.insert(keys[i], i).second) ++in_errors;
             }
             auto t2 = std::chrono::high_resolution_clock::now();
+            //const Table& ctable = table;
             for (size_t i = 0; i < n; ++i)
             {
                 auto e = table.find(keys[i]);
-                if (!e) fin_errors++;
-
-                //if ( (e == table.end()) || ((*e).second != i))
-                //    fin_errors++;
+                if ( (e == table.end()) || ((*e).second != i))
+                    //if (ctable.at(keys[i]) != i)
+                    fin_errors++;
             }
             auto t3 = std::chrono::high_resolution_clock::now();
             for (size_t i = n; i < 2*n; ++i)
             {
                 auto e = table.find(keys[i]);
-                if (e) fin_errors++;
-                //if ( (e != table.end()) && (keys[(*e).second] != keys[i]))
-                //    fin_errors++;
+                if ( (e != table.end()) && (keys[(*e).second] != keys[i]))
+                    fin_errors++;
             }
             auto t4 = std::chrono::high_resolution_clock::now();
 

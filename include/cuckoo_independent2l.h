@@ -30,7 +30,7 @@ private:
 public:
     using Key            = typename CuckooTraits<This_t>::Key;
     using Data           = typename CuckooTraits<This_t>::Data;
-    using Iterator       = typename Base_t::Iterator;
+    using iterator       = typename Base_t::iterator;
 
 
     static constexpr double fac_div = double (1ull << (32 - ct_log(tl)));
@@ -156,18 +156,15 @@ private:
                 if (! e.first) break;
                 auto hash = hasher(e.first);
 
-                //bool bla = false;
                 for (size_t ti = 0; ti < nh; ++ti)
                 {
                     if (i == size_t(Ext::loc(hash, ti) * cfactor))
                     {
                         if (! target[Ext::loc(hash, ti) * nfactor].insert(e))
                             grow_buffer.push_back(e);
-                        //bla = true;
                         break;
                     }
                 }
-                //if (!bla) std::cout << "!" << std::flush;
             }
         }
     }
@@ -182,18 +179,17 @@ private:
         n = temp;
         std::vector<std::pair<Key, Data> > ttemp;
         std::swap(ttemp, grow_buffer);
-        //grow_buffer.clear();
     }
 
 public:
-    /* Necessary Specialized Funcitions ***************************************/
+    // Specialized Funcitions (to keep per table counts) ***********************
 
-    std::pair<Iterator, bool> insert(const Key k, const Data d)
+    std::pair<iterator, bool> insert(const Key k, const Data d)
     {
         return insert(std::make_pair(k,d));
     }
 
-    std::pair<Iterator, bool> insert(const std::pair<Key, Data> t)
+    std::pair<iterator, bool> insert(const std::pair<Key, Data> t)
     {
         auto hash = hasher(t.first);
         size_t ttl = Ext::tab(hash, 0);
@@ -202,21 +198,18 @@ public:
         if (result.second)
         {
             auto currsize = ++ll_elem[ttl];
-            if (currsize > ll_thresh[ttl]) grow(ttl); //potentially grow the single table
+            if (currsize > ll_thresh[ttl]) grow(ttl);
         }
         return result;
     }
 
-    bool remove(const Key k)
+    size_t erase(const Key k)
     {
-        auto hash = hasher(k);
-        size_t ttl = Ext::tab(hash, 0);
-        if (Base_t::remove(k))
-        {
-            ll_elem[ttl]--;
-            return true;
-        }
-        return false;
+        auto hash     = hasher(k);
+        size_t ttl    = Ext::tab(hash, 0);
+        size_t nk     = Base_t::remove(k);
+        ll_elem[ttl] -= nk;
+        return nk;
     }
 };
 

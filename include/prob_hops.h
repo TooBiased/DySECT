@@ -57,14 +57,6 @@ public:
     AugmentData& operator=(AugmentData&& rhs)
     {   std::swap(data, rhs.data); return *this; }
 
-    /*
-    ~AugmentData()
-    {
-         if (data)
-         { free(data); }
-    }
-    */
-
     inline Accessor_t getAcc(size_t index)
     { return Accessor_t(reinterpret_cast<size_t*>(data.get() + index*n_bytes)); }
 
@@ -78,7 +70,6 @@ public:
     }
 
     std::unique_ptr<uchar[]> data;
-    //uchar* data;
 };
 
 
@@ -98,7 +89,8 @@ private:
 public:
     using Key      = typename ProbTraits<This_t>::Key;
     using Data     = typename ProbTraits<This_t>::Data;
-    using Iterator = typename Base_t::Iterator;
+    using iterator = typename Base_t::iterator;
+    using const_iterator = typename Base_t::const_iterator;
 
     HopsProb(size_t cap = 0      , double size_constraint = 1.1,
             size_t /*dis_steps*/ = 0, size_t /*seed*/ = 0)
@@ -113,30 +105,7 @@ public:
     HopsProb(HopsProb&& rhs)  = default;
     HopsProb& operator=(HopsProb&& ) = default;
 
-    /* SHOULD CHANGE THIS TO THE MULTIPLY BY DOUBLE FACTOR VARIANT */
-    inline size_t index(size_t i) const
-    { return double(bitmask & i) * factor; }
-    inline size_t mod  (size_t i) const
-    { return i; }
-
 private:
-    inline void grow()
-    {
-        auto ntable = This_t(n, alpha);
-
-        for (size_t i = 0; i < capacity; ++i)
-        {
-            auto current  = table[i];
-            if (current.first)
-                ntable.insert(current);
-        }
-
-        //std::swap(table   , ntable.table);
-        //std::swap(nh_data.data , ntable.nh_data.data);
-        //std::swap(capacity, ntable.capacity);
-        (*this) = std::move(ntable);
-    }
-
     using Base_t::alpha;
     using Base_t::n;
     using Base_t::capacity;
@@ -150,13 +119,19 @@ private:
     AugData_t nh_data;
 
 public:
+    /* SHOULD CHANGE THIS TO THE MULTIPLY BY DOUBLE FACTOR VARIANT */
+    inline size_t index(size_t i) const
+    { return double(bitmask & i) * factor; }
+    inline size_t mod  (size_t i) const
+    { return i; }
+
     //specialized functions because of Hop Hood Hashing
-    inline std::pair<Iterator, bool> insert(const Key k, const Data d)
+    inline std::pair<iterator, bool> insert(const Key& k, const Data& d)
     {
         return insert(std::make_pair(k,d));
     }
 
-    inline std::pair<Iterator, bool> insert(const std::pair<Key, Data> t)
+    inline std::pair<iterator, bool> insert(const std::pair<Key, Data>& t)
     {
         // we first have to check if t.first is already present
         size_t ind  = h(t.first);
@@ -171,7 +146,7 @@ public:
                 auto temp = table[i];
                 if ( temp.first == t.first )
                 {
-                    return std::make_pair(Iterator(&table[i]), false);
+                    return std::make_pair(iterator(&table[i]), false);
                 }
             }
         }
@@ -191,10 +166,90 @@ public:
                 table[ti] = t;
                 aug.set(ti-ind);
                 inc_n();
-                return std::make_pair(Iterator(&table[ti]), true);
+                return std::make_pair(iterator(&table[ti]), true);
             }
         }
         return std::make_pair(Base_t::end(), false);
+    }
+
+    inline iterator find(const Key& k)
+    {
+        auto ind = h(k);
+        size_t bits = nh_data.getNHood(ind);
+
+        for (size_t i = ind; bits; ++i, bits>>=1)
+        {
+            if (!(bits & 1)) continue;
+            auto temp = table[i];
+            if ( temp.first == k )
+            {
+                return iterator(&table[i]);
+            }
+        }
+        return Base_t::end();
+    }
+
+    inline const_iterator find(const Key& k) const
+    {
+        auto ind = h(k);
+        size_t bits = nh_data.getNHood(ind);
+
+        for (size_t i = ind; bits; ++i, bits>>=1)
+        {
+            if (!(bits & 1)) continue;
+            auto temp = table[i];
+            if ( temp.first == k )
+            {
+                return const_iterator(&table[i]);
+            }
+        }
+        return Base_t::cend();
+    }
+
+    inline size_t erase(const Key& k)
+    {
+        auto ind = h(k);
+        size_t bits = nh_data.getNHood(ind);
+
+        for (size_t i = ind; bits; ++i, bits>>=1)
+        {
+            if (!(bits&1)) continue;
+            auto tempk = table[i].first;
+            if ( tempk == k )
+            {
+                nh_data.getAcc(ind).unset(i-ind);
+                table[i] = std::make_pair(0,0);
+                return 1;
+            }
+        }
+        return 0;
+    }
+
+    inline static void print_init_header(std::ostream& out)
+    {
+        out.width(5); out << "nghb" << " ";
+        Base_t::print_init_header(out);
+    }
+
+    inline void print_init_data(std::ostream& out)
+    {
+        out.width(5); out << nh_size << " ";
+        Base_t::print_init_data(out);
+    }
+
+private:
+    inline void grow()
+    {
+        auto ntable = This_t(n, alpha);
+
+        for (size_t i = 0; i < capacity; ++i)
+        {
+            auto current  = table[i];
+            if (current.first)
+                ntable.insert(current);
+        }
+
+        (*this) = std::move(ntable);
     }
 
     inline std::pair<bool, size_t> move_gap(const size_t pos, const size_t goal)
@@ -217,59 +272,6 @@ public:
         }
         return std::make_pair(false, pos);
     }
-
-    inline Iterator find(const Key k)
-    {
-        auto ind = h(k);
-        size_t bits = nh_data.getNHood(ind);
-        //auto   aug  = nh_data.getCAcc(ind);
-        //size_t bits = aug.getNHood();
-
-        for (size_t i = ind; bits; ++i, bits>>=1)
-        {
-            if (!(bits & 1)) continue;
-            auto temp = table[i];
-            if ( temp.first == k )
-            {
-                return Iterator(&table[i]);
-            }
-        }
-        return Base_t::end();
-    }
-
-    inline bool remove(const Key k)
-    {
-        auto ind = h(k);
-        //auto   aug  = nh_data.getAcc(ind);
-        //size_t bits = aug.getNHood();
-        size_t bits = nh_data.getNHood(ind);
-
-        for (size_t i = ind; bits; ++i, bits>>=1)
-        {
-            if (!(bits&1)) continue;
-            auto tempk = table[i].first;
-            if ( tempk == k )
-            {
-                nh_data.getAcc(ind).unset(i-ind);
-                table[i] = std::make_pair(0,0);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    inline static void print_init_header(std::ostream& out)
-    {
-        out.width(5); out << "nghb" << " ";
-        Base_t::print_init_header(out);
-    }
-
-    inline void print_init_data(std::ostream& out)
-    {
-        out.width(5); out << nh_size << " ";
-        Base_t::print_init_data(out);
-    }
-
 };
 
 

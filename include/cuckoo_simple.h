@@ -62,10 +62,9 @@ public:
 private:
     using Base_t::capacity;
     using Base_t::alpha;
+    using Base_t::hasher;
     double beta;
     size_t thresh;
-    using Base_t::hasher;
-
     size_t n_buckets;
     double factor;
     std::unique_ptr<Bucket_t[]> table;

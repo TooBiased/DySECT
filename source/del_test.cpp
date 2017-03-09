@@ -111,7 +111,7 @@ struct Test
             for (size_t i = win; i < win+n; ++i)
             {
                 if (!table.insert(keys[i], i).second)  ++in_errors;
-                if (!table.remove(keys[i-win])) ++del_errors;
+                if (!table.erase(keys[i-win])) ++del_errors;
             }
             auto t2 = std::chrono::high_resolution_clock::now();
             for (size_t i = 0  ; i < n; ++i)
@@ -127,7 +127,7 @@ struct Test
 
             for (size_t i = n; i < win+n; ++i)
             {
-                if (!table.remove(keys[i])) ++del_errors;
+                if (!table.erase(keys[i])) ++del_errors;
             }
 
             auto t3 = std::chrono::high_resolution_clock::now();

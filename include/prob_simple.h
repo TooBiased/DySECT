@@ -17,28 +17,20 @@ public:
     using Key    = typename ProbTraits<This_t>::Key;
     using Data   = typename ProbTraits<This_t>::Data;
 
-    static constexpr size_t bs = 0;
-    static constexpr size_t tl = 0;
-
-    static size_t next_power_of_two(size_t i)
-    {
-        size_t t = 2048;
-        while (t < i) t <<= 1;
-        return t;
-    }
-
     FastLinProb(size_t cap = 0, double = 1., size_t = 0)
         : Base_t(next_power_of_two(cap) << 1, 1.)
     {
         thresh  = capacity * .6;
         bitmask = capacity - 1;
     }
-
     FastLinProb(const FastLinProb&) = delete;
     FastLinProb& operator=(const FastLinProb&) = delete;
-
     FastLinProb(FastLinProb&& rhs)  = default;
     FastLinProb& operator=(FastLinProb&& ) = default;
+
+    static constexpr size_t bs = 0;
+    static constexpr size_t tl = 0;
+    size_t bitmask;
 
     inline size_t index(size_t i) const { return i & bitmask; }
     inline size_t mod(size_t i)   const { return i & bitmask; }
@@ -47,6 +39,13 @@ private:
     using Base_t::capacity;
     using Base_t::thresh;
     using Base_t::table;
+
+    static size_t next_power_of_two(size_t i)
+    {
+        size_t t = 2048;
+        while (t < i) t <<= 1;
+        return t;
+    }
 
     explicit FastLinProb(size_t cap, size_t lthresh, This_t* )
         : Base_t(cap, 1.), bitmask(cap-1)
@@ -70,8 +69,6 @@ private:
 
         (*this) = std::move(ntable);
     }
-
-    size_t bitmask;
 };
 
 
@@ -111,22 +108,23 @@ public:
     {
         factor = double(capacity-300)/double(1ull << 32);
     }
-
     SpaceLinProb(const SpaceLinProb&) = delete;
     SpaceLinProb& operator=(const SpaceLinProb&) = delete;
-
     SpaceLinProb(SpaceLinProb&& rhs)  = default;
     SpaceLinProb& operator=(SpaceLinProb&& ) = default;
-
-    /* SHOULD CHANGE THIS TO THE MULTIPLY BY DOUBLE FACTOR VARIANT */
-    inline size_t index(size_t i) const { return (bitmask & i)*factor; }
-    inline size_t mod(size_t i)   const { return i; }
 
     using Base_t::alpha;
     using Base_t::n;
     using Base_t::capacity;
 
+    inline size_t index(size_t i) const { return (bitmask & i)*factor; }
+    inline size_t mod(size_t i)   const { return i; }
+
 private:
+    using Base_t::table;
+    double factor;
+    static constexpr size_t bitmask = (1ull<<32)-1;
+
     inline void grow()
     {
         auto ntable = This_t(n, alpha);
@@ -142,11 +140,6 @@ private:
 
         (*this) = std::move(ntable);
     }
-
-    using Base_t::table;
-
-    double factor;
-    static constexpr size_t bitmask = (1ull<<32)-1;
 };
 
 
