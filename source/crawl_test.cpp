@@ -69,7 +69,8 @@ struct Test
             Table table(cap, alpha, steps);
             std::ifstream inf (inf_name, std::ifstream::binary);
             char buffer[bsize];
-            size_t contained = 0;
+            size_t contained  = 0;
+            size_t individual = 0;
 
             if (! inf.is_open() )
             { std::cout << "file not found" << std::endl; return 5; }
@@ -78,8 +79,6 @@ struct Test
             while (inf.tellg() >= 0)
             {
                 inf.read(buffer, bsize);
-                //std::cout << inf.tellg() << " " << std::flush;
-                //std::cout << inf.gcount() << std::endl;
 
                 char* j0 = buffer;
                 for (char* j = buffer; j < buffer+inf.gcount(); ++j)
@@ -89,11 +88,12 @@ struct Test
                         if (j0 < j)
                         {
                             size_t key = XXH64(j0, j-j0, hseed);
-                            if (! table.insert(key, 1)) ++contained;
+                            auto e = table.insert(key, 1);
+                            if (e.second) ++individual;
                             else
                             {
-                                //outf->write(j0, j-j0);
-                                //std::cout << " " << std::flush;
+                                ++((*e.first).second);
+                                ++contained;
                             }
                         }
                         j0 = j+1;
@@ -107,7 +107,7 @@ struct Test
             double ttest = std::chrono::duration_cast<std::chrono::microseconds>
                                (t1 - t0).count()/1000.;
 
-            print_timing(*outf, i, alpha, cap, ttest, contained, table.n, table);
+            print_timing(*outf, i, alpha, cap, ttest, contained, individual, table);
 
             inf.close();
         }

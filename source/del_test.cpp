@@ -105,24 +105,24 @@ struct Test
             auto t0 = std::chrono::high_resolution_clock::now();
             for (size_t i = 0  ; i < win  ; ++i)
             {
-                if (! table.insert(keys[i], i)) ++in_errors;
+                if (! table.insert(keys[i], i).second) ++in_errors;
             }
             auto t1 = std::chrono::high_resolution_clock::now();
             for (size_t i = win; i < win+n; ++i)
             {
-                if (!table.insert(keys[i], i))  ++in_errors;
+                if (!table.insert(keys[i], i).second)  ++in_errors;
                 if (!table.remove(keys[i-win])) ++del_errors;
             }
             auto t2 = std::chrono::high_resolution_clock::now();
             for (size_t i = 0  ; i < n; ++i)
             {
                 auto e = table.find(keys[i]);
-                if (e.first)  ++fin_errors;;
+                if (e != table.end())  ++fin_errors;;
             }
             for (size_t i = n; i < win+n; ++i)
             {
                 auto e = table.find(keys[i]);
-                if (!e.first) ++fin_errors;
+                if (e == table.end()) ++fin_errors;
             }
 
             for (size_t i = n; i < win+n; ++i)

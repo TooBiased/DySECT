@@ -96,8 +96,9 @@ private:
     friend Base_t;
 
 public:
-    using Key    = typename ProbTraits<This_t>::Key;
-    using Data   = typename ProbTraits<This_t>::Data;
+    using Key      = typename ProbTraits<This_t>::Key;
+    using Data     = typename ProbTraits<This_t>::Data;
+    using Iterator = typename Base_t::Iterator;
 
     HopsProb(size_t cap = 0      , double size_constraint = 1.1,
             size_t /*dis_steps*/ = 0, size_t /*seed*/ = 0)
@@ -150,12 +151,12 @@ private:
 
 public:
     //specialized functions because of Hop Hood Hashing
-    inline bool insert(Key k, Data d)
+    inline std::pair<Iterator, bool> insert(const Key k, const Data d)
     {
         return insert(std::make_pair(k,d));
     }
 
-    inline bool insert(std::pair<Key, Data> t)
+    inline std::pair<Iterator, bool> insert(const std::pair<Key, Data> t)
     {
         // we first have to check if t.first is already present
         size_t ind  = h(t.first);
@@ -170,7 +171,7 @@ public:
                 auto temp = table[i];
                 if ( temp.first == t.first )
                 {
-                    return false;
+                    return std::make_pair(Iterator(&table[i]), false);
                 }
             }
         }
@@ -190,13 +191,13 @@ public:
                 table[ti] = t;
                 aug.set(ti-ind);
                 inc_n();
-                return true;
+                return std::make_pair(Iterator(&table[ti]), true);
             }
         }
-        return false;
+        return std::make_pair(Base_t::end(), false);
     }
 
-    inline std::pair<bool, size_t> move_gap(size_t pos, size_t goal)
+    inline std::pair<bool, size_t> move_gap(const size_t pos, const size_t goal)
     {
         for (size_t i = pos - nh_size + 1; i < pos; ++i)
         {
@@ -217,7 +218,7 @@ public:
         return std::make_pair(false, pos);
     }
 
-    inline typename Base_t::FRet find(Key k) const
+    inline Iterator find(const Key k)
     {
         auto ind = h(k);
         size_t bits = nh_data.getNHood(ind);
@@ -230,13 +231,13 @@ public:
             auto temp = table[i];
             if ( temp.first == k )
             {
-                return std::make_pair(true, temp.second);
+                return Iterator(&table[i]);
             }
         }
-        return std::make_pair(false, 0);
+        return Base_t::end();
     }
 
-    inline bool remove(Key k)
+    inline bool remove(const Key k)
     {
         auto ind = h(k);
         //auto   aug  = nh_data.getAcc(ind);

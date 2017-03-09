@@ -27,7 +27,7 @@ public:
         return t;
     }
 
-    FastLinProb(size_t cap = 0      , double /*size_constraint*/ = 1., size_t /*steps*/ = 0)
+    FastLinProb(size_t cap = 0, double = 1., size_t = 0)
         : Base_t(next_power_of_two(cap) << 1, 1.)
     {
         thresh  = capacity * .6;
@@ -48,7 +48,7 @@ private:
     using Base_t::thresh;
     using Base_t::table;
 
-    explicit FastLinProb(size_t cap, size_t lthresh, This_t* /* make unique */)
+    explicit FastLinProb(size_t cap, size_t lthresh, This_t* )
         : Base_t(cap, 1.), bitmask(cap-1)
     {
         thresh = lthresh;
@@ -73,6 +73,8 @@ private:
 
     size_t bitmask;
 };
+
+
 
 
 template<class K, class D, class HF, class Conf>

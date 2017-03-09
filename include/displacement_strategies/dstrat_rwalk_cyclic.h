@@ -11,6 +11,7 @@ class dstrat_rwalk_cyclic
 public:
     using Key          = typename Parent::Key;
     using Data         = typename Parent::Data;
+    using Pair_t       = std::pair<Key, Data>;
     using Parent_t     = Parent;
     using Hashed_t     = typename Parent::Hashed_t;
     using Bucket_t     = typename Parent::Bucket_t;
@@ -29,20 +30,22 @@ public:
         : tab(parent), re(std::move(rhs.re)), steps(rhs.steps)
     { }
 
-    inline int insert(std::pair<Key,Data> t, Hashed_t hash)
+    inline std::pair<int, Pair_t*> insert(Pair_t t, Hashed_t hash)
     {
-        std::vector<std::pair<std::pair<Key, Data>, Bucket_t*> > queue;
+        std::vector<std::pair<Pair_t, Bucket_t*> > queue;
         std::uniform_int_distribution<size_t> bin(0,nh-1);
         std::uniform_int_distribution<size_t> bsd(0,tab.bs-1);
         std::uniform_int_distribution<size_t> hfd(0,nh-2);
 
         auto tp = t;
         Bucket_t* tb = tab.getBucket(hash, bin(re));
+        Pair_t* pos = nullptr;
 
         queue.emplace_back(tp,tb);
         for (size_t i = 0; !tb->space() && i<steps; ++i)
         {
             auto r = bsd(re);
+            if (tp.first == t.first) pos = &(tb->elements[r]);
             tp = tb->replace(r, tp);
 
             auto hash = tab.hasher(tp.first);
@@ -55,7 +58,7 @@ public:
 
         if (tb->insert(tp))
         {
-            return queue.size() -1;;
+            return std::make_pair(queue.size() -1, pos);
         }
 
         std::pair<Key,Data> ttp;
@@ -70,6 +73,6 @@ public:
             ttp = tp;
         }
 
-        return -1;
+        return std::make_pair(-1, nullptr);
     }
 };

@@ -8,6 +8,7 @@
 #include "bucket.h"
 #include "config.h"
 #include "hasher.h"
+#include "iterator_base.h"
 // CRTP base class for all cuckoo tables, this encapsulates
 // main cuckoo table functionality (insert, find, and remove)
 
@@ -39,7 +40,6 @@ private:
 
     using This_t         = CuckooMultiBase<SCuckoo>;
     using Specialized_t  = typename CuckooTraits<SCuckoo>::Specialized_t;
-    //using HashFct_t      = typename CuckooTraits<SCuckoo>::HashFct_t;
     using DisStrat_t     = typename CuckooTraits<SCuckoo>::Config_t::template DisStrat_temp<This_t>;
     using HistCount_t    = typename CuckooTraits<SCuckoo>::Config_t::HistCount_t;
     using Hasher_t       = typename CuckooTraits<SCuckoo>::Hasher_t;
@@ -53,7 +53,12 @@ public:
 
     using Key      = typename CuckooTraits<SCuckoo>::Key;
     using Data     = typename CuckooTraits<SCuckoo>::Data;
+    using Pair_t   = std::pair<Key,Data>;
     using FRet     = std::pair<bool, Data>;
+    using Iterator = IteratorBase<This_t>;
+
+    Iterator end() { return Iterator::end(); }
+
 
     CuckooMultiBase(size_t cap = 0, double size_constraint = 1.1,
                size_t dis_steps = 0, size_t seed = 0)
@@ -77,9 +82,10 @@ public:
         return *this;
     }
 
-    bool insert(Key k, Data d);
-    bool insert(std::pair<Key,Data> t);
-    FRet find  (Key k) const;
+    Iterator find(const Key k);
+    std::pair<Iterator, bool> insert(const Key k, const Data d);
+    std::pair<Iterator, bool> insert(const Pair_t t);
+
     bool remove(Key k);
 
     /*** some functions for easier load visualization (not in final product) **/
@@ -135,7 +141,7 @@ private:
 
 /* IMPLEMENTATION *************************************************************/
 
-
+/* OLD IMPLEMENTATION (PRE ITERATOR)
 template<class SCuckoo>
 inline bool CuckooMultiBase<SCuckoo>::insert(Key k, Data d)
 {
@@ -175,7 +181,7 @@ inline bool CuckooMultiBase<SCuckoo>::insert(std::pair<Key, Data> t)
     }
     else
     {
-        r = displacer.insert(t, hash);
+        std::tie(r, std::ignore) = displacer.insert(t, hash);
     }
 
     if (r >= 0)
@@ -185,34 +191,28 @@ inline bool CuckooMultiBase<SCuckoo>::insert(std::pair<Key, Data> t)
         return true;
     }
     else return false;
+
 }
+
+
 
 template<class SCuckoo>
 inline typename CuckooMultiBase<SCuckoo>::FRet
 CuckooMultiBase<SCuckoo>::find(Key k) const
 {
     auto hash = hasher(k);
-    Bucket_t* ptr[nh];
-    getBuckets(hash, ptr);
-
-    FRet p[nh];
-    // Make sure this is unrolled and inlined
     for (size_t i = 0; i < nh; ++i)
     {
-        p[i] = ptr[i]->find(k);
+        Bucket_t* tb = getBucket(hash, i);
+        FRet      tr = tb->find(k);
+        if (tr.first) return tr;
     }
-
-    // seperated from top for data independence
-    for (size_t i = 0; i < nh; ++i)
-    {
-        if (p[i].first) return p[i];
-    }
-
     return std::make_pair(false, 0ull);
 }
+*/
 
 template<class SCuckoo>
-inline bool CuckooMultiBase<SCuckoo>::remove(Key k)
+inline bool CuckooMultiBase<SCuckoo>::remove(const Key k)
 {
     auto hash = hasher(k);
     Bucket_t* ptr[nh];
@@ -234,4 +234,65 @@ inline bool CuckooMultiBase<SCuckoo>::remove(Key k)
         }
     }
     return false;
+}
+
+
+
+
+template<class SCuckoo>
+inline typename CuckooMultiBase<SCuckoo>::Iterator CuckooMultiBase<SCuckoo>::find(const Key k)
+{
+    auto hash = hasher(k);
+
+    for (size_t i = 0; i < nh; ++i)
+    {
+        Bucket_t* tb = getBucket(hash, i);
+        Pair_t*   tp = tb->findPtr(k);
+        if (tp) return Iterator(tp);
+    }
+    return Iterator::end();
+}
+
+template<class SCuckoo>
+inline std::pair<typename CuckooMultiBase<SCuckoo>::Iterator, bool>
+CuckooMultiBase<SCuckoo>::insert(const Key k, const Data d)
+{
+    return insert(std::make_pair(k,d));
+}
+
+template<class SCuckoo>
+inline std::pair<typename CuckooMultiBase<SCuckoo>::Iterator, bool>
+CuckooMultiBase<SCuckoo>::insert(const Pair_t t)
+{
+    auto hash = hasher(t.first);
+
+    std::pair<int,Pair_t*> max = std::make_pair(0, nullptr);
+    for (size_t i = 0; i < nh; ++i)
+    {
+        auto temp = getBucket(hash, i)->probePtr(t.first);
+
+        if (temp.first < 0)
+            return std::make_pair(Iterator(temp.second), false);
+        max = (max.first > temp.first) ? max : temp;
+    }
+
+    if (max.first > 0)
+    {
+        *max.second = t;
+        hcounter.add(0);
+        static_cast<Specialized_t*>(this)->inc_n();
+        return std::make_pair(Iterator(max.second), true);
+    }
+
+    int  srch = -1;
+    Pair_t* pos  = nullptr;
+    std::tie(srch, pos) = displacer.insert(t, hash);
+    if (srch >=0)
+    {
+        hcounter.add(srch);
+        static_cast<Specialized_t*>(this)->inc_n();
+        return std::make_pair(Iterator(pos), true);
+    }
+
+    return std::make_pair(end(), false);
 }

@@ -135,25 +135,25 @@ struct Test
             {
                 for (; j < nxt_blk; ++j)
                 {
-                    if (!table.insert(inkeys[j], j)) ++in_errors;
+                    if (!table.insert(inkeys[j], j).second) ++in_errors;
                 }
 
                 auto t1 = std::chrono::high_resolution_clock::now();
                 for ( ; j < nxt_blk+win; ++j)
                 {
-                    if (!table.insert(inkeys[j], j)) ++in_errors;
+                    if (!table.insert(inkeys[j], j).second) ++in_errors;
                 }
                 auto t2 = std::chrono::high_resolution_clock::now();
                 for (size_t k = 0; k < win; ++k)
                 {
                     auto temp = table.find(fikeys[k]);
-                    if (!temp.first ) ++fi_errors;
+                    if (temp == table.end()) ++fi_errors;
                 }
                 auto t3 = std::chrono::high_resolution_clock::now();
                 for (size_t k = win; k < win<<1; ++k)
                 {
                     auto temp = table.find(fikeys[k]);
-                    if ( temp.first ) ++fi_errors;
+                    if (temp != table.end()) ++fi_errors;
                 }
                 auto t4 = std::chrono::high_resolution_clock::now();
                 double d_in  = std::chrono::duration_cast<std::chrono::nanoseconds> (t2 - t1).count()/double(win);

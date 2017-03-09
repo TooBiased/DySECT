@@ -105,7 +105,7 @@ struct Test
                 auto t1 = std::chrono::high_resolution_clock::now();
                 for (size_t ti = j*block_size; ti < (j+1)*block_size; ++ti)
                 {
-                    if (!table.insert(keys[ti], ti)) ++in_errors;
+                    if (!table.insert(keys[ti], ti).second) ++in_errors;
                 }
                 auto t2 = std::chrono::high_resolution_clock::now();
                 double d_step = std::chrono::duration_cast<std::chrono::microseconds> (t2 - t1).count()/1000.;

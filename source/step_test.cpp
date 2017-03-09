@@ -182,10 +182,10 @@ struct Test
 
         for (size_t i = 0; i < n; ++i)
         {
-            if (!g_d.insert(keys[i], i)) { ++e_g_d; }
-            if (!g_s.insert(keys[i], i)) { ++e_g_s; }
-            if (!s_s.insert(keys[i], i)) { ++e_s_s; }
-            if (!h_s.insert(keys[i], i)) { ++e_h_s; }
+            if (!g_d.insert(keys[i], i).second) { ++e_g_d; }
+            if (!g_s.insert(keys[i], i).second) { ++e_g_s; }
+            if (!s_s.insert(keys[i], i).second) { ++e_s_s; }
+            if (!h_s.insert(keys[i], i).second) { ++e_h_s; }
             if ( g_d.capacity != curr_d_size )
             {
                 print_stuff(g_d, g_s, s_s, h_s, lvl++, name);

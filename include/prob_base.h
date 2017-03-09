@@ -7,6 +7,7 @@
 
 #include "config.h"
 #include "bucket.h"
+#include "iterator_base.h"
 
 template <class T>
 class ProbTraits;
@@ -14,28 +15,26 @@ class ProbTraits;
 template<class SpProb>
 class ProbBase
 {
-public:
-    using Key      = typename ProbTraits<SpProb>::Key;
-    using Data     = typename ProbTraits<SpProb>::Data;
-    using FRet     = std::pair<bool, Data>;
-
 private:
     using This_t         = ProbBase<SpProb>;
     using Specialized_t  = typename ProbTraits<SpProb>::Specialized_t;
-    using Bucket_t       = Bucket<Key,Data,1>;
-    using Cell_t   = std::pair<Key,Data>;
-    using HashFct_t      = typename ProbTraits<SpProb>::HashFct_t;
-    //using HistCount_t    = typename ProbTraits<SpProb>::Config_t::HistCount_t;
-
     friend Specialized_t;
+    using HashFct_t      = typename ProbTraits<SpProb>::HashFct_t;
 
 public:
+    using Key      = typename ProbTraits<SpProb>::Key;
+    using Data     = typename ProbTraits<SpProb>::Data;
+    using Pair_t   = std::pair<Key,Data>;
+    using Iterator = IteratorBase<This_t>;
+    static constexpr Iterator end() { return Iterator::end(); }
+
+
     ProbBase(size_t cap, double alpha)
         : alpha(alpha), beta((alpha+1.)/2.), n(0),
           capacity((cap) ? cap*alpha : 2048*alpha),
           thresh  ((cap) ? cap*beta  : 2048*beta)
     {
-        if (capacity) table = std::make_unique<Cell_t[]>(capacity);
+        if (capacity) table = std::make_unique<Pair_t[]>(capacity);
     }
 
     ~ProbBase() = default;
@@ -46,9 +45,9 @@ public:
     ProbBase(ProbBase&& rhs) = default;
     ProbBase& operator=(ProbBase&& rhs) = default;
 
-    bool insert(Key k, Data d);
-    bool insert(std::pair<Key,Data> t);
-    FRet find  (Key k) const;
+    std::pair<Iterator, bool> insert(Key k, Data d);
+    std::pair<Iterator, bool> insert(std::pair<Key,Data> t);
+    Iterator find  (Key k) const;
     bool remove(Key k);// { return false; }
 
     inline static void print_init_header(std::ostream& out)
@@ -64,7 +63,7 @@ public:
     size_t     thresh;
     HashFct_t  hasher;
 
-    std::unique_ptr<Cell_t[]> table;
+    std::unique_ptr<Pair_t[]> table;
 
 private:
     /*** static polymorph functions *******************************************/
@@ -82,13 +81,15 @@ private:
 
 /* IMPLEMENTATION *************************************************************/
 template<class SpProb>
-inline bool ProbBase<SpProb>::insert(Key k, Data d)
+inline std::pair<typename ProbBase<SpProb>::Iterator, bool>
+ProbBase<SpProb>::insert(const Key k, const Data d)
 {
     return insert(std::make_pair(k,d));
 }
 
 template<class SpProb>
-inline bool ProbBase<SpProb>::insert(std::pair<Key, Data> t)
+inline std::pair<typename ProbBase<SpProb>::Iterator, bool>
+ProbBase<SpProb>::insert(const std::pair<Key, Data> t)
 {
     auto ind = h(t.first);
 
@@ -96,20 +97,24 @@ inline bool ProbBase<SpProb>::insert(std::pair<Key, Data> t)
     {
         size_t ti = static_cast<const SpProb*>(this)->mod(i);
         auto temp = table[ti];
+        if ( temp.first == t.first)
+        {
+            return std::make_pair(Iterator(&table[ti]), false);
+        }
         if ( temp.first == 0 )
         {
             table[ti] = t;
             //hcounter.add(i - ind);
             static_cast<SpProb*>(this)->inc_n();
-            return true;
+            return std::make_pair(Iterator(&table[ti]), true);
         }
     }
-    return false;
+    return std::make_pair(end(), false);
 }
 
 template<class SpProb>
-inline typename ProbBase<SpProb>::FRet
-ProbBase<SpProb>::find(Key k) const
+inline typename ProbBase<SpProb>::Iterator
+ProbBase<SpProb>::find(const Key k) const
 {
     auto ind = h(k);
 
@@ -124,14 +129,14 @@ ProbBase<SpProb>::find(Key k) const
         }
         else if ( temp.first == k )
         {
-            return std::make_pair(true, temp.second);
+            return Iterator(&table[ti]);
         }
     }
-    return std::make_pair(false, 0);
+    return end();
 }
 
 template<class SpProb>
-inline bool ProbBase<SpProb>::remove(Key k)
+inline bool ProbBase<SpProb>::remove(const Key k)
 {
     auto ind = h(k);
 
@@ -156,7 +161,7 @@ inline bool ProbBase<SpProb>::remove(Key k)
 }
 
 template<class SpProb>
-inline void ProbBase<SpProb>::propagate_remove(size_t origin)
+inline void ProbBase<SpProb>::propagate_remove(const size_t origin)
 {
     size_t tempn = n;
     n = 0;

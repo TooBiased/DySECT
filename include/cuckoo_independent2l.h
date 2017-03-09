@@ -30,6 +30,7 @@ private:
 public:
     using Key            = typename CuckooTraits<This_t>::Key;
     using Data           = typename CuckooTraits<This_t>::Data;
+    using Iterator       = typename Base_t::Iterator;
 
 
     static constexpr double fac_div = double (1ull << (32 - ct_log(tl)));
@@ -126,7 +127,6 @@ private:
         if (grow_buffer.size()) return;
         size_t nsize   = std::floor(double(ll_elem[tab]) * alpha / double(bs));
         nsize          = std::max(nsize, ll_size[tab]+1);
-        //size_t nsize   = ll_size[tab] << 1;
         capacity      += nsize - ll_size[tab];
         double nfactor = double(nsize)      / fac_div;
         size_t nthresh = ll_elem[tab] * beta;
@@ -188,25 +188,26 @@ private:
 public:
     /* Necessary Specialized Funcitions ***************************************/
 
-    bool insert(Key k, Data d)
+    std::pair<Iterator, bool> insert(const Key k, const Data d)
     {
         return insert(std::make_pair(k,d));
     }
 
-    bool insert(std::pair<Key, Data> t)
+    std::pair<Iterator, bool> insert(const std::pair<Key, Data> t)
     {
         auto hash = hasher(t.first);
         size_t ttl = Ext::tab(hash, 0);
-        if (Base_t::insert(t))
+
+        auto result = Base_t::insert(t);
+        if (result.second)
         {
             auto currsize = ++ll_elem[ttl];
             if (currsize > ll_thresh[ttl]) grow(ttl); //potentially grow the single table
-            return true;
         }
-        return false;
+        return result;
     }
 
-    bool remove(Key k)
+    bool remove(const Key k)
     {
         auto hash = hasher(k);
         size_t ttl = Ext::tab(hash, 0);

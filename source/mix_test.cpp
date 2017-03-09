@@ -133,12 +133,12 @@ struct Test
             {
                 if (pcount < pattern)
                 {
-                    if (!table.insert(keys[i], i)) ++errors;
+                    if (!table.insert(keys[i], i).second) ++errors;
                 }
                 else
                 {
                     auto res = table.find(keys[i]);
-                    if (!res.first) ++ferrors;
+                    if (res == table.end()) ++ferrors;
                 }
                 pcount  = (pcount < 9) ? pcount+1 : 0;
             }

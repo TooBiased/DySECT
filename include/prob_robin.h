@@ -13,8 +13,9 @@ private:
     friend Base_t;
 
 public:
-    using Key    = typename ProbTraits<This_t>::Key;
-    using Data   = typename ProbTraits<This_t>::Data;
+    using Key      = typename ProbTraits<This_t>::Key;
+    using Data     = typename ProbTraits<This_t>::Data;
+    using Iterator = typename Base_t::Iterator;
 
     RobinProb(size_t cap = 0      , double size_constraint = 1.1,
               size_t /*dis_steps*/ = 0, size_t /*seed*/ = 0)
@@ -85,12 +86,12 @@ private:
 
 public:
     //specialized functions because of Robin Hood Hashing
-    inline bool insert(Key k, Data d)
+    inline std::pair<Iterator, bool> insert(const Key k, const Data d)
     {
         return insert(std::make_pair(k,d));
     }
 
-    inline bool insert(std::pair<Key, Data> t)
+    inline std::pair<Iterator, bool> insert(const std::pair<Key, Data> t)
     {
         // using doubles makes the element order independent from the capacity
         // thus growing gets even easier
@@ -101,13 +102,19 @@ public:
         {
             auto ti    = mod(i);
             auto temp  = table[ti];
+
+            if ( temp.first == t.first )
+            {
+                return std::make_pair(Iterator(&table[ti]), false);
+            }
             if ( temp.first == 0 )
             {
-                if (i == capacity - 1) return false;
+                if (i == capacity - 1)
+                    return std::make_pair(Base_t::end(), false);
                 table[ti] = current;
                 inc_n();
                 pdistance = std::max<size_t>(pdistance, i-size_t(ind));
-                return true;
+                return std::make_pair(Iterator(&table[ti]), true);
             }
             double tind = dindex(hasher(temp.first));
             if ( tind > ind )
@@ -117,10 +124,10 @@ public:
                 ind = tind;
             }
         }
-        return false;
+        return std::make_pair(Base_t::end(), false);
     }
 
-    inline typename Base_t::FRet find(Key k) const
+    inline Iterator find(const Key k)
     {
         auto ind = h(k);
 
@@ -135,13 +142,13 @@ public:
             }
             else if ( temp.first == k )
             {
-                return std::make_pair(true, temp.second);
+                return Iterator(&table[ti]);
             }
         }
-        return std::make_pair(false, 0);
+        return Base_t::end();
     }
 
-    inline bool remove(Key k)
+    inline bool remove(const Key k)
     {
         auto ind = h(k);
 
@@ -164,7 +171,7 @@ public:
         return false;
     }
 
-    inline void propagate_remove(size_t hole)
+    inline void propagate_remove(const size_t hole)
     {
         size_t thole = hole;
         for (size_t i = hole+1; ; ++i)

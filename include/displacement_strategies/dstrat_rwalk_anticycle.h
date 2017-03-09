@@ -13,6 +13,7 @@ class dstrat_rwalk_anticycle
 public:
     using Key            = typename Parent::Key;
     using Data           = typename Parent::Data;
+    using Pair_t         = std::pair<Key,Data>;
     using Parent_t       = Parent;
     using Hashed_t       = typename Parent::Hashed_t;
     using Bucket_t       = typename Parent::Bucket_t;
@@ -31,9 +32,9 @@ public:
         : tab(parent), re(std::move(rhs.re)), steps(rhs.steps)
     { }
 
-    inline int insert(std::pair<Key,Data> t, Hashed_t hash)
+    inline std::pair<int, Pair_t*> insert(Pair_t t, Hashed_t hash)
     {
-        std::vector<std::pair<std::pair<Key, Data>, Bucket_t*> > queue;
+        std::vector<std::pair<Pair_t, Bucket_t*> > queue;
         std::uniform_int_distribution<size_t> bin(0,nh-1);
         std::uniform_int_distribution<size_t> bsd(0,tab.bs-1);
         std::uniform_int_distribution<size_t> hfd(0,nh-2);
@@ -66,19 +67,21 @@ public:
             }
         }
 
-        if (! tb->space()) { return -1; }
+        if (! tb->space()) { return std::make_pair<-1, nullptr>; }
 
         //hist[queue.size() - 1] += 1;
 
         for (size_t i = queue.size()-1; i > 0; --i)
         {
             std::tie(tp,tb) = queue[i];
-            if (! queue[i-1].second->remove(tp.first))  { std::cout << "e2" << std::endl; return -1; }
-            if (! tb->insert(tp.first, tp.second))      { std::cout << "e1" << std::endl; return -1; }
+            if (! queue[i-1].second->remove(tp.first) ||
+                ! tb->insert(tp.first, tp.second))
+            { return std::make_pair(-1, nullptr); }
+
         }
 
-        if (! queue[0].second->insert(t)) { std::cout << "e3" << std::endl; return -1; }
+        Pair_t* pos = queue[0].second->insert(t);
 
-        return i;
+        return std::make_pair((pos) ? i : -1, pos);
     }
 };

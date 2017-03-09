@@ -11,7 +11,8 @@
      !ROBINPROB       && \
      !HOPPROB         && \
      !HOPSCOTCH       && \
-     !SPACEHOPSCOTCH)
+     !SPACEHOPSCOTCH  && \
+     !STD_UNORDERED)
 #warning WARNING: No table chosen using! CEG2L
 #define CEG2L
 #endif // NO HASHTYPE DEFINED => GROWS
@@ -76,6 +77,12 @@
 #define MULTI
 #include "include/cuckoo_independent2l.h"
 #define HASHTYPE CuckooIndependent2L
+#endif
+
+#ifdef STD_UNORDERED
+#define TRIV_CONFIG
+#include "include/std_unordered.h"
+#define HASHTYPE STDProb
 #endif
 
 #ifdef MULTI

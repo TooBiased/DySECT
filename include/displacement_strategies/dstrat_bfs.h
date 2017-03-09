@@ -11,6 +11,7 @@ class dstrat_bfs
 public:
     using Key            = typename Parent::Key;
     using Data           = typename Parent::Data;
+    using Pair_t         = std::pair<Key,Data>;
     using Parent_t       = typename Parent::This_t;
     using Hashed_t       = typename Parent::Hashed_t;
     using Bucket_t       = typename Parent::Bucket_t;
@@ -60,7 +61,7 @@ public:
     }
 
 
-    inline bool rollBackDisplacements(std::pair<Key,Data> t, BFSQueue& bq)
+    inline Pair_t* rollBackDisplacements(std::pair<Key,Data> t, BFSQueue& bq)
     {
         Key       k1;
         int       prev1;
@@ -75,31 +76,16 @@ public:
             std::tie(k2,prev2,b2) = bq[prev1];
 
             auto pop = b2->pop(k1);
-            // if (!pop.first)
-            // {
-            //     std::cout << "serious issue with rollBack " << k1 << " from " << b2
-            //               << " pop " << pop.first << " " << pop.second << std::endl;
 
-            //     return false;
-            // }
-            // if (!
-            b1->insert(k1, pop.second); //)
-            // {
-            //     std::cout << "even more serious issue with rollBack" << std::endl;
-            //     return false;
-            // }
+            b1->insert(k1, pop.second);
 
             k1 = k2; prev1 = prev2; b1 = b2;
         }
 
-        // if (!
-        b1->insert(t); //)
-        // {   std::cout << "failed final insert" << std::endl; return false; }
-
-        return true;
+        return b1->insertPtr(t);
     }
 
-    inline int insert(std::pair<Key,Data> t, Hashed_t hash)
+    inline std::pair<int, Pair_t*> insert(std::pair<Key,Data> t, Hashed_t hash)
     {
         BFSQueue  bq;
 
@@ -113,42 +99,13 @@ public:
 
         for (size_t i = 0; i < steps; ++i)
         {
-            /*
-            if (i >= bq.size())
-            {
-                std::cout << "WTF" << std::endl;
-                for (size_t i = 0; i < bq.size(); ++i)
-                {
-                    Key k;
-                    int p;
-                    Bucket_t* b;
-                    std::tie(k,p,b) =  bq[i];
-                    std::cout << "| " << k << " | " << p << " | " << b << " |" << std::endl;
-                }
-                for (size_t i = 0; i < nh; ++i)
-                {
-                    for (size_t j = 0; j < tab.bs; ++j)
-                    {
-                        Key k = b[i]->get(j).first;
-                        Bucket_t* b2[nh];
-                        tab.getBuckets(tab.hasher(k), b2);
-                        std::cout << "| k " << k;
-                        for (size_t z = 0; z < nh; ++z)
-                        {
-                            std::cout << " | " << b2[z];
-                        }
-                        std::cout << " |" << std::endl;
-                    }
-                }
-            }
-            else
-            */
             if (expand(bq, i))
             {
-                return (rollBackDisplacements(t, bq)) ? bq.size()-nh : -1;
+                Pair_t* pos = rollBackDisplacements(t, bq);
+                return std::make_pair((pos) ? bq.size()-nh : -1, pos);
             }
         }
 
-        return -1;
+        return std::make_pair(-1, nullptr);
     }
 };

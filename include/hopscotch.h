@@ -4,13 +4,15 @@
 //#include "extern/hopscotch-map/src/hopscotch_map.h"
 #include "config.h"
 #include "bucket.h"
+#include "iterator_base.h"
 
 
 template<class K, class D, class HF = std::hash<K>, class Conf = Config<> >
 class Hopscotch
 {
 private:
-    using Table_t = tsl::hopscotch_map<K,D,HF>;
+    using Table_t    = tsl::hopscotch_map<K,D,HF>;
+    using IterNative_t = typename Table_t::iterator;
     // template<class Key,
     //          class T,
     //          class Hash = std::hash<Key>,
@@ -23,11 +25,11 @@ private:
 public:
     using Key  = K;
     using Data = D;
-    using FRet = std::pair<bool, Data>;
+    using Iterator = typename Table_t::iterator;
 
     Hopscotch(size_t cap = 0, double size_constraint = 1.1,
               size_t /*dis_steps*/ = 0, size_t /*seed*/ = 0)
-        : table(cap*size_constraint), hcounter(0)
+        : table(cap*size_constraint)
     { }
 
     Hopscotch(const Hopscotch&) = delete;
@@ -36,16 +38,22 @@ public:
     Hopscotch(Hopscotch&&) = default;
     Hopscotch& operator=(Hopscotch&&) = default;
 
-    bool insert(Key k, Data d) { return insert(std::make_pair(k,d)); } //make bool
-    bool insert(std::pair<Key,Data> t)
+    std::pair<Iterator,bool> insert(Key k, Data d)
     {
-        return table.insert(t).second;
+        return insert(std::make_pair(k,d));
     }
-    FRet find  (Key k) const
+    std::pair<Iterator,bool> insert(std::pair<Key,Data> t)
     {
-        auto it = table.find(k);
-        return std::make_pair((it!=end(table)), it->second);
-    } //correct
+        // really stupid shit
+        auto ret = table.insert(t);
+
+        return table.insert(t);
+    }
+    Iterator find  (const Key k)
+    {
+        return table.find(k);
+        //return std::make_pair((it!=end(table)), it->second);
+    }
     bool remove(Key k)
     {
         return table.erase(k);
@@ -55,18 +63,6 @@ private:
     Table_t table;
 
 public:
-    /*** for symmetry with my implementation **********************************/
-
-    using HistCount_t = typename Conf::HistCount_t;
-    using Bucket_t    = Bucket<K,D,1>;
-    HistCount_t hcounter;
-
-    static constexpr size_t bs = 0;
-    static constexpr size_t tl = 0;
-
-    std::pair<size_t, Bucket_t*> getTable(size_t) { return std::make_pair(0ul, nullptr); }
-    void clearHist() { }
-
     /* VISUALISATION **********************************************************/
     static void print_init_header(std::ostream&)
     { }
@@ -86,6 +82,8 @@ private:
                                           Conf::NeighborSize : 62;
     using Table_t = tsl::hopscotch_map<K,D,HF, std::equal_to<K>, std::allocator<std::pair<K,D> >,
                                        nh_size, typename Conf::GrowRatio>;
+    using IterNative_t = typename Table_t::iterator;
+
     // template<class Key,
     //          class T,
     //          class Hash = std::hash<Key>,
@@ -98,7 +96,29 @@ private:
 public:
     using Key  = K;
     using Data = D;
-    using FRet = std::pair<bool, Data>;
+    using Pair_t = std::pair<Key,Data>;
+
+    //using Iterator = typename Table_t::iterator;
+    class Iterator : public IterNative_t
+    {
+    public:
+        using difference_type   = typename IterNative_t::difference_type;
+        using value_type = Pair_t;
+        using reference  = Pair_t&;
+        using pointer    = Pair_t*;
+        using iterator_category = typename IterNative_t::iterator_category;
+
+        Iterator(const IterNative_t& rhs) : IterNative_t(rhs) { };
+
+        reference operator*() const
+        {
+            return const_cast<reference>(IterNative_t::operator*());
+        }
+        pointer operator->() const
+        {
+            return const_cast<pointer>(IterNative_t::operator->());
+        }
+    };
 
     SpaceHopscotch(size_t cap = 0, double size_constraint = 1.1,
               size_t /*dis_steps*/ = 0, size_t /*seed*/ = 0)
@@ -111,39 +131,20 @@ public:
     SpaceHopscotch(SpaceHopscotch&&) = default;
     SpaceHopscotch& operator=(SpaceHopscotch&&) = default;
 
-    bool insert(Key k, Data d) { return insert(std::make_pair(k,d)); } //make bool
-    bool insert(std::pair<Key,Data> t)
-    {
-        return table.insert(t).second;
-    }
-    FRet find  (Key k) const
-    {
-        auto it = table.find(k);
-        return std::make_pair((it!=table.end()), it->second);
-    }
-    bool remove(Key k)
-    {
-        return table.erase(k);
-    }
+    inline std::pair<Iterator, bool> insert(const Key k, const Data d)
+    { return insert(std::make_pair(k,d)); }
+    inline std::pair<Iterator, bool> insert(std::pair<Key,Data> t)
+    { return table.insert(t); }
+
+    inline Iterator find(const Key k)
+    { return table.find(k); }
+    inline bool remove(const Key k)
+    { return table.erase(k); }
 
 private:
     Table_t table;
 
 public:
-    /*** for symmetry with my implementation **********************************/
-    /*
-    using HistCount_t = typename Conf::HistCount_t;
-    using Bucket_t    = Bucket<K,D,1>;
-    HistCount_t hcounter;
-
-    static constexpr size_t bs = 0;
-    static constexpr size_t tl = 0;
-
-    std::pair<size_t, Bucket_t*> getTable(size_t) { return std::make_pair(0ul, nullptr); }
-    void clearHist() { }
-    */
-
-    /* VISUALISATION **********************************************************/
     inline static void print_init_header(std::ostream& out)
     {
         out.width(6); out << "nghb";
