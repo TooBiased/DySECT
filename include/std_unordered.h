@@ -16,7 +16,7 @@ public:
     using Key = K;
     using Data = D;
 
-    FastLinProb(size_t cap, double = 1.1, size_t = 0) : table(cap) {}
+    STDProb(size_t cap, double = 1.1, size_t = 0) : table(cap) {}
 
     inline std::pair<iterator, bool> insert(const std::pair<Key,Data> t)
     {

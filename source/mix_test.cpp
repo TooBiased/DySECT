@@ -124,7 +124,7 @@ struct Test
             auto t0 = std::chrono::high_resolution_clock::now();
             for (size_t i = 0; i < pre; ++i)
             {
-                if (!table.insert(keys[i], i)) ++errors;
+                if (!table.insert(keys[i], i).second) ++errors;
             }
 
             auto t1 = std::chrono::high_resolution_clock::now();

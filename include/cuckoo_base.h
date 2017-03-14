@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <tuple>
+#include <limits>
 
 #include "bucket.h"
 #include "config.h"
@@ -70,13 +71,14 @@ public:
     CuckooMultiBase& operator=(const CuckooMultiBase&     ) = delete;
     CuckooMultiBase& operator=(      CuckooMultiBase&& rhs)
     {
-        n = rhs.n;   capacity = rhs.capacity;   alpha = rhs.alpha;
+        n = rhs.n; capacity = rhs.capacity; grow_thresh = rhs.grow_thresh; alpha = rhs.alpha;
         return *this;
     }
 
     // members that should become private at some point ************************
     size_t       n;
     size_t       capacity;
+    size_t       grow_thresh;
     double       alpha;
     Hasher_t     hasher;
     DisStrat_t   displacer;
@@ -134,8 +136,10 @@ public:
 template<class SCuckoo>
 CuckooMultiBase<SCuckoo>::CuckooMultiBase(size_t cap, double size_constraint,
                                  size_t dis_steps, size_t seed)
-        : n(0), capacity(cap), alpha(size_constraint),
-          displacer(*this, dis_steps, seed), hcounter(dis_steps)
+    : n(0), capacity(cap), grow_thresh(std::numeric_limits<size_t>::max()),
+      alpha(size_constraint),
+      displacer(*this, dis_steps, seed),
+      hcounter(dis_steps)
 { }
 
 template<class SCuckoo>
@@ -189,6 +193,7 @@ template<class SCuckoo>
 inline std::pair<typename CuckooMultiBase<SCuckoo>::iterator, bool>
 CuckooMultiBase<SCuckoo>::insert(const Pair_t& t)
 {
+    if (n > grow_thresh) static_cast<Specialized_t*>(this)->grow();
     auto hash = hasher(t.first);
 
     std::pair<int,Pair_t*> max = std::make_pair(0, nullptr);

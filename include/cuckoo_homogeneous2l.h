@@ -34,7 +34,7 @@ public:
                        size_t dis_steps = 0, size_t seed = 0)
         : Base_t(0, size_constraint, dis_steps, seed),
           ll_size(std::floor(double(cap) * size_constraint / double(tl*bs))),
-          beta((size_constraint+1.)/2.), thresh(),
+          beta((size_constraint+1.)/2.),
           factor(double(ll_size)/double(1ull << (32-ct_log(tl))))
     {
         for (size_t i = 0; i < tl; ++i)
@@ -42,7 +42,7 @@ public:
             ll_table[i] = std::make_unique<Bucket_t[]>(ll_size);
         }
         capacity    = tl * ll_size * bs;
-        thresh      = double(capacity) / beta;
+        grow_thresh      = double(capacity) / beta;
 
         //factor      = double(ll_size) / double(1ull << (32 - ct_log(tl)));
     }
@@ -52,7 +52,7 @@ public:
 
     CuckooHomogeneous2L(CuckooHomogeneous2L&& rhs)
         : Base_t(std::move(rhs)), ll_size(rhs.ll_size), beta(rhs.beta),
-          thresh(rhs.thresh), factor(rhs.factor)
+          factor(rhs.factor)
     {
         for (size_t i = 0; i < tl; ++i)
         {
@@ -66,7 +66,6 @@ public:
 
         ll_size= rhs.ll_size;
         beta   = rhs.beta;
-        thresh = rhs.thresh;
         factor = rhs.factor;
 
         for (size_t i = 0; i < tl; ++i)
@@ -87,15 +86,15 @@ public:
     }
 
     using Base_t::n;
-    using Base_t::alpha;
     using Base_t::capacity;
+    using Base_t::grow_thresh;
+    using Base_t::alpha;
     using Base_t::hasher;
     using Base_t::insert;
 
 private:
     size_t                      ll_size;
     double                      beta;
-    size_t                      thresh;
     double                      factor;
 
     std::unique_ptr<Bucket_t[]> ll_table[tl];
@@ -111,12 +110,6 @@ private:
     {
         size_t tab = Ext::tab(h,i);
         return &(ll_table[tab][Ext::loc(h,i) * factor]);
-    }
-
-    inline void inc_n()
-    {
-        ++n;
-        if (n > thresh) grow();
     }
 
     void grow()
@@ -135,7 +128,7 @@ private:
         ll_size  = nll_size;
         factor   = nfactor;
         capacity = ll_size*tl*bs;
-        thresh   = double(n)*beta;
+        grow_thresh   = double(n)*beta;
         if (grow_buffer.size()) finalize_grow();
     }
 

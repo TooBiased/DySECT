@@ -12,7 +12,6 @@ class Hopscotch
 {
 private:
     using Table_t    = tsl::hopscotch_map<K,D,HF>;
-    using IterNative_t = typename Table_t::iterator;
     // template<class Key,
     //          class T,
     //          class Hash = std::hash<Key>,
@@ -22,10 +21,34 @@ private:
     //          class GrowthFactor = std::ratio<2, 1>>
     // class hopscotch_map;
 
+
+    using IterNative_t = typename Table_t::iterator;
 public:
     using Key  = K;
     using Data = D;
-    using iterator = typename Table_t::iterator;
+    using Pair_t = std::pair<Key,Data>;
+    class iterator : public IterNative_t
+    {
+    public:
+        using difference_type   = typename IterNative_t::difference_type;
+        using value_type = std::pair<const Key,Data>;
+        using reference  = value_type&;
+        using pointer    = value_type*;
+        using iterator_category = typename IterNative_t::iterator_category;
+
+        iterator(const IterNative_t& rhs) : IterNative_t(rhs) { };
+
+        reference operator*() const
+        {
+            return reinterpret_cast<reference>(
+                       const_cast<Pair_t&>(IterNative_t::operator*()));
+        }
+        pointer operator->() const
+        {
+            return reinterpret_cast<pointer>(
+                       const_cast<Pair_t*>(IterNative_t::operator->()));
+        }
+    };
     using const_iterator = typename Table_t::const_iterator;
 
     Hopscotch(size_t cap = 0, double size_constraint = 1.1,
@@ -41,7 +64,7 @@ public:
 
     inline std::pair<iterator, bool> insert(const Key& k, const Data& d)
     { return insert(std::make_pair(k,d)); }
-    inline std::pair<iterator, bool> insert(std::pair<Key,Data>& t)
+    inline std::pair<iterator, bool> insert(const std::pair<Key,Data>& t)
     { return table.insert(t); }
 
     inline iterator find(const Key& k)
@@ -50,6 +73,11 @@ public:
     { return table.find(k); }
     inline size_t erase(const Key& k)
     { return table.erase(k); }
+
+    inline iterator begin()        { return table.begin();  }
+    inline iterator end()          { return table.end();    }
+    inline iterator cbegin() const { return table.cbegin(); }
+    inline iterator cend()   const { return table.cend();   }
 
     inline Data& at(const Key& k)             { return table.at(k); }
     inline const Data& at(const Key& k) const { return table.at(k); }
@@ -100,7 +128,7 @@ public:
     {
     public:
         using difference_type   = typename IterNative_t::difference_type;
-        using value_type = std::<const Key,Data>;
+        using value_type = std::pair<const Key,Data>;
         using reference  = value_type&;
         using pointer    = value_type*;
         using iterator_category = typename IterNative_t::iterator_category;
@@ -133,7 +161,7 @@ public:
 
     inline std::pair<iterator, bool> insert(const Key& k, const Data& d)
     { return insert(std::make_pair(k,d)); }
-    inline std::pair<iterator, bool> insert(std::pair<Key,Data>& t)
+    inline std::pair<iterator, bool> insert(const std::pair<Key,Data>& t)
     { return table.insert(t); }
 
     inline iterator find(const Key& k)
@@ -142,6 +170,11 @@ public:
     { return table.find(k); }
     inline size_t erase(const Key& k)
     { return table.erase(k); }
+
+    inline iterator begin()        { return table.begin();  }
+    inline iterator end()          { return table.end();    }
+    inline iterator cbegin() const { return table.cbegin(); }
+    inline iterator cend()   const { return table.cend();   }
 
     inline Data& at(const Key& k)             { return table.at(k); }
     inline const Data& at(const Key& k) const { return table.at(k); }

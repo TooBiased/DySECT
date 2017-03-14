@@ -121,7 +121,7 @@ private:
         return &(ll_tab[tab][Ext::loc(h,i)*ll_factor[tab]]);
     }
 
-    inline void grow(size_t tab)
+    inline void growTab(size_t tab)
     {
         //TODO make this prettier
         if (grow_buffer.size()) return;
@@ -198,7 +198,7 @@ public:
         if (result.second)
         {
             auto currsize = ++ll_elem[ttl];
-            if (currsize > ll_thresh[ttl]) grow(ttl);
+            if (currsize > ll_thresh[ttl]) growTab(ttl);
         }
         return result;
     }
@@ -207,9 +207,15 @@ public:
     {
         auto hash     = hasher(k);
         size_t ttl    = Ext::tab(hash, 0);
-        size_t nk     = Base_t::remove(k);
+        size_t nk     = Base_t::erase(k);
         ll_elem[ttl] -= nk;
         return nk;
+    }
+
+    void grow()
+    {
+        // called from the base class not implemented since growing is triggered
+        // individually for all sub-tables
     }
 };
 

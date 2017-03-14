@@ -35,13 +35,12 @@ public:
                  size_t dis_steps = 0, size_t seed = 0)
         : Base_t(comp_n_bucket(cap,size_constraint)*bs, size_constraint,
                  dis_steps, seed),
-          beta((size_constraint + 1.)/2.), thresh(beta*std::max<size_t>(256ull, cap)),
+          beta((size_constraint + 1.)/2.),
           n_buckets(comp_n_bucket(cap, size_constraint)),
           factor(double(n_buckets)/double(1ull<<32)),
           table(new Bucket_t[n_buckets])
     {
-        //std::cout <<  "cap:"     << capacity << " buck:" << n_buckets
-        //          << " thresh:" << thresh   << " beta:" << beta << std::endl;
+        grow_thresh =  beta*std::max<size_t>(256ull, cap);
     }
 
     CuckooSimple(const CuckooSimple&) = delete;
@@ -61,10 +60,10 @@ public:
     using Base_t::n;
 private:
     using Base_t::capacity;
+    using Base_t::grow_thresh;
     using Base_t::alpha;
     using Base_t::hasher;
     double beta;
-    size_t thresh;
     size_t n_buckets;
     double factor;
     std::unique_ptr<Bucket_t[]> table;
@@ -85,11 +84,6 @@ private:
         return &(table[l]);
     }
 
-    inline void inc_n()
-    {
-        if (++n > thresh) grow();
-    }
-
     inline void grow()
     {
         if (grow_buffer.size()) return;
@@ -106,7 +100,7 @@ private:
 
         n_buckets = nsize;
         table     = std::move(ntable);
-        thresh    = nthresh;
+        grow_thresh    = nthresh;
         factor    = nfactor;
         if (grow_buffer.size()) finalize_grow();
     }

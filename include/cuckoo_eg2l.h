@@ -14,12 +14,6 @@ private:
     using This_t         = CuckooEG2L<K,D,HF,Conf>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
     friend Base_t;
-
-public:
-    static constexpr size_t bs = CuckooTraits<This_t>::bs;
-    static constexpr size_t tl = CuckooTraits<This_t>::tl;
-    static constexpr size_t nh = CuckooTraits<This_t>::nh;
-
 private:
     using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
     using Hasher_t       = typename CuckooTraits<This_t>::Hasher_t;
@@ -71,7 +65,6 @@ public:
           n_large(rhs.n_large),
           bits_small(rhs.bits_small),
           bits_large(rhs.bits_large),
-          grow_thresh(rhs.grow_thresh),
           shrnk_thresh(rhs.shrnk_thresh)
     {
         for (size_t i = 0; i < tl; ++i)
@@ -90,8 +83,6 @@ public:
         std::swap(n_large   , rhs.n_large);
         std::swap(bits_small, rhs.bits_small);
         std::swap(bits_large, rhs.bits_large);
-
-        std::swap(grow_thresh, rhs.grow_thresh);
         std::swap(shrnk_thresh,rhs.shrnk_thresh);
 
         for (size_t i = 0; i < tl; ++i)
@@ -109,9 +100,13 @@ public:
     }
 
     using Base_t::n;
-    using Base_t::alpha;
     using Base_t::capacity;
+    using Base_t::grow_thresh;
+    using Base_t::alpha;
     using Base_t::hasher;
+    static constexpr size_t bs = CuckooTraits<This_t>::bs;
+    static constexpr size_t tl = CuckooTraits<This_t>::tl;
+    static constexpr size_t nh = CuckooTraits<This_t>::nh;
 
 private:
     std::unique_ptr<Bucket_t[]> llt[tl];
@@ -119,7 +114,6 @@ private:
     size_t n_large;
     size_t bits_small;
     size_t bits_large;
-    size_t grow_thresh;
     size_t shrnk_thresh;
 
     static constexpr size_t tl_bitmask = tl - 1;
@@ -138,12 +132,6 @@ private:
         size_t tab = Ext::tab(h,i);
         size_t loc = Ext::loc(h,i) & bitmask(tab);
         return &(llt[tab][loc]);
-    }
-
-    inline void inc_n()
-    {
-        ++n;
-        if (n > grow_thresh) grow();
     }
 
     inline void dec_n()
@@ -280,7 +268,7 @@ private:
         n -= buffer.size();
         for (auto& e : buffer)
         {
-            bla += (Base_t::insert(e)) ? 1: 0;
+            bla += (Base_t::insert(e).second) ? 1: 0;
         }
     }
 

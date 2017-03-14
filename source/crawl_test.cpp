@@ -2,6 +2,10 @@
 #include "utils/hashfct.h"
 #include "utils/commandline.h"
 
+#ifdef MALLOC_COUNT
+#include "malloc_count.h"
+#endif
+
 #include <iostream>
 #include <fstream>
 #include <chrono>
@@ -26,13 +30,19 @@ struct Test
 
     void print_headline(std::ostream& out)
     {
-        print(out, "it"     , 3);
+        print(out, "# it"   , 4);
         print(out, "alpha"  , 6);
         Table::print_init_header(out);
         print(out, "cap"    , 9);
         print(out, "time"   , 9);
-        print(out, "doubles", 8);
-        print(out, "individ", 8);
+        print(out, "doubles", 10);
+        print(out, "individ", 9);
+        print(out, "err" , 6);
+        #ifdef MALLOC_COUNT
+        print(out, "mem"    , 7);
+        print(out, "mx_mem" , 7);
+        #endif
+
         out << std::endl;
     }
 
@@ -43,15 +53,21 @@ struct Test
                       double ttest,
                       size_t contained,
                       size_t n,
+                      size_t errors,
                       Table& table)
     {
-        print(out, it       , 3);
+        print(out, it       , 4);
         print(out, alpha    , 6);
         table.print_init_data(out);
         print(out, cap      , 9);
         print(out, ttest    , 9);
-        print(out, contained, 8);
-        print(out, n        , 8);
+        print(out, contained, 10);
+        print(out, n        , 9);
+        print(out, errors   , 6);
+        #ifdef MALLOC_COUNT
+        print(out, double(malloc_count_current())/double(8*2*n), 7);
+        print(out, double(malloc_count_peak()   )/double(8*2*n), 7);
+        #endif
         out << std::endl;
     }
 
@@ -66,11 +82,17 @@ struct Test
 
         for (size_t i = 0; i < it; ++i)
         {
+            #ifdef MALLOC_COUNT
+            malloc_count_reset_peak();
+            #endif
+
             Table table(cap, alpha, steps);
             std::ifstream inf (inf_name, std::ifstream::binary);
             char buffer[bsize];
             size_t contained  = 0;
             size_t individual = 0;
+            size_t max        = 0;
+            size_t errors     = 0;
 
             if (! inf.is_open() )
             { std::cout << "file not found" << std::endl; return 5; }
@@ -84,7 +106,7 @@ struct Test
                 for (char* j = buffer; j < buffer+inf.gcount(); ++j)
                 {
                     if (*j == ' ' || *j == '\n')
-                    {
+                   {
                         if (j0 < j)
                         {
                             size_t key = XXH64(j0, j-j0, hseed);
@@ -92,8 +114,13 @@ struct Test
                             if (e.second) ++individual;
                             else
                             {
-                                ++((*e.first).second);
-                                ++contained;
+                                if (e.first != table.end())
+                                {
+                                    size_t a = ++((*e.first).second);
+                                    max = (a < max) ? max : a;
+                                    ++contained;
+                                }
+                                else ++errors;
                             }
                         }
                         j0 = j+1;
@@ -107,7 +134,7 @@ struct Test
             double ttest = std::chrono::duration_cast<std::chrono::microseconds>
                                (t1 - t0).count()/1000.;
 
-            print_timing(*outf, i, alpha, cap, ttest, contained, individual, table);
+            print_timing(*outf, i, alpha, cap, ttest, contained, individual, errors, table);
 
             inf.close();
         }
