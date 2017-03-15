@@ -10,6 +10,7 @@ private:
     using This_t         = CuckooSimple<K,D,HF,Conf>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
     friend Base_t;
+    friend iterator_incr<This_t>;
 
 public:
     static constexpr size_t bs = CuckooTraits<This_t>::bs;
@@ -21,6 +22,8 @@ private:
     using Hasher_t       = typename CuckooTraits<This_t>::Hasher_t;
     using Hashed_t       = typename Hasher_t::Hashed_t;
     using Ext            = typename Hasher_t::Extractor_t;
+    using iterator       = typename Base_t::iterator;
+    using const_iterator = typename Base_t::const_iterator;
 
 public:
     using Key            = typename CuckooTraits<This_t>::Key;
@@ -58,6 +61,23 @@ public:
 
     using Base_t::insert;
     using Base_t::n;
+    using Base_t::make_iterator;
+    using Base_t::make_citerator;
+
+    inline iterator begin()
+    {
+        auto temp = make_iterator(&table[0].elements[0]);
+        if (! temp->first) temp++;
+        return temp;
+    }
+
+    inline const_iterator begin() const
+    {
+        auto temp = make_citerator(&table[0].elements[0]);
+        if (! temp->first) temp++;
+        return temp;
+    }
+
 private:
     using Base_t::capacity;
     using Base_t::grow_thresh;
@@ -146,6 +166,9 @@ private:
 };
 
 
+
+// Traits class defining types *************************************************
+
 template<class K, class D, class HF,
          class Conf>
 class CuckooTraits<CuckooSimple<K,D,HF,Conf> >
@@ -163,4 +186,37 @@ public:
 
     using Hasher_t      = Hasher<K, HF, 0, nh, true, true>;
     using Bucket_t      = Bucket<K,D,bs>;
+};
+
+
+
+// Iterator increment **********************************************************
+
+template<class K, class D, class HF, class Conf>
+class iterator_incr<CuckooSimple<K,D,HF,Conf> >
+{
+public:
+    using Table_t   = CuckooSimple<K,D,HF,Conf>;
+    using pointer = std::pair<const K,D>*;
+    static constexpr size_t bs = Conf::bs;
+
+public:
+    iterator_incr(const Table_t& table_)
+        : end_ptr(reinterpret_cast<pointer>
+                  (&table_.table[table_.n_buckets-1].elements[bs-1]))
+    { }
+    iterator_incr(const iterator_incr&) = default;
+    iterator_incr& operator=(const iterator_incr&) = default;
+
+    pointer next(pointer cur)
+    {
+        while (cur < end_ptr)
+        {
+            if ((++cur)->first) return cur;
+        }
+        return nullptr;
+    }
+
+private:
+    pointer end_ptr;
 };

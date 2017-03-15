@@ -40,6 +40,8 @@ private:
     using Base_t::table;
     using Base_t::h;
     using Base_t::inc_n;
+    using Base_t::make_iterator;
+    using Base_t::make_citerator;
 
     static constexpr size_t bitmask = (1ull << 32) - 1;
     size_t pdistance;
@@ -74,7 +76,7 @@ public:
 
             if ( temp.first == t.first )
             {
-                return std::make_pair(iterator(&table[ti]), false);
+                return std::make_pair(make_iterator(&table[ti]), false);
             }
             if ( temp.first == 0 )
             {
@@ -83,7 +85,7 @@ public:
                 table[ti] = current;
                 inc_n();
                 pdistance = std::max<size_t>(pdistance, i-size_t(ind));
-                return std::make_pair(iterator(&table[ti]), true);
+                return std::make_pair(make_iterator(&table[ti]), true);
             }
             double tind = dindex(hasher(temp.first));
             if ( tind > ind )
@@ -111,7 +113,7 @@ public:
             }
             else if ( temp.first == k )
             {
-                return iterator(&table[ti]);
+                return make_iterator(&table[ti]);
             }
         }
         return Base_t::end();
@@ -132,7 +134,7 @@ public:
             }
             else if ( temp.first == k )
             {
-                return const_iterator(&table[ti]);
+                return make_citerator(&table[ti]);
             }
         }
         return Base_t::cend();

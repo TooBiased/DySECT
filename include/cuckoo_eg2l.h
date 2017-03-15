@@ -6,6 +6,8 @@
 template<class T>
 class CuckooTraits;
 
+
+
 template<class K, class D, class HF = std::hash<K>,
          class Conf = Config<> >
 class CuckooEG2L : public CuckooTraits<CuckooEG2L<K,D,HF,Conf> >::Base_t
@@ -14,6 +16,8 @@ private:
     using This_t         = CuckooEG2L<K,D,HF,Conf>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
     friend Base_t;
+    friend iterator_incr<This_t>;
+
 private:
     using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
     using Hasher_t       = typename CuckooTraits<This_t>::Hasher_t;
@@ -23,6 +27,9 @@ private:
 public:
     using Key            = typename CuckooTraits<This_t>::Key;
     using Data           = typename CuckooTraits<This_t>::Data;
+    using iterator       = typename Base_t::iterator;
+    using const_iterator = typename Base_t::const_iterator;
+
 
     CuckooEG2L(size_t cap = 0      , double size_constraint = 1.1,
                        size_t dis_steps = 0, size_t seed = 0)
@@ -107,6 +114,22 @@ public:
     static constexpr size_t bs = CuckooTraits<This_t>::bs;
     static constexpr size_t tl = CuckooTraits<This_t>::tl;
     static constexpr size_t nh = CuckooTraits<This_t>::nh;
+    using Base_t::make_iterator;
+    using Base_t::make_citerator;
+
+    iterator begin()
+    {
+        auto temp = make_iterator(&llt[0][0].elements[0]);
+        if (! temp->first) temp++;
+        return temp;
+    }
+
+    const_iterator begin() const
+    {
+        auto temp = make_citerator(&llt[0][0].elements[0]);
+        if (! temp->first) temp++;
+        return temp;
+    }
 
 private:
     std::unique_ptr<Bucket_t[]> llt[tl];
@@ -197,7 +220,6 @@ private:
 
         migrate_shrnk( n_large, ntab, buffer );
 
-        //llb[grow_table] = grow_amount-1;
         llt[n_large] = std::move(ntab);
 
         finish_shrnk(buffer);
@@ -211,7 +233,6 @@ private:
     inline void migrate_shrnk(size_t tab, std::unique_ptr<Bucket_t[]>& target,
                               std::vector<std::pair<Key, Data> >& buffer)
     {
-        //size_t bnew = llb[tab] >> 1;
         size_t flag = bits_small + 1;
 
         for (size_t i = 0; i < flag; ++i)
@@ -274,6 +295,10 @@ private:
 
 };
 
+
+
+// Traits class defining types *************************************************
+
 template<class K, class D, class HF,
          class Conf>
 class CuckooTraits<CuckooEG2L<K,D,HF,Conf> >
@@ -291,4 +316,87 @@ public:
 
     using Hasher_t       = Hasher<K, HF, ct_log(tl), nh, true, true>;
     using Bucket_t       = Bucket<K,D,bs>;
+};
+
+
+
+// Iterator increment **********************************************************
+
+template<class K, class D, class HF, class Conf>
+class iterator_incr<CuckooEG2L<K,D,HF,Conf> >
+{
+public:
+    using Table_t   = CuckooEG2L<K,D,HF,Conf>;
+    using ipointer = std::pair<const K,D>*;
+    static constexpr size_t tl = Conf::tl;
+    static constexpr size_t bs = Conf::bs;
+
+public:
+    iterator_incr(const Table_t& table_)
+        : table(table_), end_tab(nullptr), tab(tl + 1)
+    { }
+    iterator_incr(const iterator_incr&) = default;
+    iterator_incr& operator=(const iterator_incr&) = default;
+
+    ipointer next(ipointer cur)
+    {
+        if (tab > tl) initialize_tab(cur);
+
+        auto temp = cur+1;
+        if (temp > end_tab)
+        { temp = overflow_tab(); if (!temp) return nullptr; }
+
+        while (!temp->first)
+        {
+            if (++temp > end_tab) return overflow_tab();
+        }
+        return temp;
+    }
+
+    size_t n_forwards;
+private:
+    const Table_t& table;
+    ipointer       end_tab;
+    size_t         tab;
+
+    ipointer overflow_tab()
+    {
+        if (++tab >= tl) return nullptr;
+        size_t size = (tab < table.n_large) ? table.bits_large : table.bits_small;
+        end_tab = reinterpret_cast<ipointer>(&table.llt[tab][size].elements[bs-1]);
+        return reinterpret_cast<ipointer>(&table.llt[tab][0].elements[0]);
+    }
+
+    void initialize_tab(ipointer ptr)
+    {
+        for (size_t i = 0; i < table.n_large; ++i)
+        {
+            ipointer tab_b_ptr = reinterpret_cast<ipointer>
+                (&table.llt[i][0].elements[0]);
+            ipointer tab_e_ptr = reinterpret_cast<ipointer>
+                (&table.llt[i][table.bits_large].elements[bs-1]);
+
+            if (tab_b_ptr <= ptr && ptr <= tab_e_ptr)
+            {
+                tab = i;
+                end_tab = tab_e_ptr;
+                return;
+            }
+        }
+        for (size_t i = table.n_large; i < tl; ++i)
+        {
+            ipointer tab_b_ptr = reinterpret_cast<ipointer>
+                (&table.llt[i][0].elements[0]);
+            ipointer tab_e_ptr = reinterpret_cast<ipointer>
+                (&table.llt[i][table.bits_small].elements[bs-1]);
+
+            if (tab_b_ptr <= ptr && ptr <= tab_e_ptr)
+            {
+                tab = i;
+                end_tab = tab_e_ptr;
+                return;
+            }
+        }
+    }
+
 };

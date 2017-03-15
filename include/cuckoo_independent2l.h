@@ -15,6 +15,7 @@ private:
     using This_t         = CuckooIndependent2L<K,D,HF,Conf>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
     friend Base_t;
+    friend iterator_incr<This_t>;
 
 public:
     static constexpr size_t bs = CuckooTraits<This_t>::bs;
@@ -31,6 +32,7 @@ public:
     using Key            = typename CuckooTraits<This_t>::Key;
     using Data           = typename CuckooTraits<This_t>::Data;
     using iterator       = typename Base_t::iterator;
+    using const_iterator = typename Base_t::const_iterator;
 
 
     static constexpr double fac_div = double (1ull << (32 - ct_log(tl)));
@@ -217,7 +219,27 @@ public:
         // called from the base class not implemented since growing is triggered
         // individually for all sub-tables
     }
+
+    using Base_t::make_iterator;
+    using Base_t::make_citerator;
+    iterator begin()
+    {
+        auto temp = make_iterator(&ll_tab[0][0].elements[0]);
+        if (! temp->first) temp++;
+        return temp;
+    }
+
+    const_iterator begin() const
+    {
+        auto temp = make_citerator(&ll_tab[0][0].elements[0]);
+        if (! temp->first) temp++;
+        return temp;
+    }
 };
+
+
+
+// Traits class defining types *************************************************
 
 template<class K, class D, class HF, class Conf>
 class CuckooTraits<CuckooIndependent2L<K,D,HF,Conf> >
@@ -235,4 +257,73 @@ public:
 
     using Hasher_t       = Hasher<K, HF, ct_log(tl), nh, true, true>;
     using Bucket_t       = Bucket<K,D,bs>;
+};
+
+
+
+// Iterator increment **********************************************************
+
+template<class K, class D, class HF, class Conf>
+class iterator_incr<CuckooIndependent2L<K,D,HF,Conf> >
+{
+public:
+    using Table_t   = CuckooIndependent2L<K,D,HF,Conf>;
+    using ipointer = std::pair<const K,D>*;
+    static constexpr size_t tl = Conf::tl;
+    static constexpr size_t bs = Conf::bs;
+
+public:
+    iterator_incr(const Table_t& table_)
+        : table(table_), end_tab(nullptr), tab(tl + 1)
+    { }
+    iterator_incr(const iterator_incr&) = default;
+    iterator_incr& operator=(const iterator_incr&) = default;
+
+    ipointer next(ipointer cur)
+    {
+        if (tab > tl) initialize_tab(cur);
+
+        auto temp = cur+1;
+        if (temp > end_tab)
+        { temp = overflow_tab(); if (!temp) return nullptr; }
+
+        while (!temp->first)
+        {
+            if (++temp > end_tab) return overflow_tab();
+        }
+        return temp;
+    }
+
+    size_t n_forwards;
+private:
+    const Table_t& table;
+    ipointer       end_tab;
+    size_t         tab;
+
+    ipointer overflow_tab()
+    {
+        if (++tab >= tl) return nullptr;
+        size_t size = table.ll_size[tab] - 1;
+        end_tab = reinterpret_cast<ipointer>(&table.ll_tab[tab][size].elements[bs-1]);
+        return reinterpret_cast<ipointer>(&table.ll_tab[tab][0].elements[0]);
+    }
+
+    void initialize_tab(ipointer ptr)
+    {
+        for (size_t i = 0; i < tl; ++i)
+        {
+            ipointer tab_b_ptr = reinterpret_cast<ipointer>
+                (&table.ll_tab[i][0].elements[0]);
+            ipointer tab_e_ptr = tab_b_ptr + table.ll_size[i]*bs;
+
+            if (tab_b_ptr <= ptr && ptr < tab_e_ptr)
+            {
+                tab = i;
+                end_tab = tab_e_ptr;
+                return;
+            }
+            std::cout << "?" << std::endl;
+        }
+    }
+
 };

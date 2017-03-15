@@ -11,6 +11,8 @@
 
 template <class T>
 class ProbTraits;
+template <class T>
+class iterator_incr;
 
 template<class SpProb>
 class ProbBase
@@ -25,8 +27,8 @@ public:
     using Key      = typename ProbTraits<SpProb>::Key;
     using Data     = typename ProbTraits<SpProb>::Data;
     using Pair_t   = std::pair<Key,Data>;
-    using iterator = IteratorBase<This_t>;
-    using const_iterator = IteratorBase<This_t, true>;
+    using iterator = IteratorBase<iterator_incr<This_t> >;
+    using const_iterator = IteratorBase<iterator_incr<This_t>, true>;
     //static constexpr iterator end() { return iterator::end(); }
 
 
@@ -54,10 +56,20 @@ public:
     size_t                    erase (const Key& k);
 
     // Easy use Accessors for std compliance ***********************************
-    inline iterator           end   () const { return iterator::end(); }
-    inline iterator           begin () const; // unimplemented
-    inline const_iterator     cend  () const { return const_iterator::end(); }
-    inline const_iterator     cbegin() const; // unimplemented
+    inline iterator           begin () const
+    {
+        auto temp = make_iterator(&table[0]);
+        if (!temp->first) temp++;
+        return temp;
+    }
+    inline iterator           end   () const { return make_iterator(nullptr);  }
+    inline const_iterator     cbegin() const
+    {
+        auto temp = make_citerator(&table[0]);
+        if (!temp->first) temp++;
+        return temp;
+    }
+    inline const_iterator     cend  () const { return make_citerator(nullptr); }
     Data&                     at    (const Key& k);
     const Data&               at    (const Key& k) const;
     Data&                     operator[](const Key& k);
@@ -80,6 +92,15 @@ public:
     std::unique_ptr<Pair_t[]> table;
 
 private:
+    inline iterator make_iterator(Pair_t* pair) const
+    {
+        return iterator(pair, *this);
+    }
+    inline const_iterator make_citerator(Pair_t* pair) const
+    {
+        return const_iterator(pair, *this);
+    }
+
     /*** static polymorph functions *******************************************/
     inline size_t h(Key k) const
     { return static_cast<const Specialized_t*>(this)->index(hasher(k)); }
@@ -112,7 +133,7 @@ ProbBase<SpProb>::find(const Key& k)
         }
         else if ( temp.first == k )
         {
-            return iterator(&table[ti]);
+            return make_iterator(&table[ti]);
         }
     }
     return end();
@@ -135,7 +156,7 @@ ProbBase<SpProb>::find(const Key& k) const
         }
         else if ( temp.first == k )
         {
-            return const_iterator(&table[ti]);
+            return make_citerator(&table[ti]);
         }
     }
     return cend();
@@ -160,14 +181,14 @@ ProbBase<SpProb>::insert(const Pair_t& t)
         auto temp = table[ti];
         if ( temp.first == t.first)
         {
-            return std::make_pair(iterator(&table[ti]), false);
+            return std::make_pair(make_iterator(&table[ti]), false);
         }
         if ( temp.first == 0 )
         {
             table[ti] = t;
             //hcounter.add(i - ind);
             static_cast<SpProb*>(this)->inc_n();
-            return std::make_pair(iterator(&table[ti]), true);
+            return std::make_pair(make_iterator(&table[ti]), true);
         }
     }
     return std::make_pair(end(), false);
@@ -255,3 +276,37 @@ inline void ProbBase<SpProb>::propagate_remove(const size_t origin)
     }
     n = tempn;
 }
+
+
+
+// Iterator increment **********************************************************
+
+template<class Specialized>
+class iterator_incr<ProbBase<Specialized> >
+{
+public:
+    using Table_t = ProbBase<Specialized>;
+    using Key     = typename Table_t::Key;
+    using Data    = typename Table_t::Data;
+    using ipointer = std::pair<const Key, Data>*;
+
+public:
+    iterator_incr(const Table_t& table_)
+        : end_ptr(reinterpret_cast<ipointer>
+                  (&table_.table[table_.capacity - 1]))
+    { }
+    iterator_incr(const iterator_incr&) = default;
+    iterator_incr& operator=(const iterator_incr&) = default;
+
+    ipointer next(ipointer cur)
+    {
+        while (cur < end_ptr)
+        {
+            if ((++cur)->first) return cur;
+        }
+        return nullptr;
+    }
+
+private:
+    const ipointer end_ptr;
+};

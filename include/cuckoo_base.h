@@ -33,6 +33,9 @@ public:
     using Bucket_t       = Bucket<Key,Data,bs>;
 };*/
 
+template<class T, bool c = false>
+class iterator_incr;
+
 
 template<class SCuckoo>
 class CuckooMultiBase
@@ -58,8 +61,8 @@ public:
     //using mapped_type    = Data;
     //using value_type     = std::pair<const Key, Data>;
     using Pair_t         = std::pair<Key,Data>;
-    using iterator       = IteratorBase<This_t>;
-    using const_iterator = IteratorBase<This_t, true>;
+    using iterator       = IteratorBase<iterator_incr<Specialized_t> >;
+    using const_iterator = IteratorBase<iterator_incr<Specialized_t>, true>;
 
 
 
@@ -71,7 +74,8 @@ public:
     CuckooMultiBase& operator=(const CuckooMultiBase&     ) = delete;
     CuckooMultiBase& operator=(      CuckooMultiBase&& rhs)
     {
-        n = rhs.n; capacity = rhs.capacity; grow_thresh = rhs.grow_thresh; alpha = rhs.alpha;
+        n = rhs.n; capacity = rhs.capacity;
+        grow_thresh = rhs.grow_thresh; alpha = rhs.alpha;
         return *this;
     }
 
@@ -96,14 +100,22 @@ public:
     //bool                      remove(const Key k) { return erase(k); }
 
     // Easy use Accessors for std compliance ***********************************
-    inline iterator           end   () const { return iterator::end(); }
+    inline iterator           end   ()
+        { return make_iterator(nullptr); }
     inline iterator           begin () const; // unimplemented
-    inline const_iterator     cend  () const { return const_iterator::end(); }
+    inline const_iterator     cend  ()const
+        { return make_citerator(nullptr); }
     inline const_iterator     cbegin() const; // unimplemented
     Data&                     at    (const Key& k);
     const Data&               at    (const Key& k) const;
     Data&                     operator[](const Key& k);
     size_t                    count (const Key& k) const;
+private:
+    inline iterator       make_iterator (      Pair_t* pos)
+    { return iterator      (pos, *static_cast<Specialized_t*>(this)); }
+
+    inline const_iterator make_citerator(const Pair_t* pos)
+    { return const_iterator(pos, *static_cast<Specialized_t*>(this)); }
 
 private:
     /*** static polymorph functions *******************************************/
@@ -111,7 +123,7 @@ private:
     inline void               dec_n() { --n; }
     inline void               getBuckets(Hashed_t h, Bucket_t** mem) const
     { return static_cast<const Specialized_t*>(this)->getBuckets(h, mem); }
-    inline Bucket_t*          getBucket(Hashed_t h, size_t i) const
+    inline Bucket_t*          getBucket (Hashed_t h, size_t i) const
     { return static_cast<const Specialized_t*>(this)->getBucket(h, i); }
 
 public:
@@ -162,9 +174,9 @@ CuckooMultiBase<SCuckoo>::find(const Key& k)
     {
         Bucket_t* tb = getBucket(hash, i);
         Pair_t*   tp = tb->findPtr(k);
-        if (tp) return iterator(tp);
+        if (tp) return make_iterator(tp);
     }
-    return iterator::end();
+    return end();
 }
 
 template<class SCuckoo>
@@ -177,9 +189,9 @@ CuckooMultiBase<SCuckoo>::find(const Key& k) const
     {
         Bucket_t* tb = getBucket(hash, i);
         Pair_t*   tp = tb->findPtr(k);
-        if (tp) return const_iterator(tp);
+        if (tp) return make_citerator(tp);
     }
-    return const_iterator::end();
+    return end();
 }
 
 template<class SCuckoo>
@@ -202,7 +214,7 @@ CuckooMultiBase<SCuckoo>::insert(const Pair_t& t)
         auto temp = getBucket(hash, i)->probePtr(t.first);
 
         if (temp.first < 0)
-            return std::make_pair(iterator(temp.second), false);
+            return std::make_pair(make_iterator(temp.second), false);
         max = (max.first > temp.first) ? max : temp;
     }
 
@@ -211,7 +223,7 @@ CuckooMultiBase<SCuckoo>::insert(const Pair_t& t)
         *max.second = t;
         hcounter.add(0);
         static_cast<Specialized_t*>(this)->inc_n();
-        return std::make_pair(iterator(max.second), true);
+        return std::make_pair(make_iterator(max.second), true);
     }
 
     int  srch = -1;
@@ -221,7 +233,7 @@ CuckooMultiBase<SCuckoo>::insert(const Pair_t& t)
     {
         hcounter.add(srch);
         static_cast<Specialized_t*>(this)->inc_n();
-        return std::make_pair(iterator(pos), true);
+        return std::make_pair(make_iterator(pos), true);
     }
 
     return std::make_pair(end(), false);

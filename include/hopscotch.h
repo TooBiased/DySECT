@@ -74,8 +74,8 @@ public:
     inline size_t erase(const Key& k)
     { return table.erase(k); }
 
-    inline iterator begin()        { return table.begin();  }
-    inline iterator end()          { return table.end();    }
+    inline iterator begin()  const { return table.begin();  }
+    inline iterator end()    const { return table.end();    }
     inline iterator cbegin() const { return table.cbegin(); }
     inline iterator cend()   const { return table.cend();   }
 
@@ -176,9 +176,9 @@ public:
     inline iterator cbegin() const { return table.cbegin(); }
     inline iterator cend()   const { return table.cend();   }
 
-    inline Data& at(const Key& k)             { return table.at(k); }
-    inline const Data& at(const Key& k) const { return table.at(k); }
-    inline Data& operator[](const Key& k)     { return table[k]; }
+    inline Data& at(const Key& k)             { return table.at(k);    }
+    inline const Data& at(const Key& k) const { return table.at(k);    }
+    inline Data& operator[](const Key& k)     { return table[k];       }
     inline size_t count(const Key& k)   const { return table.count(k); }
 
 private:

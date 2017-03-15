@@ -43,5 +43,8 @@ public:
     inline void print_init_data(std::ostream& )
     { }
 
-    constexpr iterator end() { return table.end(); }
+    inline iterator       begin()  const { return table.begin(); }
+    inline iterator       end()    const { return table.end();   }
+    inline const_iterator cbegin() const { return table.cbegin(); }
+    inline const_iterator cend()   const { return table.cend();   }
 };

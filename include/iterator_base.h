@@ -1,15 +1,30 @@
 #pragma once
 
-template <class Table, bool is_const = false>
+// template <class Table, class Ptr>
+// class iterator_incr
+// {
+// private:
+//     using Pointer_t = Ptr;
+// public:
+//     iterator_incr(const Table&) { }
+
+//     iterator_incr(const iterator_incr&) = default;
+//     iterator_incr& operator=(const iterator_incr&) = default;
+
+//     Pointer_t next(Pointer_t) { return nullptr; }
+// };
+
+template <class Increment, bool is_const = false>
 class IteratorBase
 {
 private:
-    using Table_t = Table;
-    using Key     = typename Table_t::Key;
-    using Data    = typename Table_t::Data;
-    using stored  = std::pair<      Key, Data>;
-    using pair    = std::pair<const Key, Data>;
-    using c_stored = typename std::conditional<is_const, const stored, stored>::type;
+    using Table_t  = typename Increment::Table_t;
+    using Key      = typename Table_t::Key;
+    using Data     = typename Table_t::Data;
+    using stored   = std::pair<      Key, Data>;
+    using pair     = std::pair<const Key, Data>;
+    using c_stored = typename std::conditional<is_const, const stored , stored >::type;
+    using c_table  = typename std::conditional<is_const, const Table_t, Table_t>::type;
 
 public:
     using difference_type = std::ptrdiff_t;
@@ -17,6 +32,7 @@ public:
     using reference  = value_type&;
     using pointer    = value_type*;
     using iterator_category = std::forward_iterator_tag;
+    using Incr_t   = Increment;
 
     template<class T, bool b>
     friend void swap(IteratorBase<T,b>& l, IteratorBase<T,b>& r);
@@ -27,15 +43,16 @@ public:
 
     //IteratorBase(pointer pair_ = nullptr)
     //    : ptr(pair_) { }
-    IteratorBase(c_stored* pair_)
-        : ptr(reinterpret_cast<pointer>(pair_)) { }
+    IteratorBase(c_stored* pair_, const Table_t& table)
+        : ptr(reinterpret_cast<pointer>(pair_)), incr(table) { }
 
-    IteratorBase(const IteratorBase& rhs)   : ptr(rhs.ptr) { }
-    IteratorBase& operator=(const IteratorBase& r) { ptr = r.ptr; return *this; }
+    IteratorBase(const IteratorBase& rhs) : ptr(rhs.ptr), incr(rhs.incr) { }
+    IteratorBase& operator=(const IteratorBase& r)
+    { ptr = r.ptr; incr = r.incr; return *this; }
 
     ~IteratorBase() = default;
 
-    IteratorBase& operator++(int = 0) { return end(); }
+    IteratorBase& operator++(int = 0) { ptr = incr.next(ptr); return *this; }
     reference operator* () const { return *ptr; }
     pointer   operator->() const { return  ptr; }
 
@@ -57,6 +74,5 @@ public:
     // size_t  ver;
     // key_t   key;
     pointer ptr;
-
-    static constexpr IteratorBase end() { return IteratorBase(nullptr); }
+    Incr_t  incr;
 };

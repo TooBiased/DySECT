@@ -113,6 +113,8 @@ private:
 
     using Base_t::h;
     using Base_t::inc_n;
+    using Base_t::make_iterator;
+    using Base_t::make_citerator;
 
     static constexpr size_t bitmask = (1ull << 32) - 1;
     double    factor;
@@ -146,7 +148,7 @@ public:
                 auto temp = table[i];
                 if ( temp.first == t.first )
                 {
-                    return std::make_pair(iterator(&table[i]), false);
+                    return std::make_pair(make_iterator(&table[i]), false);
                 }
             }
         }
@@ -166,7 +168,7 @@ public:
                 table[ti] = t;
                 aug.set(ti-ind);
                 inc_n();
-                return std::make_pair(iterator(&table[ti]), true);
+                return std::make_pair(make_iterator(&table[ti]), true);
             }
         }
         return std::make_pair(Base_t::end(), false);
@@ -183,7 +185,7 @@ public:
             auto temp = table[i];
             if ( temp.first == k )
             {
-                return iterator(&table[i]);
+                return make_iterator(&table[i]);
             }
         }
         return Base_t::end();
@@ -200,7 +202,7 @@ public:
             auto temp = table[i];
             if ( temp.first == k )
             {
-                return const_iterator(&table[i]);
+                return make_citerator(&table[i]);
             }
         }
         return Base_t::cend();
