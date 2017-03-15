@@ -87,8 +87,8 @@ private:
     friend Base_t;
 
 public:
-    using Key      = typename ProbTraits<This_t>::Key;
-    using Data     = typename ProbTraits<This_t>::Data;
+    using key_type      = typename ProbTraits<This_t>::key_type;
+    using mapped_type     = typename ProbTraits<This_t>::mapped_type;
     using iterator = typename Base_t::iterator;
     using const_iterator = typename Base_t::const_iterator;
 
@@ -111,29 +111,24 @@ private:
     using Base_t::capacity;
     using Base_t::table;
 
+    double    factor;
+    AugData_t nh_data;
+
+    static constexpr size_t bitmask = (1ull << 32) - 1;
+
     using Base_t::h;
     using Base_t::inc_n;
     using Base_t::make_iterator;
     using Base_t::make_citerator;
 
-    static constexpr size_t bitmask = (1ull << 32) - 1;
-    double    factor;
-    AugData_t nh_data;
-
 public:
-    /* SHOULD CHANGE THIS TO THE MULTIPLY BY DOUBLE FACTOR VARIANT */
-    inline size_t index(size_t i) const
-    { return double(bitmask & i) * factor; }
-    inline size_t mod  (size_t i) const
-    { return i; }
-
-    //specialized functions because of Hop Hood Hashing
-    inline std::pair<iterator, bool> insert(const Key& k, const Data& d)
+    //specialized functions because of Hops Hashing
+    inline std::pair<iterator, bool> insert(const key_type& k, const mapped_type& d)
     {
         return insert(std::make_pair(k,d));
     }
 
-    inline std::pair<iterator, bool> insert(const std::pair<Key, Data>& t)
+    inline std::pair<iterator, bool> insert(const std::pair<key_type, mapped_type>& t)
     {
         // we first have to check if t.first is already present
         size_t ind  = h(t.first);
@@ -174,7 +169,7 @@ public:
         return std::make_pair(Base_t::end(), false);
     }
 
-    inline iterator find(const Key& k)
+    inline iterator find(const key_type& k)
     {
         auto ind = h(k);
         size_t bits = nh_data.getNHood(ind);
@@ -191,7 +186,7 @@ public:
         return Base_t::end();
     }
 
-    inline const_iterator find(const Key& k) const
+    inline const_iterator find(const key_type& k) const
     {
         auto ind = h(k);
         size_t bits = nh_data.getNHood(ind);
@@ -208,7 +203,7 @@ public:
         return Base_t::cend();
     }
 
-    inline size_t erase(const Key& k)
+    inline size_t erase(const key_type& k)
     {
         auto ind = h(k);
         size_t bits = nh_data.getNHood(ind);
@@ -227,19 +222,12 @@ public:
         return 0;
     }
 
-    inline static void print_init_header(std::ostream& out)
-    {
-        out.width(5); out << "nghb" << " ";
-        Base_t::print_init_header(out);
-    }
-
-    inline void print_init_data(std::ostream& out)
-    {
-        out.width(5); out << nh_size << " ";
-        Base_t::print_init_data(out);
-    }
-
 private:
+    inline size_t index(size_t i) const
+    { return double(bitmask & i) * factor; }
+    inline size_t mod  (size_t i) const
+    { return i; }
+
     inline void grow()
     {
         auto ntable = This_t(n, alpha);
@@ -274,6 +262,19 @@ private:
         }
         return std::make_pair(false, pos);
     }
+
+public:
+    inline static void print_init_header(std::ostream& out)
+    {
+        out.width(5); out << "nghb" << " ";
+        Base_t::print_init_header(out);
+    }
+
+    inline void print_init_data(std::ostream& out)
+    {
+        out.width(5); out << nh_size << " ";
+        Base_t::print_init_data(out);
+    }
 };
 
 
@@ -283,8 +284,9 @@ class ProbTraits<HopsProb<K,D,HF,Conf> >
 public:
     using Specialized_t = HopsProb<K,D,HF,Conf>;
     using Base_t        = ProbBase<Specialized_t>;
-    using Key           = K;
-    using Data          = D;
     using HashFct_t     = HF;
     using Config_t      = Conf;
+
+    using key_type      = K;
+    using mapped_type   = D;
 };

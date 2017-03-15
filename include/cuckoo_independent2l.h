@@ -14,32 +14,27 @@ class CuckooIndependent2L
 private:
     using This_t         = CuckooIndependent2L<K,D,HF,Conf>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
-    friend Base_t;
-    friend iterator_incr<This_t>;
-
-public:
-    static constexpr size_t bs = CuckooTraits<This_t>::bs;
-    static constexpr size_t tl = CuckooTraits<This_t>::tl;
-    static constexpr size_t nh = CuckooTraits<This_t>::nh;
-
-private:
     using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
     using Hasher_t       = typename CuckooTraits<This_t>::Hasher_t;
     using Hashed_t       = typename Hasher_t::Hashed_t;
     using Ext            = typename Hasher_t::Extractor_t;
 
+    friend Base_t;
+    friend iterator_incr<This_t>;
+
 public:
-    using Key            = typename CuckooTraits<This_t>::Key;
-    using Data           = typename CuckooTraits<This_t>::Data;
+    using key_type            = typename CuckooTraits<This_t>::key_type;
+    using mapped_type           = typename CuckooTraits<This_t>::mapped_type;
     using iterator       = typename Base_t::iterator;
     using const_iterator = typename Base_t::const_iterator;
 
+private:
+    using value_intern   = std::pair<key_type, mapped_type>;
 
-    static constexpr double fac_div = double (1ull << (32 - ct_log(tl)));
-
+public:
     CuckooIndependent2L(size_t cap = 0      , double size_constraint = 1.1,
                         size_t dis_steps = 0, size_t seed = 0)
-        : Base_t(0, size_constraint, dis_steps, seed), beta((1.0+size_constraint)/2.0)
+        : Base_t(size_constraint, dis_steps, seed), beta((1.0+size_constraint)/2.0)
     {
         size_t lsize  = std::floor(cap * size_constraint / double(tl*bs));
         lsize  = std::max(lsize, 256ul);
@@ -90,26 +85,83 @@ public:
         return *this;
     }
 
+private:
+    using Base_t::n;
+    using Base_t::capacity;
+    using Base_t::alpha;
+    using Base_t::hasher;
+
+    static constexpr size_t bs = CuckooTraits<This_t>::bs;
+    static constexpr size_t tl = CuckooTraits<This_t>::tl;
+    static constexpr size_t nh = CuckooTraits<This_t>::nh;
+    static constexpr double fac_div = double (1ull << (32 - ct_log(tl)));
+
+    double beta;
+    size_t     ll_size  [tl];
+    size_t     ll_elem  [tl];
+    size_t     ll_thresh[tl];
+    double     ll_factor[tl];
+    std::unique_ptr<Bucket_t[]> ll_tab[tl];
+    std::vector<value_intern> grow_buffer;
+
+    using Base_t::make_iterator;
+    using Base_t::make_citerator;
+
+public:
+    // Specialized Funcitions (to keep per table counts) ***********************
+
+    std::pair<iterator, bool> insert(const key_type k, const mapped_type d)
+    {
+        return insert(std::make_pair(k,d));
+    }
+
+    std::pair<iterator, bool> insert(const std::pair<key_type, mapped_type> t)
+    {
+        auto hash = hasher(t.first);
+        size_t ttl = Ext::tab(hash, 0);
+
+        auto result = Base_t::insert(t);
+        if (result.second)
+        {
+            auto currsize = ++ll_elem[ttl];
+            if (currsize > ll_thresh[ttl]) growTab(ttl);
+        }
+        return result;
+    }
+
+    size_t erase(const key_type k)
+    {
+        auto hash     = hasher(k);
+        size_t ttl    = Ext::tab(hash, 0);
+        size_t nk     = Base_t::erase(k);
+        ll_elem[ttl] -= nk;
+        return nk;
+    }
+
+
+
     std::pair<size_t, Bucket_t*> getTable(size_t i)
     {
         return (i < tl) ? std::make_pair(ll_size[i], ll_tab[i].get())
                         : std::make_pair(0,nullptr);
     }
 
-    using Base_t::n;
-    using Base_t::capacity;
+    iterator begin() const
+    {
+        auto temp = make_iterator(&ll_tab[0][0].elements[0]);
+        if (! temp->first) temp++;
+        return temp;
+    }
+
+    const_iterator cbegin() const
+    {
+        auto temp = make_citerator(&ll_tab[0][0].elements[0]);
+        if (! temp->first) temp++;
+        return temp;
+    }
 
 private:
-    using Base_t::alpha;
-    double beta;
-    using Base_t::hasher;
-
-    std::unique_ptr<Bucket_t[]> ll_tab[tl];
-    size_t     ll_size  [tl];
-    size_t     ll_elem  [tl];
-    size_t     ll_thresh[tl];
-    double     ll_factor[tl];
-    std::vector<std::pair<Key, Data> > grow_buffer;
+    // Functions for finding buckets *******************************************
 
     inline void getBuckets(Hashed_t h, Bucket_t** mem) const
     {
@@ -121,6 +173,15 @@ private:
     {
         size_t tab = Ext::tab(h,0);
         return &(ll_tab[tab][Ext::loc(h,i)*ll_factor[tab]]);
+    }
+
+
+
+    // Size changes (GROWING) **************************************************
+    void grow()
+    {
+        // necessary for base class not implemented since growing is triggered
+        // individually for each subtable in this specialization
     }
 
     inline void growTab(size_t tab)
@@ -179,61 +240,8 @@ private:
             Base_t::insert(e);
         }
         n = temp;
-        std::vector<std::pair<Key, Data> > ttemp;
+        std::vector<std::pair<key_type, mapped_type> > ttemp;
         std::swap(ttemp, grow_buffer);
-    }
-
-public:
-    // Specialized Funcitions (to keep per table counts) ***********************
-
-    std::pair<iterator, bool> insert(const Key k, const Data d)
-    {
-        return insert(std::make_pair(k,d));
-    }
-
-    std::pair<iterator, bool> insert(const std::pair<Key, Data> t)
-    {
-        auto hash = hasher(t.first);
-        size_t ttl = Ext::tab(hash, 0);
-
-        auto result = Base_t::insert(t);
-        if (result.second)
-        {
-            auto currsize = ++ll_elem[ttl];
-            if (currsize > ll_thresh[ttl]) growTab(ttl);
-        }
-        return result;
-    }
-
-    size_t erase(const Key k)
-    {
-        auto hash     = hasher(k);
-        size_t ttl    = Ext::tab(hash, 0);
-        size_t nk     = Base_t::erase(k);
-        ll_elem[ttl] -= nk;
-        return nk;
-    }
-
-    void grow()
-    {
-        // called from the base class not implemented since growing is triggered
-        // individually for all sub-tables
-    }
-
-    using Base_t::make_iterator;
-    using Base_t::make_citerator;
-    iterator begin()
-    {
-        auto temp = make_iterator(&ll_tab[0][0].elements[0]);
-        if (! temp->first) temp++;
-        return temp;
-    }
-
-    const_iterator begin() const
-    {
-        auto temp = make_citerator(&ll_tab[0][0].elements[0]);
-        if (! temp->first) temp++;
-        return temp;
     }
 };
 
@@ -247,9 +255,10 @@ class CuckooTraits<CuckooIndependent2L<K,D,HF,Conf> >
 public:
     using Specialized_t  = CuckooIndependent2L<K,D,HF,Conf>;
     using Base_t         = CuckooMultiBase<Specialized_t>;
-    using Key            = K;
-    using Data           = D;
     using Config_t       = Conf;
+
+    using key_type       = K;
+    using mapped_type    = D;
 
     static constexpr size_t bs = Conf::bs;
     static constexpr size_t tl = Conf::tl;
@@ -266,13 +275,14 @@ public:
 template<class K, class D, class HF, class Conf>
 class iterator_incr<CuckooIndependent2L<K,D,HF,Conf> >
 {
-public:
-    using Table_t   = CuckooIndependent2L<K,D,HF,Conf>;
+private:
     using ipointer = std::pair<const K,D>*;
     static constexpr size_t tl = Conf::tl;
     static constexpr size_t bs = Conf::bs;
 
 public:
+    using Table_t   = CuckooIndependent2L<K,D,HF,Conf>;
+
     iterator_incr(const Table_t& table_)
         : table(table_), end_tab(nullptr), tab(tl + 1)
     { }
@@ -294,7 +304,6 @@ public:
         return temp;
     }
 
-    size_t n_forwards;
 private:
     const Table_t& table;
     ipointer       end_tab;
@@ -322,7 +331,6 @@ private:
                 end_tab = tab_e_ptr;
                 return;
             }
-            std::cout << "?" << std::endl;
         }
     }
 

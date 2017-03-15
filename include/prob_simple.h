@@ -14,8 +14,8 @@ private:
     friend Base_t;
 
 public:
-    using Key    = typename ProbTraits<This_t>::Key;
-    using Data   = typename ProbTraits<This_t>::Data;
+    using key_type    = typename ProbTraits<This_t>::key_type;
+    using mapped_type   = typename ProbTraits<This_t>::mapped_type;
 
     FastLinProb(size_t cap = 0, double = 1., size_t = 0)
         : Base_t(next_power_of_two(cap) << 1, 1.)
@@ -28,18 +28,18 @@ public:
     FastLinProb(FastLinProb&& rhs)  = default;
     FastLinProb& operator=(FastLinProb&& ) = default;
 
-    static constexpr size_t bs = 0;
-    static constexpr size_t tl = 0;
-    size_t bitmask;
-
-    inline size_t index(size_t i) const { return i & bitmask; }
-    inline size_t mod(size_t i)   const { return i & bitmask; }
-
 private:
     using Base_t::capacity;
     using Base_t::thresh;
     using Base_t::table;
 
+    size_t bitmask;
+
+    // Access Functions ********************************************************
+    inline size_t index(size_t i) const { return i & bitmask; }
+    inline size_t mod(size_t i)   const { return i & bitmask; }
+
+    // Helper Function *********************************************************
     static size_t next_power_of_two(size_t i)
     {
         size_t t = 2048;
@@ -47,6 +47,7 @@ private:
         return t;
     }
 
+    // Growing *****************************************************************
     explicit FastLinProb(size_t cap, size_t lthresh, This_t* )
         : Base_t(cap, 1.), bitmask(cap-1)
     {
@@ -80,10 +81,11 @@ class ProbTraits<FastLinProb<K,D,HF,Conf> >
 public:
     using Specialized_t = FastLinProb<K,D,HF,Conf>;
     using Base_t        = ProbBase<Specialized_t>;
-    using Key           = K;
-    using Data          = D;
     using HashFct_t     = HF;
     using Config_t      = Conf;
+
+    using key_type      = K;
+    using mapped_type   = D;
 };
 
 
@@ -100,8 +102,8 @@ private:
     friend Base_t;
 
 public:
-    using Key    = typename ProbTraits<This_t>::Key;
-    using Data   = typename ProbTraits<This_t>::Data;
+    using key_type    = typename ProbTraits<This_t>::key_type;
+    using mapped_type   = typename ProbTraits<This_t>::mapped_type;
 
     SpaceLinProb(size_t cap = 0, double size_constraint = 1.1, size_t /*steps*/=0)
         : Base_t(cap, size_constraint)
@@ -113,18 +115,21 @@ public:
     SpaceLinProb(SpaceLinProb&& rhs)  = default;
     SpaceLinProb& operator=(SpaceLinProb&& ) = default;
 
+private:
     using Base_t::alpha;
     using Base_t::n;
     using Base_t::capacity;
+    using Base_t::table;
 
+    double factor;
+
+    static constexpr size_t bitmask = (1ull<<32)-1;
+
+    // Access Functions ********************************************************
     inline size_t index(size_t i) const { return (bitmask & i)*factor; }
     inline size_t mod(size_t i)   const { return i; }
 
-private:
-    using Base_t::table;
-    double factor;
-    static constexpr size_t bitmask = (1ull<<32)-1;
-
+    // Growing *****************************************************************
     inline void grow()
     {
         auto ntable = This_t(n, alpha);
@@ -149,8 +154,9 @@ class ProbTraits<SpaceLinProb<K,D,HF,Conf> >
 public:
     using Specialized_t = SpaceLinProb<K,D,HF,Conf>;
     using Base_t        = ProbBase<Specialized_t>;
-    using Key           = K;
-    using Data          = D;
     using HashFct_t     = HF;
     using Config_t      = Conf;
+
+    using key_type      = K;
+    using mapped_type   = D;
 };

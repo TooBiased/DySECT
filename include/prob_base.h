@@ -20,24 +20,27 @@ class ProbBase
 private:
     using This_t         = ProbBase<SpProb>;
     using Specialized_t  = typename ProbTraits<SpProb>::Specialized_t;
-    friend Specialized_t;
     using HashFct_t      = typename ProbTraits<SpProb>::HashFct_t;
 
+    friend Specialized_t;
+    friend iterator_incr<This_t>;
+
 public:
-    using Key      = typename ProbTraits<SpProb>::Key;
-    using Data     = typename ProbTraits<SpProb>::Data;
-    using Pair_t   = std::pair<Key,Data>;
-    using iterator = IteratorBase<iterator_incr<This_t> >;
+    using key_type       = typename ProbTraits<SpProb>::key_type;
+    using mapped_type    = typename ProbTraits<SpProb>::mapped_type;
+    using iterator       = IteratorBase<iterator_incr<This_t> >;
     using const_iterator = IteratorBase<iterator_incr<This_t>, true>;
-    //static constexpr iterator end() { return iterator::end(); }
 
+private:
+    using value_intern         = std::pair<key_type,mapped_type>;
 
+public:
     ProbBase(size_t cap, double alpha)
         : alpha(alpha), beta((alpha+1.)/2.), n(0),
           capacity((cap) ? cap*alpha : 2048*alpha),
           thresh  ((cap) ? cap*beta  : 2048*beta)
     {
-        if (capacity) table = std::make_unique<Pair_t[]>(capacity);
+        if (capacity) table = std::make_unique<value_intern[]>(capacity);
     }
 
     ~ProbBase() = default;
@@ -48,12 +51,24 @@ public:
     ProbBase(ProbBase&& rhs) = default;
     ProbBase& operator=(ProbBase&& rhs) = default;
 
+private:
+    /*** members that should become private at some point *********************/
+    double     alpha;
+    double     beta;
+    size_t     n;
+    size_t     capacity;
+    size_t     thresh;
+    HashFct_t  hasher;
+
+    std::unique_ptr<value_intern[]> table;
+
+public:
     // Basic Hash Table Functionality ******************************************
-    iterator                  find  (const Key& k);
-    const_iterator            find  (const Key& k) const;
-    std::pair<iterator, bool> insert(const Key& k, const Data& d);
-    std::pair<iterator, bool> insert(const Pair_t& t);
-    size_t                    erase (const Key& k);
+    iterator                  find  (const key_type& k);
+    const_iterator            find  (const key_type& k) const;
+    std::pair<iterator, bool> insert(const key_type& k, const mapped_type& d);
+    std::pair<iterator, bool> insert(const value_intern& t);
+    size_t                    erase (const key_type& k);
 
     // Easy use Accessors for std compliance ***********************************
     inline iterator           begin () const
@@ -70,46 +85,34 @@ public:
         return temp;
     }
     inline const_iterator     cend  () const { return make_citerator(nullptr); }
-    Data&                     at    (const Key& k);
-    const Data&               at    (const Key& k) const;
-    Data&                     operator[](const Key& k);
-    size_t                    count (const Key& k) const;
-
-
-    inline static void print_init_header(std::ostream& out)
-    { out.width(9); out << "f_cap"  << " " <<  std::flush;}
-    inline void print_init_data  (std::ostream& out)
-    { out.width(9); out << capacity << " " << std::flush;}
-
-    /*** members that should become private at some point *********************/
-    double     alpha;
-    double     beta;
-    size_t     n;
-    size_t     capacity;
-    size_t     thresh;
-    HashFct_t  hasher;
-
-    std::unique_ptr<Pair_t[]> table;
+    mapped_type&              at    (const key_type& k);
+    const mapped_type&        at    (const key_type& k) const;
+    mapped_type&              operator[](const key_type& k);
+    size_t                    count (const key_type& k) const;
 
 private:
-    inline iterator make_iterator(Pair_t* pair) const
-    {
-        return iterator(pair, *this);
-    }
-    inline const_iterator make_citerator(Pair_t* pair) const
-    {
-        return const_iterator(pair, *this);
-    }
+    // Easy iterators **********************************************************
+    inline iterator make_iterator(value_intern* pair) const
+    { return iterator(pair, *this); }
+    inline const_iterator make_citerator(value_intern* pair) const
+    { return const_iterator(pair, *this); }
 
-    /*** static polymorph functions *******************************************/
-    inline size_t h(Key k) const
+    // implementation specific functions (static polymorph) ********************
+    inline size_t h(key_type k) const
     { return static_cast<const Specialized_t*>(this)->index(hasher(k)); }
-
-    void propagate_remove(size_t origin);
 
     inline void inc_n()
     { if (++n > thresh) static_cast<Specialized_t*>(this)->grow(); }
     inline void dec_n() { --n; }
+
+    // Private helper function *************************************************
+    void propagate_remove(size_t origin);
+
+public:
+    inline static void print_init_header(std::ostream& out)
+    { out.width(9); out << "f_cap"  << " " <<  std::flush;}
+    inline void print_init_data  (std::ostream& out)
+    { out.width(9); out << capacity << " " << std::flush;}
 };
 
 
@@ -118,7 +121,7 @@ private:
 
 template<class SpProb>
 inline typename ProbBase<SpProb>::iterator
-ProbBase<SpProb>::find(const Key& k)
+ProbBase<SpProb>::find(const key_type& k)
 {
     auto ind = h(k);
 
@@ -141,7 +144,7 @@ ProbBase<SpProb>::find(const Key& k)
 
 template<class SpProb>
 inline typename ProbBase<SpProb>::const_iterator
-ProbBase<SpProb>::find(const Key& k) const
+ProbBase<SpProb>::find(const key_type& k) const
 {
     auto ind = h(k);
 
@@ -164,14 +167,14 @@ ProbBase<SpProb>::find(const Key& k) const
 
 template<class SpProb>
 inline std::pair<typename ProbBase<SpProb>::iterator, bool>
-ProbBase<SpProb>::insert(const Key& k, const Data& d)
+ProbBase<SpProb>::insert(const key_type& k, const mapped_type& d)
 {
     return insert(std::make_pair(k,d));
 }
 
 template<class SpProb>
 inline std::pair<typename ProbBase<SpProb>::iterator, bool>
-ProbBase<SpProb>::insert(const Pair_t& t)
+ProbBase<SpProb>::insert(const value_intern& t)
 {
     auto ind = h(t.first);
 
@@ -195,7 +198,7 @@ ProbBase<SpProb>::insert(const Pair_t& t)
 }
 
 template<class SpProb>
-inline size_t ProbBase<SpProb>::erase(const Key& k)
+inline size_t ProbBase<SpProb>::erase(const key_type& k)
 {
     auto ind = h(k);
 
@@ -224,8 +227,8 @@ inline size_t ProbBase<SpProb>::erase(const Key& k)
 // Accessor Implementations ****************************************************
 
 template<class SpProb>
-inline typename ProbBase<SpProb>::Data&
-ProbBase<SpProb>::at(const Key& k)
+inline typename ProbBase<SpProb>::mapped_type&
+ProbBase<SpProb>::at(const key_type& k)
 {
     auto a = static_cast<Specialized_t*>(this)->find(k);
     if (a == end()) throw std::out_of_range("cannot find key");
@@ -233,8 +236,8 @@ ProbBase<SpProb>::at(const Key& k)
 }
 
 template<class SpProb>
-inline const typename ProbBase<SpProb>::Data&
-ProbBase<SpProb>::at(const Key& k) const
+inline const typename ProbBase<SpProb>::mapped_type&
+ProbBase<SpProb>::at(const key_type& k) const
 {
     auto a = static_cast<const Specialized_t*>(this)->find(k);
     if (a == cend()) throw std::out_of_range("cannot find key");
@@ -242,15 +245,15 @@ ProbBase<SpProb>::at(const Key& k) const
 }
 
 template<class SpProb>
-inline typename ProbBase<SpProb>::Data&
-ProbBase<SpProb>::operator[](const Key& k)
+inline typename ProbBase<SpProb>::mapped_type&
+ProbBase<SpProb>::operator[](const key_type& k)
 {
-    auto t = static_cast<Specialized_t*>(this)->insert(k, Data());
+    auto t = static_cast<Specialized_t*>(this)->insert(k, mapped_type());
     return (*t.first).second;
 }
 
 template<class SpProb>
-inline size_t ProbBase<SpProb>::count(const Key& k) const
+inline size_t ProbBase<SpProb>::count(const key_type& k) const
 {
     return (static_cast<const Specialized_t*>(this)->find(k) != cend()) ? 1 : 0;
 }
@@ -285,10 +288,12 @@ template<class Specialized>
 class iterator_incr<ProbBase<Specialized> >
 {
 public:
-    using Table_t = ProbBase<Specialized>;
-    using Key     = typename Table_t::Key;
-    using Data    = typename Table_t::Data;
-    using ipointer = std::pair<const Key, Data>*;
+    using Table_t    = ProbBase<Specialized>;
+
+private:
+    using key_type    = typename Table_t::key_type;
+    using mapped_type = typename Table_t::mapped_type;
+    using ipointer    = std::pair<const key_type, mapped_type>*;
 
 public:
     iterator_incr(const Table_t& table_)

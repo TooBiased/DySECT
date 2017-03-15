@@ -10,20 +10,22 @@
 template<class Parent> // think about spezialization if nh = 2
 class dstrat_rwalk_anticycle
 {
-public:
-    using Key            = typename Parent::Key;
-    using Data           = typename Parent::Data;
-    using Pair_t         = std::pair<Key,Data>;
+private:
+    using key_type       = typename Parent::key_type;
+    using mapped_type    = typename Parent::mapped_type;
+    using value_intern   = std::pair<key_type,mapped_type>;
+
     using Parent_t       = Parent;
     using Hashed_t       = typename Parent::Hashed_t;
     using Bucket_t       = typename Parent::Bucket_t;
 
-    Parent&      tab;
+    Parent_t&    tab;
     std::mt19937 re;
     const size_t steps;
 
     static constexpr size_t nh = Parent::nh;
 
+public:
     dstrat_rwalk_anticycle(Parent_t& parent, size_t steps=256, size_t seed=30982391937209388ull)
         : tab(parent), re(seed), steps(steps)
     { }
@@ -32,9 +34,9 @@ public:
         : tab(parent), re(std::move(rhs.re)), steps(rhs.steps)
     { }
 
-    inline std::pair<int, Pair_t*> insert(Pair_t t, Hashed_t hash)
+    inline std::pair<int, value_intern*> insert(value_intern t, Hashed_t hash)
     {
-        std::vector<std::pair<Pair_t, Bucket_t*> > queue;
+        std::vector<std::pair<value_intern, Bucket_t*> > queue;
         std::uniform_int_distribution<size_t> bin(0,nh-1);
         std::uniform_int_distribution<size_t> bsd(0,tab.bs-1);
         std::uniform_int_distribution<size_t> hfd(0,nh-2);
@@ -80,7 +82,7 @@ public:
 
         }
 
-        Pair_t* pos = queue[0].second->insert(t);
+        value_intern* pos = queue[0].second->insert(t);
 
         return std::make_pair((pos) ? i : -1, pos);
     }

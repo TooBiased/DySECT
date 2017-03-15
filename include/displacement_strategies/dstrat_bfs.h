@@ -8,20 +8,21 @@
 template<class Parent>
 class dstrat_bfs
 {
-public:
-    using Key            = typename Parent::Key;
-    using Data           = typename Parent::Data;
-    using Pair_t         = std::pair<Key,Data>;
+private:
+    using key_type       = typename Parent::key_type;
+    using mapped_type    = typename Parent::mapped_type;
+    using value_intern   = std::pair<key_type,mapped_type>;
     using Parent_t       = typename Parent::This_t;
     using Hashed_t       = typename Parent::Hashed_t;
     using Bucket_t       = typename Parent::Bucket_t;
 
-    using BFSQueue       = std::vector<std::tuple<Key, int, Bucket_t*> >;
+    using BFSQueue       = std::vector<std::tuple<key_type, int, Bucket_t*> >;
 
     Parent&      tab;
     const size_t steps;
     static constexpr size_t nh = Parent_t::nh;
 
+public:
     dstrat_bfs(Parent& parent, size_t steps = 256, size_t = 0)
         : tab(parent), steps(steps+1)
     {
@@ -32,16 +33,38 @@ public:
         : tab(parent), steps(rhs.steps)
     { }
 
+    inline std::pair<int, value_intern*> insert(std::pair<key_type,mapped_type> t, Hashed_t hash)
+    {
+        BFSQueue  bq;
+
+        Bucket_t* b[nh];
+        tab.getBuckets(hash, b);
+
+        for (size_t i = 0; i < nh; ++i)
+        {
+            bq.push_back(std::tuple<key_type, int, Bucket_t*>(t.first, -1, b[i]));
+        }
+
+        for (size_t i = 0; i < steps; ++i)
+        {
+            if (expand(bq, i))
+            {
+                value_intern* pos = rollBackDisplacements(t, bq);
+                return std::make_pair((pos) ? bq.size()-nh : -1, pos);
+            }
+        }
+
+        return std::make_pair(-1, nullptr);
+    }
+
+private:
     inline bool expand(BFSQueue& q, size_t index)
     {
-        //bool overwatch = false;
-        //if (std::get<0>(q[0]) == 480139307921249140) overwatch = true;
-        //if (overwatch) std::cout << "!" << std::endl;
         Bucket_t* b = std::get<2>(q[index]);
 
         for (size_t i = 0; i < tab.bs && q.size() < steps; ++i)
         {
-            Key k = b->get(i).first;
+            key_type k = b->get(i).first;
 
             auto hash = tab.hasher(k);
 
@@ -60,15 +83,14 @@ public:
         return false;
     }
 
-
-    inline Pair_t* rollBackDisplacements(std::pair<Key,Data> t, BFSQueue& bq)
+    inline value_intern* rollBackDisplacements(std::pair<key_type,mapped_type> t, BFSQueue& bq)
     {
-        Key       k1;
+        key_type       k1;
         int       prev1;
         Bucket_t* b1;
         std::tie(k1, prev1, b1) = bq[bq.size()-1];
 
-        Key       k2;
+        key_type       k2;
         int       prev2;
         Bucket_t* b2;
         while (prev1 >= 0)
@@ -83,29 +105,5 @@ public:
         }
 
         return b1->insertPtr(t);
-    }
-
-    inline std::pair<int, Pair_t*> insert(std::pair<Key,Data> t, Hashed_t hash)
-    {
-        BFSQueue  bq;
-
-        Bucket_t* b[nh];
-        tab.getBuckets(hash, b);
-
-        for (size_t i = 0; i < nh; ++i)
-        {
-            bq.push_back(std::tuple<Key, int, Bucket_t*>(t.first, -1, b[i]));
-        }
-
-        for (size_t i = 0; i < steps; ++i)
-        {
-            if (expand(bq, i))
-            {
-                Pair_t* pos = rollBackDisplacements(t, bq);
-                return std::make_pair((pos) ? bq.size()-nh : -1, pos);
-            }
-        }
-
-        return std::make_pair(-1, nullptr);
     }
 };

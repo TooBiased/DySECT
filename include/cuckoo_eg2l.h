@@ -15,25 +15,24 @@ class CuckooEG2L : public CuckooTraits<CuckooEG2L<K,D,HF,Conf> >::Base_t
 private:
     using This_t         = CuckooEG2L<K,D,HF,Conf>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
-    friend Base_t;
-    friend iterator_incr<This_t>;
-
-private:
     using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
     using Hasher_t       = typename CuckooTraits<This_t>::Hasher_t;
     using Hashed_t       = typename Hasher_t::Hashed_t;
     using Ext            = typename Hasher_t::Extractor_t;
 
+    friend Base_t;
+    friend iterator_incr<This_t>;
+
 public:
-    using Key            = typename CuckooTraits<This_t>::Key;
-    using Data           = typename CuckooTraits<This_t>::Data;
+    using key_type       = typename CuckooTraits<This_t>::key_type;
+    using mapped_type    = typename CuckooTraits<This_t>::mapped_type;
     using iterator       = typename Base_t::iterator;
     using const_iterator = typename Base_t::const_iterator;
 
 
     CuckooEG2L(size_t cap = 0      , double size_constraint = 1.1,
                        size_t dis_steps = 0, size_t seed = 0)
-        : Base_t(0, size_constraint, dis_steps, seed)
+        : Base_t(size_constraint, dis_steps, seed)
     {
         double avg_size_f = double(cap) * size_constraint / double(tl*bs);
 
@@ -67,8 +66,6 @@ public:
 
     CuckooEG2L(CuckooEG2L&& rhs)
         : Base_t(std::move(rhs)),
-          //grow_table(rhs.grow_table),
-          //grow_amount(rhs.grow_amount),
           n_large(rhs.n_large),
           bits_small(rhs.bits_small),
           bits_large(rhs.bits_large),
@@ -84,9 +81,6 @@ public:
     CuckooEG2L& operator=(CuckooEG2L&& rhs)
     {
         Base_t::operator=(std::move(rhs));
-
-        //std::swap(grow_table , rhs.grow_table );
-        //std::swap(grow_amount, rhs.grow_amount);
         std::swap(n_large   , rhs.n_large);
         std::swap(bits_small, rhs.bits_small);
         std::swap(bits_large, rhs.bits_large);
@@ -94,37 +88,49 @@ public:
 
         for (size_t i = 0; i < tl; ++i)
         {
-            //std::swap(llb[i], rhs.llb[i]);
             std::swap(llt[i], rhs.llt[i]);
         }
         return *this;
     }
 
+private:
+    using Base_t::n;
+    using Base_t::capacity;
+    using Base_t::grow_thresh;
+    using Base_t::alpha;
+    using Base_t::hasher;
+
+    static constexpr size_t bs = CuckooTraits<This_t>::bs;
+    static constexpr size_t tl = CuckooTraits<This_t>::tl;
+    static constexpr size_t nh = CuckooTraits<This_t>::nh;
+
+    size_t n_large;
+    size_t bits_small;
+    size_t bits_large;
+    size_t shrnk_thresh;
+
+    std::unique_ptr<Bucket_t[]> llt[tl];
+
+    static constexpr size_t tl_bitmask = tl - 1;
+
+    using Base_t::make_iterator;
+    using Base_t::make_citerator;
+
+public:
     std::pair<size_t, Bucket_t*> getTable(size_t i)
     {
         return (i < tl) ? std::make_pair(bitmask(i)+1, llt[i].get())
                         : std::make_pair(0,nullptr);
     }
 
-    using Base_t::n;
-    using Base_t::capacity;
-    using Base_t::grow_thresh;
-    using Base_t::alpha;
-    using Base_t::hasher;
-    static constexpr size_t bs = CuckooTraits<This_t>::bs;
-    static constexpr size_t tl = CuckooTraits<This_t>::tl;
-    static constexpr size_t nh = CuckooTraits<This_t>::nh;
-    using Base_t::make_iterator;
-    using Base_t::make_citerator;
-
-    iterator begin()
+    iterator begin() const
     {
         auto temp = make_iterator(&llt[0][0].elements[0]);
         if (! temp->first) temp++;
         return temp;
     }
 
-    const_iterator begin() const
+    const_iterator cbegin() const
     {
         auto temp = make_citerator(&llt[0][0].elements[0]);
         if (! temp->first) temp++;
@@ -132,14 +138,7 @@ public:
     }
 
 private:
-    std::unique_ptr<Bucket_t[]> llt[tl];
-
-    size_t n_large;
-    size_t bits_small;
-    size_t bits_large;
-    size_t shrnk_thresh;
-
-    static constexpr size_t tl_bitmask = tl - 1;
+    // Functions for finding buckets *******************************************
 
     inline size_t bitmask(size_t tab) const
     { return (tab < n_large) ? bits_large : bits_small; }
@@ -157,11 +156,9 @@ private:
         return &(llt[tab][loc]);
     }
 
-    inline void dec_n()
-    {
-        --n;
-        if (n < shrnk_thresh) shrink();
-    }
+
+
+    // Size changes (GROWING) **************************************************
 
     inline void grow()
     {
@@ -211,12 +208,22 @@ private:
         }
     }
 
+
+
+    // Size changes (SHRINKING) ************************************************
+
+    inline void dec_n()
+    {
+        --n;
+        if (n < shrnk_thresh) shrink();
+    }
+
     inline void shrink()
     {
         if (n_large) { n_large--; }
         else         { n_large = tl-1; bits_small >>= 1; bits_large >>= 1; }
         auto ntab = std::make_unique<Bucket_t[]>(bits_small + 1);
-        std::vector<std::pair<Key, Data> > buffer;
+        std::vector<std::pair<key_type, mapped_type> > buffer;
 
         migrate_shrnk( n_large, ntab, buffer );
 
@@ -231,7 +238,7 @@ private:
     }
 
     inline void migrate_shrnk(size_t tab, std::unique_ptr<Bucket_t[]>& target,
-                              std::vector<std::pair<Key, Data> >& buffer)
+                              std::vector<std::pair<key_type, mapped_type> >& buffer)
     {
         size_t flag = bits_small + 1;
 
@@ -279,11 +286,10 @@ private:
                     }
                 }
             }
-
         }
     }
 
-    inline void finish_shrnk(std::vector<std::pair<Key, Data> >& buffer)
+    inline void finish_shrnk(std::vector<std::pair<key_type, mapped_type> >& buffer)
     {
         size_t bla = 0;
         n -= buffer.size();
@@ -306,9 +312,10 @@ class CuckooTraits<CuckooEG2L<K,D,HF,Conf> >
 public:
     using Specialized_t  = CuckooEG2L<K,D,HF,Conf>;
     using Base_t         = CuckooMultiBase<Specialized_t>;
-    using Key            = K;
-    using Data           = D;
     using Config_t       = Conf;
+
+    using key_type       = K;
+    using mapped_type    = D;
 
     static constexpr size_t tl = Config_t::tl;
     static constexpr size_t bs = Config_t::bs;
@@ -316,6 +323,7 @@ public:
 
     using Hasher_t       = Hasher<K, HF, ct_log(tl), nh, true, true>;
     using Bucket_t       = Bucket<K,D,bs>;
+
 };
 
 
@@ -325,13 +333,14 @@ public:
 template<class K, class D, class HF, class Conf>
 class iterator_incr<CuckooEG2L<K,D,HF,Conf> >
 {
-public:
-    using Table_t   = CuckooEG2L<K,D,HF,Conf>;
+private:
     using ipointer = std::pair<const K,D>*;
     static constexpr size_t tl = Conf::tl;
     static constexpr size_t bs = Conf::bs;
 
 public:
+    using Table_t   = CuckooEG2L<K,D,HF,Conf>;
+
     iterator_incr(const Table_t& table_)
         : table(table_), end_tab(nullptr), tab(tl + 1)
     { }
@@ -353,7 +362,6 @@ public:
         return temp;
     }
 
-    size_t n_forwards;
 private:
     const Table_t& table;
     ipointer       end_tab;

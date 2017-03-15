@@ -12,11 +12,11 @@ class Hopscotch
 {
 private:
     using Table_t    = tsl::hopscotch_map<K,D,HF>;
-    // template<class Key,
+    // template<class key_type,
     //          class T,
-    //          class Hash = std::hash<Key>,
-    //          class KeyEqual = std::equal_to<Key>,
-    //          class Allocator = std::allocator<std::pair<Key, T>>,
+    //          class Hash = std::hash<key_type>,
+    //          class key_typeEqual = std::equal_to<key_type>,
+    //          class Allocator = std::allocator<std::pair<key_type, T>>,
     //          unsigned int NeighborhoodSize = 62,
     //          class GrowthFactor = std::ratio<2, 1>>
     // class hopscotch_map;
@@ -24,14 +24,14 @@ private:
 
     using IterNative_t = typename Table_t::iterator;
 public:
-    using Key  = K;
-    using Data = D;
-    using Pair_t = std::pair<Key,Data>;
+    using key_type  = K;
+    using mapped_type = D;
+    using value_intern = std::pair<key_type,mapped_type>;
     class iterator : public IterNative_t
     {
     public:
         using difference_type   = typename IterNative_t::difference_type;
-        using value_type = std::pair<const Key,Data>;
+        using value_type = std::pair<const key_type,mapped_type>;
         using reference  = value_type&;
         using pointer    = value_type*;
         using iterator_category = typename IterNative_t::iterator_category;
@@ -41,12 +41,12 @@ public:
         reference operator*() const
         {
             return reinterpret_cast<reference>(
-                       const_cast<Pair_t&>(IterNative_t::operator*()));
+                       const_cast<value_intern&>(IterNative_t::operator*()));
         }
         pointer operator->() const
         {
             return reinterpret_cast<pointer>(
-                       const_cast<Pair_t*>(IterNative_t::operator->()));
+                       const_cast<value_intern*>(IterNative_t::operator->()));
         }
     };
     using const_iterator = typename Table_t::const_iterator;
@@ -62,16 +62,16 @@ public:
     Hopscotch(Hopscotch&&) = default;
     Hopscotch& operator=(Hopscotch&&) = default;
 
-    inline std::pair<iterator, bool> insert(const Key& k, const Data& d)
+    inline std::pair<iterator, bool> insert(const key_type& k, const mapped_type& d)
     { return insert(std::make_pair(k,d)); }
-    inline std::pair<iterator, bool> insert(const std::pair<Key,Data>& t)
+    inline std::pair<iterator, bool> insert(const std::pair<key_type,mapped_type>& t)
     { return table.insert(t); }
 
-    inline iterator find(const Key& k)
+    inline iterator find(const key_type& k)
     { return table.find(k); }
-    inline const_iterator find(const Key& k) const
+    inline const_iterator find(const key_type& k) const
     { return table.find(k); }
-    inline size_t erase(const Key& k)
+    inline size_t erase(const key_type& k)
     { return table.erase(k); }
 
     inline iterator begin()  const { return table.begin();  }
@@ -79,10 +79,10 @@ public:
     inline iterator cbegin() const { return table.cbegin(); }
     inline iterator cend()   const { return table.cend();   }
 
-    inline Data& at(const Key& k)             { return table.at(k); }
-    inline const Data& at(const Key& k) const { return table.at(k); }
-    inline Data& operator[](const Key& k)     { return table[k]; }
-    inline size_t count(const Key& k)   const { return table.count(k); }
+    inline mapped_type& at(const key_type& k)             { return table.at(k); }
+    inline const mapped_type& at(const key_type& k) const { return table.at(k); }
+    inline mapped_type& operator[](const key_type& k)     { return table[k]; }
+    inline size_t count(const key_type& k)          const { return table.count(k); }
 
 private:
     Table_t table;
@@ -120,15 +120,15 @@ private:
 
 public:
     using Key  = K;
-    using Data = D;
-    using Pair_t = std::pair<Key,Data>;
+    using mapped_type = D;
+    using value_intern = std::pair<Key,mapped_type>;
 
     //using iterator = typename Table_t::iterator;
     class iterator : public IterNative_t
     {
     public:
         using difference_type   = typename IterNative_t::difference_type;
-        using value_type = std::pair<const Key,Data>;
+        using value_type = std::pair<const Key,mapped_type>;
         using reference  = value_type&;
         using pointer    = value_type*;
         using iterator_category = typename IterNative_t::iterator_category;
@@ -138,12 +138,12 @@ public:
         reference operator*() const
         {
             return reinterpret_cast<reference>(
-                       const_cast<Pair_t&>(IterNative_t::operator*()));
+                       const_cast<value_intern&>(IterNative_t::operator*()));
         }
         pointer operator->() const
         {
             return reinterpret_cast<pointer>(
-                       const_cast<Pair_t*>(IterNative_t::operator->()));
+                       const_cast<value_intern*>(IterNative_t::operator->()));
         }
     };
     using const_iterator = typename Table_t::const_iterator;
@@ -159,9 +159,9 @@ public:
     SpaceHopscotch(SpaceHopscotch&&) = default;
     SpaceHopscotch& operator=(SpaceHopscotch&&) = default;
 
-    inline std::pair<iterator, bool> insert(const Key& k, const Data& d)
+    inline std::pair<iterator, bool> insert(const Key& k, const mapped_type& d)
     { return insert(std::make_pair(k,d)); }
-    inline std::pair<iterator, bool> insert(const std::pair<Key,Data>& t)
+    inline std::pair<iterator, bool> insert(const std::pair<Key,mapped_type>& t)
     { return table.insert(t); }
 
     inline iterator find(const Key& k)
@@ -176,9 +176,9 @@ public:
     inline iterator cbegin() const { return table.cbegin(); }
     inline iterator cend()   const { return table.cend();   }
 
-    inline Data& at(const Key& k)             { return table.at(k);    }
-    inline const Data& at(const Key& k) const { return table.at(k);    }
-    inline Data& operator[](const Key& k)     { return table[k];       }
+    inline mapped_type& at(const Key& k)             { return table.at(k);    }
+    inline const mapped_type& at(const Key& k) const { return table.at(k);    }
+    inline mapped_type& operator[](const Key& k)     { return table[k];       }
     inline size_t count(const Key& k)   const { return table.count(k); }
 
 private:

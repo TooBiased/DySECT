@@ -21,52 +21,60 @@ class CuckooTraits;
 public:
     using Specialized_t  = T;
     using Base_t         = CuckooMultiBase<T>;
-    using Key            = ... ;
-    using Data           = ... ;
     using Config_t       = CuckooConfig<...>;
+
+    using key_type       = ... ;
+    using mapped_type    = ... ;
 
     static constexpr size_t tl = ... ;
     static constexpr size_t bs = ... ;
     static constexpr size_t nh = ... ;
 
-    union Hasher_t = Hasher<Key, HashFct, ...>;
-    using Bucket_t       = Bucket<Key,Data,bs>;
+    union Hasher_t       = Hasher<key_type, HashFct, ...>;
+    using Bucket_t       = Bucket<key_type, mapped_type, bs>;
 };*/
 
 template<class T, bool c = false>
 class iterator_incr;
+/*
+{
+    using Table_t = Specialized_t;
+    iterator_incr(const Table_t&) { ... }
+    iterator_incr(const iterator_incr&) = default;
+    iterator_incr& operator=(const iterator_incr&) = default;
+
+    pointer next(pointer) { ... }
+};
+*/
 
 
 template<class SCuckoo>
 class CuckooMultiBase
 {
 private:
-
-    using This_t         = CuckooMultiBase<SCuckoo>;
-    using Specialized_t  = typename CuckooTraits<SCuckoo>::Specialized_t;
-    using DisStrat_t     = typename CuckooTraits<SCuckoo>::Config_t::template DisStrat_temp<This_t>;
-    using HistCount_t    = typename CuckooTraits<SCuckoo>::Config_t::HistCount_t;
-    using Hasher_t       = typename CuckooTraits<SCuckoo>::Hasher_t;
+    using  This_t         = CuckooMultiBase<SCuckoo>;
+    using  Specialized_t  = typename CuckooTraits<SCuckoo>::Specialized_t;
+    using  DisStrat_t     = typename CuckooTraits<SCuckoo>::Config_t::template DisStrat_temp<This_t>;
+    using  HistCount_t    = typename CuckooTraits<SCuckoo>::Config_t::HistCount_t;
+    using  Bucket_t       = typename CuckooTraits<SCuckoo>::Bucket_t;
+    using  Hasher_t       = typename CuckooTraits<SCuckoo>::Hasher_t;
+    using  Hashed_t       = typename Hasher_t::Hashed_t;
 
     friend Specialized_t;
     friend DisStrat_t;
 
 public:
-    using Bucket_t       = typename CuckooTraits<SCuckoo>::Bucket_t;
-    using Hashed_t       = typename Hasher_t::Hashed_t;
+    using key_type        = typename CuckooTraits<SCuckoo>::key_type;
+    using mapped_type     = typename CuckooTraits<SCuckoo>::mapped_type;
+    using value_type      = std::pair<const key_type, mapped_type>;
+    using iterator        = IteratorBase<iterator_incr<Specialized_t> >;
+    using const_iterator  = IteratorBase<iterator_incr<Specialized_t>, true>;
 
-    using Key            = typename CuckooTraits<SCuckoo>::Key;
-    using Data           = typename CuckooTraits<SCuckoo>::Data;
-    //using key_type       = Key;
-    //using mapped_type    = Data;
-    //using value_type     = std::pair<const Key, Data>;
-    using Pair_t         = std::pair<Key,Data>;
-    using iterator       = IteratorBase<iterator_incr<Specialized_t> >;
-    using const_iterator = IteratorBase<iterator_incr<Specialized_t>, true>;
+private:
+    using  value_intern    = std::pair<key_type, mapped_type>;
 
-
-
-    CuckooMultiBase(size_t cap = 0, double size_constraint = 1.1,
+public:
+    CuckooMultiBase(double size_constraint = 1.1,
                     size_t dis_steps = 0, size_t seed = 0);
     ~CuckooMultiBase() = default;
     CuckooMultiBase(const CuckooMultiBase&     ) = delete;
@@ -79,6 +87,7 @@ public:
         return *this;
     }
 
+private:
     // members that should become private at some point ************************
     size_t       n;
     size_t       capacity;
@@ -91,34 +100,33 @@ public:
     static constexpr size_t tl = CuckooTraits<Specialized_t>::tl;
     static constexpr size_t nh = CuckooTraits<Specialized_t>::nh;
 
+public:
     // Basic Hash Table Functionality ******************************************
-    iterator                  find  (const Key& k);
-    const_iterator            find  (const Key& k) const;
-    std::pair<iterator, bool> insert(const Key& k, const Data& d);
-    std::pair<iterator, bool> insert(const Pair_t& t);
-    size_t                    erase (const Key& k);
-    //bool                      remove(const Key k) { return erase(k); }
+    iterator                  find  (const key_type& k);
+    const_iterator            find  (const key_type& k) const;
+    std::pair<iterator, bool> insert(const key_type& k, const mapped_type& d);
+    std::pair<iterator, bool> insert(const value_intern& t);
+    size_t                    erase (const key_type& k);
 
     // Easy use Accessors for std compliance ***********************************
-    inline iterator           end   ()
-        { return make_iterator(nullptr); }
     inline iterator           begin () const; // unimplemented
-    inline const_iterator     cend  ()const
-        { return make_citerator(nullptr); }
+    inline iterator           end   () const { return make_iterator(nullptr); }
     inline const_iterator     cbegin() const; // unimplemented
-    Data&                     at    (const Key& k);
-    const Data&               at    (const Key& k) const;
-    Data&                     operator[](const Key& k);
-    size_t                    count (const Key& k) const;
-private:
-    inline iterator       make_iterator (      Pair_t* pos)
-    { return iterator      (pos, *static_cast<Specialized_t*>(this)); }
-
-    inline const_iterator make_citerator(const Pair_t* pos)
-    { return const_iterator(pos, *static_cast<Specialized_t*>(this)); }
+    inline const_iterator     cend  () const { return make_citerator(nullptr); }
+    mapped_type&              at    (const key_type& k);
+    const mapped_type&        at    (const key_type& k) const;
+    mapped_type&              operator[](const key_type& k);
+    size_t                    count (const key_type& k) const;
 
 private:
-    /*** static polymorph functions *******************************************/
+    // Easy iterators **********************************************************
+    inline iterator           make_iterator (      value_intern* pos) const
+    { return iterator      (pos, *static_cast<const Specialized_t*>(this)); }
+
+    inline const_iterator     make_citerator(const value_intern* pos) const
+    { return const_iterator(pos, *static_cast<const Specialized_t*>(this)); }
+
+    // implementation specific functions (static polymorph) ********************
     inline void               inc_n() { ++n; }
     inline void               dec_n() { --n; }
     inline void               getBuckets(Hashed_t h, Bucket_t** mem) const
@@ -146,9 +154,9 @@ public:
 // Constructors and Appointments ***********************************************
 
 template<class SCuckoo>
-CuckooMultiBase<SCuckoo>::CuckooMultiBase(size_t cap, double size_constraint,
-                                 size_t dis_steps, size_t seed)
-    : n(0), capacity(cap), grow_thresh(std::numeric_limits<size_t>::max()),
+CuckooMultiBase<SCuckoo>::CuckooMultiBase(double size_constraint,
+                                          size_t dis_steps, size_t seed)
+    : n(0), capacity(0), grow_thresh(std::numeric_limits<size_t>::max()),
       alpha(size_constraint),
       displacer(*this, dis_steps, seed),
       hcounter(dis_steps)
@@ -166,14 +174,14 @@ CuckooMultiBase<SCuckoo>::CuckooMultiBase(CuckooMultiBase&& rhs)
 
 template<class SCuckoo>
 inline typename CuckooMultiBase<SCuckoo>::iterator
-CuckooMultiBase<SCuckoo>::find(const Key& k)
+CuckooMultiBase<SCuckoo>::find(const key_type& k)
 {
     auto hash = hasher(k);
 
     for (size_t i = 0; i < nh; ++i)
     {
         Bucket_t* tb = getBucket(hash, i);
-        Pair_t*   tp = tb->findPtr(k);
+        value_intern*   tp = tb->findPtr(k);
         if (tp) return make_iterator(tp);
     }
     return end();
@@ -181,14 +189,14 @@ CuckooMultiBase<SCuckoo>::find(const Key& k)
 
 template<class SCuckoo>
 inline typename CuckooMultiBase<SCuckoo>::const_iterator
-CuckooMultiBase<SCuckoo>::find(const Key& k) const
+CuckooMultiBase<SCuckoo>::find(const key_type& k) const
 {
     auto hash = hasher(k);
 
     for (size_t i = 0; i < nh; ++i)
     {
         Bucket_t* tb = getBucket(hash, i);
-        Pair_t*   tp = tb->findPtr(k);
+        value_intern*   tp = tb->findPtr(k);
         if (tp) return make_citerator(tp);
     }
     return end();
@@ -196,19 +204,19 @@ CuckooMultiBase<SCuckoo>::find(const Key& k) const
 
 template<class SCuckoo>
 inline std::pair<typename CuckooMultiBase<SCuckoo>::iterator, bool>
-CuckooMultiBase<SCuckoo>::insert(const Key& k, const Data& d)
+CuckooMultiBase<SCuckoo>::insert(const key_type& k, const mapped_type& d)
 {
     return insert(std::make_pair(k,d));
 }
 
 template<class SCuckoo>
 inline std::pair<typename CuckooMultiBase<SCuckoo>::iterator, bool>
-CuckooMultiBase<SCuckoo>::insert(const Pair_t& t)
+CuckooMultiBase<SCuckoo>::insert(const value_intern& t)
 {
     if (n > grow_thresh) static_cast<Specialized_t*>(this)->grow();
     auto hash = hasher(t.first);
 
-    std::pair<int,Pair_t*> max = std::make_pair(0, nullptr);
+    std::pair<int,value_intern*> max = std::make_pair(0, nullptr);
     for (size_t i = 0; i < nh; ++i)
     {
         auto temp = getBucket(hash, i)->probePtr(t.first);
@@ -227,7 +235,7 @@ CuckooMultiBase<SCuckoo>::insert(const Pair_t& t)
     }
 
     int  srch = -1;
-    Pair_t* pos  = nullptr;
+    value_intern* pos  = nullptr;
     std::tie(srch, pos) = displacer.insert(t, hash);
     if (srch >=0)
     {
@@ -240,7 +248,7 @@ CuckooMultiBase<SCuckoo>::insert(const Pair_t& t)
 }
 
 template<class SCuckoo>
-inline size_t CuckooMultiBase<SCuckoo>::erase(const Key& k)
+inline size_t CuckooMultiBase<SCuckoo>::erase(const key_type& k)
 {
     auto hash = hasher(k);
     for (size_t i = 0; i < nh; ++i)
@@ -260,8 +268,8 @@ inline size_t CuckooMultiBase<SCuckoo>::erase(const Key& k)
 // Accessor Implementations ****************************************************
 
 template<class SCuckoo>
-inline typename CuckooMultiBase<SCuckoo>::Data&
-CuckooMultiBase<SCuckoo>::at(const Key& k)
+inline typename CuckooMultiBase<SCuckoo>::mapped_type&
+CuckooMultiBase<SCuckoo>::at(const key_type& k)
 {
     auto a = static_cast<Specialized_t*>(this)->find(k);
     if (a == end()) throw std::out_of_range("cannot find key");
@@ -269,8 +277,8 @@ CuckooMultiBase<SCuckoo>::at(const Key& k)
 }
 
 template<class SCuckoo>
-inline const typename CuckooMultiBase<SCuckoo>::Data&
-CuckooMultiBase<SCuckoo>::at(const Key& k) const
+inline const typename CuckooMultiBase<SCuckoo>::mapped_type&
+CuckooMultiBase<SCuckoo>::at(const key_type& k) const
 {
     auto a = static_cast<const Specialized_t*>(this)->find(k);
     if (a == cend()) throw std::out_of_range("cannot find key");
@@ -278,15 +286,15 @@ CuckooMultiBase<SCuckoo>::at(const Key& k) const
 }
 
 template<class SCuckoo>
-inline typename CuckooMultiBase<SCuckoo>::Data&
-CuckooMultiBase<SCuckoo>::operator[](const Key& k)
+inline typename CuckooMultiBase<SCuckoo>::mapped_type&
+CuckooMultiBase<SCuckoo>::operator[](const key_type& k)
 {
-    auto t = static_cast<Specialized_t*>(this)->insert(k, Data());
+    auto t = static_cast<Specialized_t*>(this)->insert(k, mapped_type());
     return (*t.first).second;
 }
 
 template<class SCuckoo>
-inline size_t CuckooMultiBase<SCuckoo>::count(const Key& k) const
+inline size_t CuckooMultiBase<SCuckoo>::count(const key_type& k) const
 {
     return (static_cast<const Specialized_t*>(this)->find(k) != cend()) ? 1 : 0;
 }

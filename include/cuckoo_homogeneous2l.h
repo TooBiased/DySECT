@@ -13,29 +13,24 @@ class CuckooHomogeneous2L : public CuckooTraits<CuckooHomogeneous2L<K,D,HF,Conf>
 private:
     using This_t         = CuckooHomogeneous2L<K,D,HF,Conf>;
     using Base_t         = typename CuckooTraits<This_t>::Base_t;
-    friend Base_t;
-    friend iterator_incr<This_t>;
-
-public:
-    static constexpr size_t bs = CuckooTraits<This_t>::bs;
-    static constexpr size_t tl = CuckooTraits<This_t>::tl;
-    static constexpr size_t nh = CuckooTraits<This_t>::nh;
-
-private:
     using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
     using Hasher_t       = typename CuckooTraits<This_t>::Hasher_t;
     using Hashed_t       = typename Hasher_t::Hashed_t;
     using Ext            = typename Hasher_t::Extractor_t;
 
+    friend Base_t;
+    friend iterator_incr<This_t>;
+
 public:
-    using Key            = typename CuckooTraits<This_t>::Key;
-    using Data           = typename CuckooTraits<This_t>::Data;
+    using key_type            = typename CuckooTraits<This_t>::key_type;
+    using mapped_type           = typename CuckooTraits<This_t>::mapped_type;
     using iterator       = typename Base_t::iterator;
     using const_iterator = typename Base_t::const_iterator;
 
+
     CuckooHomogeneous2L(size_t cap = 0      , double size_constraint = 1.1,
                        size_t dis_steps = 0, size_t seed = 0)
-        : Base_t(0, size_constraint, dis_steps, seed),
+        : Base_t(size_constraint, dis_steps, seed),
           ll_size(std::floor(double(cap) * size_constraint / double(tl*bs))),
           beta((size_constraint+1.)/2.),
           factor(double(ll_size)/double(1ull << (32-ct_log(tl))))
@@ -45,9 +40,7 @@ public:
             ll_table[i] = std::make_unique<Bucket_t[]>(ll_size);
         }
         capacity    = tl * ll_size * bs;
-        grow_thresh      = double(capacity) / beta;
-
-        //factor      = double(ll_size) / double(1ull << (32 - ct_log(tl)));
+        grow_thresh = double(capacity) / beta;
     }
 
     CuckooHomogeneous2L(const CuckooHomogeneous2L&) = delete;
@@ -78,24 +71,37 @@ public:
         return *this;
     }
 
-    ~CuckooHomogeneous2L()
-    {
-    }
+    ~CuckooHomogeneous2L() = default;
+
+private:
+    using Base_t::n;
+    using Base_t::capacity;
+    using Base_t::grow_thresh;
+    using Base_t::alpha;
+    using Base_t::hasher;
+
+    static constexpr size_t bs = CuckooTraits<This_t>::bs;
+    static constexpr size_t tl = CuckooTraits<This_t>::tl;
+    static constexpr size_t nh = CuckooTraits<This_t>::nh;
+
+    size_t                      ll_size;
+    double                      beta;
+    double                      factor;
+
+    std::unique_ptr<Bucket_t[]> ll_table[tl];
+    std::vector<std::pair<key_type, mapped_type> > grow_buffer;
+
+    using Base_t::make_iterator;
+    using Base_t::make_citerator;
+
+public:
+    using Base_t::insert;
 
     std::pair<size_t, Bucket_t*> getTable(size_t i)
     {
         return (i < tl) ? std::make_pair(ll_size, ll_table[i].get())
                         : std::make_pair(0,nullptr);
     }
-
-    using Base_t::n;
-    using Base_t::capacity;
-    using Base_t::grow_thresh;
-    using Base_t::alpha;
-    using Base_t::hasher;
-    using Base_t::insert;
-    using Base_t::make_iterator;
-    using Base_t::make_citerator;
 
     inline iterator begin()
     {
@@ -104,21 +110,16 @@ public:
         return temp;
     }
 
-    inline const_iterator begin() const
+    inline const_iterator cbegin() const
     {
-        auto temp = make_iterator(&ll_table[0][0].elements[0]);
+        auto temp = make_citerator(&ll_table[0][0].elements[0]);
         if (! temp->first) temp++;
         return temp;
     }
 
 
 private:
-    size_t                      ll_size;
-    double                      beta;
-    double                      factor;
-
-    std::unique_ptr<Bucket_t[]> ll_table[tl];
-    std::vector<std::pair<Key, Data> > grow_buffer;
+    // Functions for finding buckets *******************************************
 
     inline void getBuckets(Hashed_t h, Bucket_t** mem) const
     {
@@ -131,6 +132,10 @@ private:
         size_t tab = Ext::tab(h,i);
         return &(ll_table[tab][Ext::loc(h,i) * factor]);
     }
+
+
+
+    // Size changes (GROWING) **************************************************
 
     void grow()
     {
@@ -191,6 +196,10 @@ private:
     }
 };
 
+
+
+// Traits class defining types *************************************************
+
 template<class K, class D, class HF,
          class Conf>
 class CuckooTraits<CuckooHomogeneous2L<K,D,HF,Conf> >
@@ -198,9 +207,10 @@ class CuckooTraits<CuckooHomogeneous2L<K,D,HF,Conf> >
 public:
     using Specialized_t  = CuckooHomogeneous2L<K,D,HF,Conf>;
     using Base_t         = CuckooMultiBase<Specialized_t>;
-    using Key            = K;
-    using Data           = D;
     using Config_t       = Conf;
+
+    using key_type       = K;
+    using mapped_type    = D;
 
     static constexpr size_t tl = Config_t::tl;
     static constexpr size_t bs = Config_t::bs;
@@ -217,13 +227,14 @@ public:
 template<class K, class D, class HF, class Conf>
 class iterator_incr<CuckooHomogeneous2L<K,D,HF,Conf> >
 {
-public:
-    using Table_t   = CuckooHomogeneous2L<K,D,HF,Conf>;
+private:
     using ipointer = std::pair<const K,D>*;
     static constexpr size_t tl = Conf::tl;
     static constexpr size_t bs = Conf::bs;
 
 public:
+    using Table_t   = CuckooHomogeneous2L<K,D,HF,Conf>;
+
     iterator_incr(const Table_t& table_)
         : table(table_), end_tab(nullptr), tab(tl + 1)
     { }
@@ -245,7 +256,6 @@ public:
         return temp;
     }
 
-    size_t n_forwards;
 private:
     const Table_t& table;
     ipointer       end_tab;
@@ -273,7 +283,6 @@ private:
                 end_tab = tab_e_ptr;
                 return;
             }
-            std::cout << "?" << std::endl;
         }
     }
 
