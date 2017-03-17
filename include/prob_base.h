@@ -71,20 +71,26 @@ public:
     size_t                    erase (const key_type& k);
 
     // Easy use Accessors for std compliance ***********************************
-    inline iterator           begin () const
+    inline iterator           begin ()
     {
         auto temp = make_iterator(&table[0]);
         if (!temp->first) temp++;
         return temp;
     }
-    inline iterator           end   () const { return make_iterator(nullptr);  }
+    inline const_iterator     begin()  const
+    {
+        return static_cast<Specialized_t*>(this)->cbegin();
+    }
     inline const_iterator     cbegin() const
     {
         auto temp = make_citerator(&table[0]);
         if (!temp->first) temp++;
         return temp;
     }
+    inline iterator           end   () { return make_iterator(nullptr);  }
+    inline const_iterator     end   () const { return static_cast<Specialized_t*>(this)->cend(); }
     inline const_iterator     cend  () const { return make_citerator(nullptr); }
+
     mapped_type&              at    (const key_type& k);
     const mapped_type&        at    (const key_type& k) const;
     mapped_type&              operator[](const key_type& k);

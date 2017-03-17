@@ -22,8 +22,8 @@ private:
     friend iterator_incr<This_t>;
 
 public:
-    using key_type            = typename CuckooTraits<This_t>::key_type;
-    using mapped_type           = typename CuckooTraits<This_t>::mapped_type;
+    using key_type       = typename CuckooTraits<This_t>::key_type;
+    using mapped_type    = typename CuckooTraits<This_t>::mapped_type;
     using iterator       = typename Base_t::iterator;
     using const_iterator = typename Base_t::const_iterator;
 

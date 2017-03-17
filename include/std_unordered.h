@@ -8,13 +8,14 @@ class STDProb
 {
 private:
     using Table_t  = std::unordered_map<K,D,HF>;
-    using iterator = typename Table_t::iterator;
 
     Table_t table;
 
 public:
     using key_type    = K;
     using mapped_type = D;
+    using iterator = typename Table_t::iterator;
+    using const_iterator = typename Table_t::const_iterator;
 
     STDProb(size_t cap, double = 1.1, size_t = 0) : table(cap) {}
 
@@ -38,8 +39,8 @@ public:
         return table.erase(k);
     }
 
-    inline iterator       begin()  const { return table.begin(); }
-    inline iterator       end()    const { return table.end();   }
+    inline iterator       begin()  { return table.begin(); }
+    inline iterator       end()    { return table.end();   }
     inline const_iterator cbegin() const { return table.cbegin(); }
     inline const_iterator cend()   const { return table.cend();   }
 

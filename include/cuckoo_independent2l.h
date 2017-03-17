@@ -12,21 +12,22 @@ class CuckooIndependent2L
     : public CuckooTraits<CuckooIndependent2L<K,D,HF,Conf> >::Base_t
 {
 private:
-    using This_t         = CuckooIndependent2L<K,D,HF,Conf>;
-    using Base_t         = typename CuckooTraits<This_t>::Base_t;
-    using Bucket_t       = typename CuckooTraits<This_t>::Bucket_t;
-    using Hasher_t       = typename CuckooTraits<This_t>::Hasher_t;
-    using Hashed_t       = typename Hasher_t::Hashed_t;
-    using Ext            = typename Hasher_t::Extractor_t;
+    using This_t             = CuckooIndependent2L<K,D,HF,Conf>;
+    using Base_t             = typename CuckooTraits<This_t>::Base_t;
+    using Bucket_t           = typename CuckooTraits<This_t>::Bucket_t;
+    using Hasher_t           = typename CuckooTraits<This_t>::Hasher_t;
+    using Hashed_t           = typename Hasher_t::Hashed_t;
+    using Ext                = typename Hasher_t::Extractor_t;
 
     friend Base_t;
     friend iterator_incr<This_t>;
 
 public:
-    using key_type            = typename CuckooTraits<This_t>::key_type;
-    using mapped_type           = typename CuckooTraits<This_t>::mapped_type;
-    using iterator       = typename Base_t::iterator;
-    using const_iterator = typename Base_t::const_iterator;
+    using key_type           = typename CuckooTraits<This_t>::key_type;
+    using mapped_type        = typename CuckooTraits<This_t>::mapped_type;
+    using iterator           = typename Base_t::iterator;
+    using const_iterator     = typename Base_t::const_iterator;
+    using insert_return_type = typename Base_t::insert_return_type;
 
 private:
     using value_intern   = std::pair<key_type, mapped_type>;
@@ -110,12 +111,12 @@ private:
 public:
     // Specialized Funcitions (to keep per table counts) ***********************
 
-    std::pair<iterator, bool> insert(const key_type k, const mapped_type d)
+    inline insert_return_type insert(const key_type k, const mapped_type d)
     {
         return insert(std::make_pair(k,d));
     }
 
-    std::pair<iterator, bool> insert(const std::pair<key_type, mapped_type> t)
+    inline insert_return_type insert(const std::pair<key_type, mapped_type> t)
     {
         auto hash = hasher(t.first);
         size_t ttl = Ext::tab(hash, 0);
@@ -146,7 +147,7 @@ public:
                         : std::make_pair(0,nullptr);
     }
 
-    iterator begin() const
+    iterator begin()
     {
         auto temp = make_iterator(&ll_tab[0][0].elements[0]);
         if (! temp->first) temp++;

@@ -74,8 +74,8 @@ public:
     inline size_t erase(const key_type& k)
     { return table.erase(k); }
 
-    inline iterator begin()  const { return table.begin();  }
-    inline iterator end()    const { return table.end();    }
+    inline iterator begin()  { return table.begin();  }
+    inline iterator end()    { return table.end();    }
     inline iterator cbegin() const { return table.cbegin(); }
     inline iterator cend()   const { return table.cend();   }
 

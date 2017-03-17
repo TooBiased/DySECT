@@ -79,7 +79,7 @@ public:
                      : std::make_pair(0,nullptr);
     }
 
-    inline iterator begin() const
+    inline iterator begin()
     {
         auto temp = make_iterator(&table[0].elements[0]);
         if (! temp->first) temp++;
