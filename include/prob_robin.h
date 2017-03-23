@@ -13,13 +13,14 @@ private:
     friend Base_t;
 
 public:
-    using key_type      = typename ProbTraits<This_t>::key_type;
-    using mapped_type     = typename ProbTraits<This_t>::mapped_type;
-    using iterator = typename Base_t::iterator;
+    using size_type      = typename Base_t::size_type;
+    using key_type       = typename ProbTraits<This_t>::key_type;
+    using mapped_type    = typename ProbTraits<This_t>::mapped_type;
+    using iterator       = typename Base_t::iterator;
     using const_iterator = typename Base_t::const_iterator;
 
-    RobinProb(size_t cap = 0      , double size_constraint = 1.1,
-              size_t /*dis_steps*/ = 0, size_t /*seed*/ = 0)
+    RobinProb(size_type cap = 0      , double size_constraint = 1.1,
+              size_type /*dis_steps*/ = 0, size_type /*seed*/ = 0)
         : Base_t(cap, size_constraint),
           pdistance(0)
     {
@@ -39,10 +40,10 @@ private:
     using Base_t::hasher;
     using Base_t::table;
 
-    size_t pdistance;
+    size_type pdistance;
     double factor;
 
-    static constexpr size_t bitmask = (1ull << 32) - 1;
+    static constexpr size_type bitmask = (1ull << 32) - 1;
 
     using Base_t::h;
     using Base_t::inc_n;
@@ -64,7 +65,7 @@ public:
         double ind     = dindex(hasher(t.first));
         auto   current = t;
 
-        for (size_t i = ind; ; ++i)
+        for (size_type i = ind; ; ++i)
         {
             auto ti    = mod(i);
             auto temp  = table[ti];
@@ -79,14 +80,14 @@ public:
                     return std::make_pair(Base_t::end(), false);
                 table[ti] = current;
                 inc_n();
-                pdistance = std::max<size_t>(pdistance, i-size_t(ind));
+                pdistance = std::max<size_type>(pdistance, i-size_type(ind));
                 return std::make_pair(make_iterator(&table[ti]), true);
             }
             double tind = dindex(hasher(temp.first));
             if ( tind > ind )
             {
                 std::swap(table[ti], current);
-                pdistance = std::max<int>(pdistance, i-size_t(ind));
+                pdistance = std::max<int>(pdistance, i-size_type(ind));
                 ind = tind;
             }
         }
@@ -97,9 +98,9 @@ public:
     {
         auto ind = h(k);
 
-        for (size_t i = ind; i <= ind+pdistance; ++i)
+        for (size_type i = ind; i <= ind+pdistance; ++i)
         {
-            size_t ti = mod(i);
+            size_type ti = mod(i);
             auto temp = table[ti];
 
             if ( temp.first == 0 )
@@ -118,9 +119,9 @@ public:
     {
         auto ind = h(k);
 
-        for (size_t i = ind; i <= ind+pdistance; ++i)
+        for (size_type i = ind; i <= ind+pdistance; ++i)
         {
-            size_t ti = mod(i);
+            size_type ti = mod(i);
             auto temp = table[ti];
 
             if ( temp.first == 0 )
@@ -135,13 +136,13 @@ public:
         return Base_t::cend();
     }
 
-    inline size_t erase(const key_type& k)
+    inline size_type erase(const key_type& k)
     {
         auto ind = h(k);
 
-        for (size_t i = ind; i <= ind+pdistance ; ++i)
+        for (size_type i = ind; i <= ind+pdistance ; ++i)
         {
-            size_t ti = mod(i);
+            size_type ti = mod(i);
             auto temp = table[ti];
 
             if ( temp.first == 0 )
@@ -159,19 +160,19 @@ public:
     }
 
 private:
-    inline size_t index (size_t i) const
+    inline size_type index (size_type i) const
     { return double(bitmask & i) * factor; }
-    inline double dindex(size_t i) const
+    inline double dindex(size_type i) const
     { return double(bitmask & i) * factor; }
-    inline size_t mod(size_t i)    const
+    inline size_type mod(size_type i)    const
     { return i; }
 
     inline void grow()
     {
         auto ntable = This_t(n, alpha);
 
-        size_t tn = n;
-        size_t tdistance = ntable.migrate(*this);
+        size_type tn = n;
+        size_type tdistance = ntable.migrate(*this);
 
         (*this) = std::move(ntable);
 
@@ -179,17 +180,17 @@ private:
         pdistance = tdistance;
     }
 
-    inline size_t migrate(This_t& source)
+    inline size_type migrate(This_t& source)
     {
-        size_t distance   = 0;
-        size_t target_pos = 0;
-        for (size_t i = 0; i < source.capacity; ++i)
+        size_type distance   = 0;
+        size_type target_pos = 0;
+        for (size_type i = 0; i < source.capacity; ++i)
         {
             auto current = source.table[i];
             if (!current.first) continue;
             auto hash = h(current.first);
             if (target_pos > hash)
-                distance   = std::max<size_t>(distance, target_pos - hash);
+                distance   = std::max<size_type>(distance, target_pos - hash);
             else
                 target_pos = hash;
             table[target_pos++] = current;
@@ -197,10 +198,10 @@ private:
         return distance;
     }
 
-    inline void propagate_remove(const size_t hole)
+    inline void propagate_remove(const size_type hole)
     {
-        size_t thole = hole;
-        for (size_t i = hole+1; ; ++i)
+        size_type thole = hole;
+        for (size_type i = hole+1; ; ++i)
         {
             auto ti   = mod(i);
             auto temp = table[ti];

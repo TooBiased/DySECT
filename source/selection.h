@@ -8,6 +8,7 @@
      !CINDEPENDENT2L  && \
      !LINPROB         && \
      !SPACEPROB       && \
+     !INPLACEPROB     && \
      !ROBINPROB       && \
      !HOPPROB         && \
      !HOPSCOTCH       && \
@@ -27,6 +28,12 @@
 #define TRIV_CONFIG
 #include "include/prob_simple.h"
 #define  HASHTYPE SpaceLinProb
+#endif
+
+#ifdef INPLACEPROB
+#define TRIV_CONFIG
+#include "include/prob_simple.h"
+#define  HASHTYPE SpaceLinProbInPlace
 #endif
 
 #ifdef ROBINPROB
