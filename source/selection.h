@@ -2,8 +2,11 @@
 
 #include "include/config.h"
 
-#if (!CSIMPLE         && \
+#if (!TESTTAB         && \
+     !CSIMPLE         && \
+     !CINPLACE        && \
      !CEG2L           && \
+     !CEIPG2L         && \
      !CHOMOGENEOUS2L  && \
      !CINDEPENDENT2L  && \
      !LINPROB         && \
@@ -11,12 +14,20 @@
      !INPLACEPROB     && \
      !ROBINPROB       && \
      !HOPPROB         && \
+     !HIPPROB         && \
      !HOPSCOTCH       && \
      !SPACEHOPSCOTCH  && \
      !STD_UNORDERED)
 #warning WARNING: No table chosen using! CEG2L
 #define CEG2L
 #endif // NO HASHTYPE DEFINED => GROWS
+
+
+#ifdef TESTTAB
+#define HOPSCOTCH_CONFIG
+#include "include/prob_hops.h"
+#define  HASHTYPE HopsProbInPlace
+#endif // TESTTAB
 
 #ifdef LINPROB
 #define TRIV_CONFIG
@@ -28,69 +39,88 @@
 #define TRIV_CONFIG
 #include "include/prob_simple.h"
 #define  HASHTYPE SpaceLinProb
-#endif
+#endif // SPACEPROB
 
 #ifdef INPLACEPROB
 #define TRIV_CONFIG
 #include "include/prob_simple.h"
 #define  HASHTYPE SpaceLinProbInPlace
-#endif
+#endif // INPLACEPROB
 
 #ifdef ROBINPROB
 #define TRIV_CONFIG
 #include "include/prob_robin.h"
 #define  HASHTYPE RobinProb
-#endif
+#endif // ROBINPROB
 
 #ifdef HOPPROB
 #define HOPSCOTCH_CONFIG
 #include "include/prob_hops.h"
 #define  HASHTYPE HopsProb
-#endif
+#endif // HOPPROB
+
+#ifdef HIPPROB
+#define HOPSCOTCH_CONFIG
+#include "include/prob_hops.h"
+#define  HASHTYPE HopsProbInPlace
+#endif // TESTTAB
 
 #ifdef HOPSCOTCH
 #define TRIV_CONFIG //NONCUCKOO
 #include "include/hopscotch.h"
 #define  HASHTYPE Hopscotch
-#endif
+#endif // HOPSCOTCH
 
 #ifdef SPACEHOPSCOTCH
 #define SPECIAL_HOPSCOTCH
 #define HOPSCOTCH_CONFIG
 #include "include/hopscotch.h"
 #define  HASHTYPE SpaceHopscotch
-#endif
+#endif // SPACEHOPSCOTCH
 
 #ifdef CSIMPLE
 #define MULTI
 #include "include/cuckoo_simple.h"
 #define HASHTYPE CuckooSimple
-#endif
+#endif // CSIMPLE
+
+#ifdef CINPLACE
+#define MULTI
+#include "include/cuckoo_simple.h"
+#define HASHTYPE CuckooSimple
+#endif // CSIMPLE
 
 #ifdef CEG2L
 #define MULTI
 //#define QUICK_MULTI
 #include "include/cuckoo_eg2l.h"
 #define HASHTYPE CuckooEG2L
-#endif
+#endif // CEG2L
+
+#ifdef CEIPG2L
+#define MULTI
+//#define QUICK_MULTI
+#include "include/cuckoo_eg2l.h"
+#define HASHTYPE CuckooEIPG2L
+#endif // CEG2L
 
 #ifdef CHOMOGENEOUS2L
 #define MULTI
 #include "include/cuckoo_homogeneous2l.h"
 #define HASHTYPE CuckooHomogeneous2L
-#endif
+#endif // CHOMOGENEOUS2L
 
 #ifdef CINDEPENDENT2L
 #define MULTI
 #include "include/cuckoo_independent2l.h"
 #define HASHTYPE CuckooIndependent2L
-#endif
+#endif // CINDEPENDENT2L
 
 #ifdef STD_UNORDERED
 #define TRIV_CONFIG
 #include "include/std_unordered.h"
 #define HASHTYPE STDProb
-#endif
+#endif // STD_UNORDERED
 
 #ifdef MULTI
 #include "include/displacement_strategies/summary.h"
@@ -167,8 +197,8 @@ struct Chooser
         auto bs = c.intArg("-bs", Config<>::bs);
         switch (bs)
         {
-        case 4:
-            return executeDTB<Functor, Hist, Displacer, TL,  4> (c, std::forward<Types>(param)...);
+        // case 4:
+        //     return executeDTB<Functor, Hist, Displacer, TL,  4> (c, std::forward<Types>(param)...);
         // case 6:
         //     return executeDTB<Functor, Hist, Displacer, TL,  6> (c, std::forward<Types>(param)...);
         case 8:
@@ -194,15 +224,15 @@ struct Chooser
         auto nh = c.intArg("-nh", Config<>::nh);
         switch (nh)
         {
-        case 2:
-            return executeDTBN<Functor, Hist, Displacer, TL, BS, 2>
-                (c, std::forward<Types>(param)...);
+        // case 2:
+        //     return executeDTBN<Functor, Hist, Displacer, TL, BS, 2>
+        //         (c, std::forward<Types>(param)...);
         case 3:
             return executeDTBN<Functor, Hist, Displacer, TL, BS, 3>
                 (c, std::forward<Types>(param)...);
-        case 4:
-            return executeDTBN<Functor, Hist, Displacer, TL, BS, 4>
-                (c, std::forward<Types>(param)...);
+        // case 4:
+        //     return executeDTBN<Functor, Hist, Displacer, TL, BS, 4>
+        //         (c, std::forward<Types>(param)...);
         default:
             constexpr auto tnh = Config<>::nh;
             std::cout << "ERROR: unknown nh value (use "

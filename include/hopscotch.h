@@ -109,26 +109,26 @@ private:
                                        nh_size, typename Conf::GrowRatio>;
     using IterNative_t = typename Table_t::iterator;
 
-    // template<class Key,
+    // template<class key_type,
     //          class T,
-    //          class Hash = std::hash<Key>,
-    //          class KeyEqual = std::equal_to<Key>,
-    //          class Allocator = std::allocator<std::pair<Key, T>>,
+    //          class Hash = std::hash<key_type>,
+    //          class KeyEqual = std::equal_to<key_type>,
+    //          class Allocator = std::allocator<std::pair<key_type, T>>,
     //          unsigned int NeighborhoodSize = 62,
     //          class GrowthFactor = std::ratio<2, 1>>
     // class hopscotch_map;
 
 public:
-    using Key  = K;
+    using key_type  = K;
     using mapped_type = D;
-    using value_intern = std::pair<Key,mapped_type>;
+    using value_intern = std::pair<key_type,mapped_type>;
 
     //using iterator = typename Table_t::iterator;
     class iterator : public IterNative_t
     {
     public:
         using difference_type   = typename IterNative_t::difference_type;
-        using value_type = std::pair<const Key,mapped_type>;
+        using value_type = std::pair<const key_type,mapped_type>;
         using reference  = value_type&;
         using pointer    = value_type*;
         using iterator_category = typename IterNative_t::iterator_category;
@@ -159,16 +159,16 @@ public:
     SpaceHopscotch(SpaceHopscotch&&) = default;
     SpaceHopscotch& operator=(SpaceHopscotch&&) = default;
 
-    inline std::pair<iterator, bool> insert(const Key& k, const mapped_type& d)
+    inline std::pair<iterator, bool> insert(const key_type& k, const mapped_type& d)
     { return insert(std::make_pair(k,d)); }
-    inline std::pair<iterator, bool> insert(const std::pair<Key,mapped_type>& t)
+    inline std::pair<iterator, bool> insert(const std::pair<key_type, mapped_type>& t)
     { return table.insert(t); }
 
-    inline iterator find(const Key& k)
+    inline iterator find(const key_type& k)
     { return table.find(k); }
-    inline const_iterator find(const Key& k) const
+    inline const_iterator find(const key_type& k) const
     { return table.find(k); }
-    inline size_t erase(const Key& k)
+    inline size_t erase(const key_type& k)
     { return table.erase(k); }
 
     inline iterator begin()        { return table.begin();  }
@@ -176,10 +176,10 @@ public:
     inline iterator cbegin() const { return table.cbegin(); }
     inline iterator cend()   const { return table.cend();   }
 
-    inline mapped_type& at(const Key& k)             { return table.at(k);    }
-    inline const mapped_type& at(const Key& k) const { return table.at(k);    }
-    inline mapped_type& operator[](const Key& k)     { return table[k];       }
-    inline size_t count(const Key& k)   const { return table.count(k); }
+    inline mapped_type& at(const key_type& k)             { return table.at(k);    }
+    inline const mapped_type& at(const key_type& k) const { return table.at(k);    }
+    inline mapped_type& operator[](const key_type& k)     { return table[k];       }
+    inline size_t count(const key_type& k)   const { return table.count(k); }
 
 private:
     Table_t table;

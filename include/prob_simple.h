@@ -167,7 +167,16 @@ public:
 
 
 
-/* Same as Above, but Growing Using in Place Migration ************************/
+
+
+
+
+
+
+// *****************************************************************************
+// Same as Above, but Growing Using in Place Migration *************************
+// *****************************************************************************
+
 template <class K, class D, class HF = std::hash<K>,
           class Conf = Config<> >
 class SpaceLinProbInPlace : public ProbTraits<SpaceLinProbInPlace<K,D,HF,Conf> >::Base_t

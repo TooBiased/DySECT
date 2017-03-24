@@ -95,7 +95,7 @@ public:
     mapped_type&              at    (const key_type& k);
     const mapped_type&        at    (const key_type& k) const;
     mapped_type&              operator[](const key_type& k);
-    size_type                    count (const key_type& k) const;
+    size_type                 count (const key_type& k) const;
 
 private:
     // Easy iterators **********************************************************
