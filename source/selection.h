@@ -197,8 +197,8 @@ struct Chooser
         auto bs = c.intArg("-bs", Config<>::bs);
         switch (bs)
         {
-        // case 4:
-        //     return executeDTB<Functor, Hist, Displacer, TL,  4> (c, std::forward<Types>(param)...);
+        case 4:
+            return executeDTB<Functor, Hist, Displacer, TL,  4> (c, std::forward<Types>(param)...);
         // case 6:
         //     return executeDTB<Functor, Hist, Displacer, TL,  6> (c, std::forward<Types>(param)...);
         case 8:
@@ -224,9 +224,9 @@ struct Chooser
         auto nh = c.intArg("-nh", Config<>::nh);
         switch (nh)
         {
-        // case 2:
-        //     return executeDTBN<Functor, Hist, Displacer, TL, BS, 2>
-        //         (c, std::forward<Types>(param)...);
+        case 2:
+            return executeDTBN<Functor, Hist, Displacer, TL, BS, 2>
+                (c, std::forward<Types>(param)...);
         case 3:
             return executeDTBN<Functor, Hist, Displacer, TL, BS, 3>
                 (c, std::forward<Types>(param)...);
@@ -262,16 +262,16 @@ struct Chooser
         {
         case 64:
             return executeN<Functor,64>(c, std::forward<Types>(param)...);
-        case 8:
-            return executeN<Functor, 8>(c, std::forward<Types>(param)...);
-        case 16:
-            return executeN<Functor,16>(c, std::forward<Types>(param)...);
-        case 24:
-            return executeN<Functor,24>(c, std::forward<Types>(param)...);
-        case 32:
-            return executeN<Functor,32>(c, std::forward<Types>(param)...);
-        case 62:
-            return executeN<Functor,62>(c, std::forward<Types>(param)...);
+        // case 8:
+        //     return executeN<Functor, 8>(c, std::forward<Types>(param)...);
+        // case 16:
+        //     return executeN<Functor,16>(c, std::forward<Types>(param)...);
+        // case 24:
+        //     return executeN<Functor,24>(c, std::forward<Types>(param)...);
+        // case 32:
+        //     return executeN<Functor,32>(c, std::forward<Types>(param)...);
+        // case 62:
+        //     return executeN<Functor,62>(c, std::forward<Types>(param)...);
         default:
             constexpr auto tns = HopscotchConfig<>::NeighborSize;
             std::cout << "ERROR: unknown ns value (use "

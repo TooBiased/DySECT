@@ -1,0 +1,62 @@
+#+TITLE:    C++ Implementation of Dynamic Open-Addressing Hash Tables with in Place Growing
+#+AUTHOR:   Tobias Maier
+#+EMAIL:    t.maier@kit.edu
+
+** Abstract
+In this paper, we present an efficient (C++)-implementation technique for dynamic hash
+tables that improves memory usage and performance of the growing
+mechanism without impacting other operations.  Hash tables are
+commonly grown using a full table migration -- all elements are
+reinserted into a larger table.  During the migration both the old and
+the new table take up memory at the same time.  Our Method will
+alleviate this issue by introducing a new cache efficient in place
+growing technique.  Our technique is adaptable and can be used with many
+different open addressing techniques like linear probing, hopscotch
+hashing, and robin hood hashing.
+
+* Introduction
+
+* Main Content
+Let us first define some terms to talk about open-addressing hash
+tables.  A hash table is a data structure, that can hold
+key-value-pairs.  There are at least three basic functions supported
+by a hash table, ~insert~ stores a key-value-pair in the table, ~find~
+given a key returns a contained element with this key, ~erase~ removes
+an element from the hash table.  Obviously details can change between
+implementations, but the techniques used here should work for many if
+not all implementations.
+
+Open-Addressing means, that elements are stored within one large
+table, each cell of the table can hold one element.  At any point of a
+hash tables lifetime, we define $n$ to be the current number of
+elements, and $m$ to be the number of cells in the table.  During the
+growing process we use $m$ for the original table size and $m'$ for
+the new table size.
+
+** Increasing the Size
+The first problem with changing the table size, is the problem of
+increasing the originally reserved memory for the table.  We offer two
+solutions, that are somewhat specific to C++ and the current memory
+architecture.
+
+The portable solution would be to use ~realloc~ to increase the
+allocated memory.  Similar to ~malloc~, ~realloc~ creates a memory
+allocation but given a pointer to a current allocation, it will first
+try to append the current memory block. If this is not possible, a new
+allocation is created and the current content is moved to the new
+position.  This does not strictly enforce, the in place behavior, but
+.
+
+The other solution exploits virtual memory and the way it is mapped to
+physical memory.  After the allocation, no actual memory is used, since pages have not yet been constructed..
+Only memory pages, that have ever been accessed are stored
+specifically.
+
+The other solution -- which we used for our implementations -- is to
+immediately allocate more memory than the table could ever use
+($\approx$ main memory size).
+
+** Preparation and Table Layout
+** In Place Growing
+
+* Experiments
