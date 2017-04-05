@@ -128,24 +128,24 @@ efficiently up to a certain load factor.  Above that, operations get
 slower and/or have a possibility to fail.
 # Is this really OPEN vs. CLOSED or DIRECT vs. INDIRECT
 When implementing a hash table one has to decide between storing
-elements directly in the hash table -- /Open Addressing/ -- or storing
-pointers to elements -- /Closed Hashing/. This has an immediate impact
+elements directly in the hash table -- /Closed Hashing/ -- or storing
+pointers to elements -- /Open Hashing/. This has an immediate impact
 on the necessary memory.
 
 \begin{align*}
-  mem_{open}  (n,m) &\geq^* m\cdot size(element)\\
-  mem_{closed}(n,m) &\geq^* m\cdot size(pointer) + n\cdot size(element)\\
+  mem_{closed}(n,m) &\geq^* m\cdot size(element)\\
+  mem_{open}  (n,m) &\geq^* m\cdot size(pointer) + n\cdot size(element)\\
 \end{align*}
 
-For large elements (\(\gg size(pointer)\)), one can simply use closed
+For large elements (\(\gg size(pointer)\)), one can simply use open
 hashing, to reduce the relevant memory factor.  Therefore, we restrict
 ourselves to the common case of elements whose size is comparable to
 that of a pointer.  For our experiments we use 128bit elements (64bit
 keys and 64bit values).  In these instances closed addressing
-introduces a significant memory overhead (at least \(\times1.5\)), therefore, we only consider
-open addressing hash tables for the purpose of this paper. For open
-addressing hash tables, the memory efficiency is directly dependent on
-the element density.
+introduces a significant memory overhead (at least \(\times1.5\)),
+therefore, we only consider closed hash tables for the purpose of this
+paper. For closed hash tables, the memory efficiency is directly
+dependent on the element density.
 
 ** $\alpha$-Space Efficient Hash Tables
 We call a hashing technique \(\alpha\)-space efficient when it can
@@ -158,7 +158,7 @@ $O(\frac{m}{m-n})$ (average number of probes to hit an empty cell).
 
 \[\alpha \cdot size_min = \alpha\cdot n\cdot size(element)$\]
 
-In many open addressing techniques -- i.e. linear probing, cuckoo
+In many closed hashing techniques -- i.e. linear probing, cuckoo
 hashing ... -- cells are the same size as elements. Therefore, being
 $\alpha$ space efficient is the same as operating with a load factor
 of $\alpha^{-1} = n/m$ ($\alpha\cdot n \cdot size(element) = m\cdot
@@ -205,8 +205,7 @@ whenever it surpasses 95%, fill rate. This would be a
 $0.95^{-1}+0.45^{-1}\approx 3.2$-space efficient table.
 
 ** Cuckoo Hashing
-Cuckoo hashing is a technique to resolve hash conflicts in an open
-addressing hash table. Its main draw is that it guarantees constant
+Cuckoo hashing is a technique to resolve hash conflicts in an closed hashing hash table. Its main draw is that it guarantees constant
 lookup times even in densely filled tables. The article TODO by TODO
 (probably mitzenmacher with or without dietzfelbinger) et al. gives a
 good overview over many cuckoo hashing variants.  The distinguishing
@@ -580,12 +579,12 @@ We call /se/ the size of one element.  For most hash tables this is
 also the size of each hash table cell.  Therefore, the size of the hash
 table is usually \(/se/\cdot m\).
 
-We call a hash table architecture *Open Addressing*, when it stores
+We call a hash table architecture *Closed Hashing*, when it stores
 its elements directly in the table.  This is the opposite of indirect
 hash table techniques like hashing with chaining. Where the hash table
 usually contains pointers to elements that are stored outside the main
 table.  In this publication, we concentrate fully on hash tables with
-open addressing since indirect tables cannot be space efficient when
+closed hashing since indirect tables cannot be space efficient when
 the element size is comparable to the pointer size of the used system
 (for an explanation see TODO).
 
@@ -597,15 +596,15 @@ $\alpha$-space efficient -- for an $1\leq \alpha$ when it can efficiently operat
 with $n$ elements while using less than \(\alpha \cdot n \cdot
 /se/ + c\) memory.
 
-While using open addressing hash tables it is clear, that we cannot
+While using closed hashing hash tables it is clear, that we cannot
 reach the minimum space of \(n\cdot/se/\) in a non-static scenario
 with on-line insertions and deletions.  Therefore, we assume that
 \(\alpha > 0\).  To efficiently use the given memory, we will usually
 make sure, that the used tables are \(m = \alpha \cdot n\) cells large
 resulting in the necessary memory consumption.
 
-Note that above statement is only true for tables which use open
-addressing.  It disregards indirect techniques which store pointers in
+Note that above statement is only true for tables which use closed
+hashing.  It disregards open hashing techniques which store pointers in
 the table.  This makes sense in the common scenario of reasonably
 small elements (not \(/se/ >> /pointer size/\)). In this scenario,
 storing one pointer per element becomes prohibitively large
@@ -618,7 +617,7 @@ Using this technique the overall memory consumption is \(\approx
 m\cdot /pointer size/ + n\cdot /se/\). Which is close to the optimum
 \(n\cdot /se/\) for large /se/.
 
-Therefore, we concentrate on hash tables with open addressing. This
+Therefore, we concentrate on hash tables with closed hashing. This
 means, that all investigated hash tables at some level consist of an
 array, which stores elements directly.
 

@@ -34,29 +34,71 @@ growing process we use $m$ for the original table size and $m'$ for
 the new table size.
 
 ** Increasing the Size
-The first problem with changing the table size, is the problem of
-increasing the originally reserved memory for the table.  We offer two
-solutions, that are somewhat specific to C++ and the current memory
-architecture.
+The first step to growing the table, is to increase the originally
+reserved memory for the table.  We offer two solutions, that are
+somewhat specific to C++ and the current memory architecture, but we
+suspect similar methods also exist in other programming environments.
 
-The portable solution would be to use ~realloc~ to increase the
-allocated memory.  Similar to ~malloc~, ~realloc~ creates a memory
-allocation but given a pointer to a current allocation, it will first
-try to append the current memory block. If this is not possible, a new
-allocation is created and the current content is moved to the new
-position.  This does not strictly enforce, the in place behavior, but
-.
+The first solution is to call ~realloc~ to increase the size of the
+allocated region.  Similar to ~malloc~, ~realloc~ creates a memory
+allocation but given a pointer to a current allocation, ~realloc~ will
+first try to append the current memory block. If this is not possible,
+a new allocation is created and the current content is moved to the
+new position.  This variant is does not strictly enforce the in place
+behavior, but it is very portable since ~realloc~ is available
+everywhere.
 
-The other solution exploits virtual memory and the way it is mapped to
-physical memory.  After the allocation, no actual memory is used, since pages have not yet been constructed..
-Only memory pages, that have ever been accessed are stored
-specifically.
-
-The other solution -- which we used for our implementations -- is to
-immediately allocate more memory than the table could ever use
-($\approx$ main memory size).
+The other solution exploits the concept of virtual memory (available
+in nearly all current systems).  After a simple allocation, no actual
+(physical) memory is used.  Only when we access the allocated memory,
+the operating system maps the accessed virtual memory pages to
+physical memory.  We can use this system in the following way: instead
+of allocating a fixed initial size ($m_0$), we allocate more memory,
+than the table could ever need($\approx$ main memory size); then we
+initialize the $m_0$ first cells of the newly allocated memory.  At this
+point only $O(m_0)$ memory is used ($\~$ one memory page offcut).  Now
+instead of reallocating to a larger size, we can simply initialize
+some additional memory at the end of the current allocation.  This
+method depends on virtual memory working as it does, which makes it a
+little less portable. We still decided to use this variant for our
+tests, because, it ensures the wanted behavior (in place property).
 
 ** Preparation and Table Layout
+For our hash table we use a somewhat unconventional addressing
+technique that offers a couple of different advantages for performance
+as well as migration locality.  As target position for an element with
+key $k$ we choose $p(k) = h(k) \cdot \frac{m}{h_{\max}}$ (where
+$h_{\max}$ is the maximum hash value+1).  This formula computes a
+position between 0 and m-1, similar to the more commonly used formula
+$\overline p(k) = h(k) \mod m$.
+
+One advantage of our variant is that the floating point multiplication
+used in our implementation performs faster than the integer modulo
+computation of the common solution.  Another advantage is, that in our
+hash table, elements are "somewhat sorted" by their hash value (apart
+from collisions, and displacement through linear probing).  This will
+make the migration significantly easier and faster, because, the
+migration will preserve this locality and benefit from the cache
+locality and less interference between elements.
+
+Another common technique to compute the hash table positions is to use
+bitmasks for the modulo computation.  This only works, if $m$ is a
+power of two ($m = 2^k$).  One can easily enforce this by initializing
+the table with a power of two and growing the table by factors of two.
+Notice that most if not all presented techniques remain possible in that
+case (replace the bitmask by an appropriate right shift).
+Additionally our method allows us, to grow by arbitrary factors, which
+was one of the premises of our implementation.
+
 ** In Place Growing
+The main idea behind our migration algorithm, is that we can create
+the new table by reinserting elements from the back to the front of
+the original table. By reinserting this way we leverage our addressing
+technique to minimize problematic insertions.
+
+Due to our addressing technique we ensure that elements that are
+stored close to the end of the original hash table are also stored
+towards the end of the new hash table.
+
 
 * Experiments
