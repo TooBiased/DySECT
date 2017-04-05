@@ -1,4 +1,4 @@
-#+TITLE:  ORG-R-TEST
+#+TITLE:  DySECT Project - Plotting Script
 #+AUTHOR: Tobias Maier
 #+EMAIL:  t.maier@kit.edu
 
@@ -97,7 +97,7 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 *** Reading Data
 #+begin_src R :session :results output
   colc <- c('it', 'al', 'bs', 'tl', 'nh', 'f_cap', 'cap', 'n_0', 'n_f' , 'tin0', 'tin1', 'tfi0', 'tfi1', 'in_err', 'fi_err', 'mem')
-  folder = "../../132tests/27_03/"
+  folder = "../132tests/27_03/"
 
   ti_egrow_raw      <- read.table(paste(folder, "ceg2l.time"         , sep="") , comment.char = "#", col.names = colc)
   ti_ceipg_raw      <- read.table(paste(folder, "ceipg2l.time"       , sep="") , comment.char = "#", col.names = colc)
@@ -445,7 +445,7 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 *** Reading Data
 #+begin_src R :session :results output
   colc <- c('it', 'al', 'bs', 'tl', 'nh', 'f_cap', 'cap', 'time', 'mult', 'ind', 'err', 'mem', 'mx_mem')
-  folder = "../../132tests/27_03/"
+  folder = "../132tests/27_03/"
 
   cw_egrow_raw      <- read.table(paste(folder, "ceg2l.crawl"         , sep="") , comment.char = "#", col.names = colc)
   cw_ceipg_raw      <- read.table(paste(folder, "ceipg2l.crawl"       , sep="") , comment.char = "#", col.names = colc)
@@ -545,7 +545,7 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 *** Reading Data
 #+begin_src R :session :results output
   colc <- c('it', 'al', 'bs', 'tl', 'nh', 'f_cap', 'cap', 'pat', 'n_0', 'n_f' , 'tpre', 'tmix', 'in_err', 'mem')
-  folder = "../../132tests/27_03/"
+  folder = "../132tests/27_03/"
 
   mx_egrow_raw      <- read.table(paste(folder, "ceg2l.mix"         , sep="") , comment.char = "#", col.names = colc)
   mx_ceipg_raw      <- read.table(paste(folder, "ceipg2l.mix"       , sep="") , comment.char = "#", col.names = colc)
@@ -677,7 +677,7 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 *** Reading Data
 #+begin_src R :session :results output
   colc <- c('it', 'bs', 'tl', 'nh', 'f_cap', 'n_step', 'win', 'al', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
-  folder = "../../132tests/27_03/"
+  folder = "../132tests/27_03/"
 
   ep_egrow_raw      <- read.table(paste(folder, "ceg2l.eps"         , sep="") , comment.char = "#", col.names = colc)
   ep_ceipg_raw      <- read.table(paste(folder, "ceipg2l.eps"       , sep="") , comment.char = "#", col.names = colc)
