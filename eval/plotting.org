@@ -1,0 +1,890 @@
+#+TITLE:  ORG-R-TEST
+#+AUTHOR: Tobias Maier
+#+EMAIL:  t.maier@kit.edu
+
+
+** Plotting example
+#+begin_src R :results output graphics :file mygraph.png :bg "white"
+# Creating a Graph
+attach(mtcars)
+plot(wt, mpg)
+abline(lm(mpg~wt))
+title("Regression of MPG on Weight")
+#+end_src
+
+#+RESULTS:
+[[file:mygraph.png]]
+
+
+* COMMON STUFF
+** Clear
+#+BEGIN_SRC R :session
+  rm(list=ls())
+  getwd()
+#+END_SRC
+
+#+RESULTS:
+: /home/maier/PHD/SpaceEfficientHashing/Implementation/loctests/eval
+
+** Define Filters
+#+BEGIN_SRC R :session
+    maskBS <- function (d, bs = 8)
+    {
+        return (d$bs == bs)
+    }
+    maskTL <- function (d, tl = 256)
+    {
+        return (d$tl == tl)
+    }
+    maskAL <- function (d, al = 1.1)
+    {
+        return (d$al == al)
+    }
+    maskNH <- function (d, nh = 2)
+    {
+        return (d$nh == nh)
+    }
+    maskCAP <- function (d, cap = 1)
+    {
+        return (d$cap == cap)
+    }
+    maskNS <- function(d, ns = 32)
+    {
+        return (d$ns ==ns)
+    }
+
+    f_ctable <- function (d, ltl, lbs, lnh)
+    {
+        return (d[maskTL(d,ltl) & maskBS(d,lbs) & maskNH(d,lnh), ])
+    }
+
+    f_htable <- function (d, lns)
+    {
+        return (d[maskNS(d,lns),])
+    }
+
+    f_cap    <- function (d, lcap)
+    {
+        return (d[maskCAP(d, lcap), ])
+    }
+
+    f_al     <- function (d, lal)
+    {
+        return (d[maskAL(d, lal), ])
+    }
+#+END_SRC
+
+#+RESULTS:
+
+** Common Stuff
+#+BEGIN_SRC R :session
+col_vec = list("black", "black",
+               "dodgerblue2", "dodgerblue2",
+               "red2", "red2",
+               "forestgreen",
+               "darkorange",
+               "darkgreen")
+pch_vec = list(15,15,16,16,17,17, 4, 9,13)
+lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
+#+END_SRC
+
+#+RESULTS:
+| 2 | 1 | 2 | 1 | 2 | 1 | 2 | 2 | 2 |
+
+
+* INDIVIDUAL TESTS
+** TIME  TEST
+*** Reading Data
+#+begin_src R :session :results output
+  colc <- c('it', 'al', 'bs', 'tl', 'nh', 'f_cap', 'cap', 'n_0', 'n_f' , 'tin0', 'tin1', 'tfi0', 'tfi1', 'in_err', 'fi_err', 'mem')
+  folder = "../../132tests/27_03/"
+
+  ti_egrow_raw      <- read.table(paste(folder, "ceg2l.time"         , sep="") , comment.char = "#", col.names = colc)
+  ti_ceipg_raw      <- read.table(paste(folder, "ceipg2l.time"       , sep="") , comment.char = "#", col.names = colc)
+  ti_simpl_raw      <- read.table(paste(folder, "csimple.time"       , sep="") , comment.char = "#", col.names = colc)
+  ti_cinpl_raw      <- read.table(paste(folder, "cinplace.time"      , sep="") , comment.char = "#", col.names = colc)
+
+  colp <- c('it', 'al',                   'f_cap', 'cap', 'n_0', 'n_f', 'tin0', 'tin1', 'tfi0', 'tfi1', 'in_err', 'fi_err', 'mem')
+  ti_sprob_raw      <- read.table(paste(folder, "spaceprob.time",      sep="") , comment.char = "#", col.names = colp)
+  colp <- c('it', 'al', 'bufs',           'f_cap', 'cap', 'n_0', 'n_f', 'tin0', 'tin1', 'tfi0', 'tfi1', 'in_err', 'fi_err', 'mem')
+  ti_pinpl_raw      <- read.table(paste(folder, "inplaceprob.time",      sep="") , comment.char = "#", col.names = colp)
+
+  colh <- c('it', 'al', 'ns',             'f_cap', 'cap', 'n_0', 'n_f', 'tin0', 'tin1', 'tfi0', 'tfi1', 'in_err', 'fi_err', 'mem')
+  ti_hprob_raw      <- read.table(paste(folder, "hopprob.time", sep="") , comment.char = "#", col.names = colh)
+
+  colp <- c('it', 'al',           'mdis', 'f_cap', 'cap', 'n_0', 'n_f', 'tin0', 'tin1', 'tfi0', 'tfi1', 'in_err', 'fi_err', 'mem')
+  ti_rprob_raw      <- read.table(paste(folder, "robinprob.time",      sep="") , comment.char = "#", col.names = colp)
+
+  colh <- c('it', 'al', 'ns', 'rat',      'f_cap', 'cap', 'n_0', 'n_f', 'tin0', 'tin1', 'tfi0', 'tfi1', 'in_err', 'fi_err', 'mem')
+  ti_shops_raw      <- read.table(paste(folder, "spacehopscotch.time", sep="") , comment.char = "#", col.names = colh)
+
+  loc_groupby <- function(d)
+  {
+      return( aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean) )
+  }
+
+  d <- ti_egrow_raw
+  ti_egrow = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean)
+  d <- ti_ceipg_raw
+  ti_ceipg = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean)
+  d <- ti_simpl_raw
+  ti_simpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean)
+  d <- ti_cinpl_raw
+  ti_cinpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean)
+
+  d <- ti_sprob_raw
+  ti_sprob = aggregate(d, by=list(d$cap, d$al), FUN=mean)
+  d <- ti_pinpl_raw
+  ti_pinpl = aggregate(d, by=list(d$cap, d$al), FUN=mean)
+  d <- ti_hprob_raw
+  ti_hprob = aggregate(d, by=list(d$ns, d$cap, d$al), FUN=mean)
+  d <- ti_rprob_raw
+  ti_rprob = aggregate(d, by=list(d$cap, d$al), FUN=mean)
+  d <- ti_shops_raw
+  ti_shops = aggregate(d, by=list(d$ns, d$rat, d$cap, d$al), FUN=mean)
+#+end_src
+
+#+RESULTS:
+
+*** Compute Some Columns
+#+BEGIN_SRC R :session :results output
+  ti_egrow$tinf = ti_egrow$tin0 + ti_egrow$tin1
+  ti_ceipg$tinf = ti_ceipg$tin0 + ti_ceipg$tin1
+  ti_simpl$tinf = ti_simpl$tin0 + ti_simpl$tin1
+  ti_cinpl$tinf = ti_cinpl$tin0 + ti_cinpl$tin1
+  ti_sprob$tinf = ti_sprob$tin0 + ti_sprob$tin1
+  ti_pinpl$tinf = ti_pinpl$tin0 + ti_pinpl$tin1
+  ti_hprob$tinf = ti_hprob$tin0 + ti_hprob$tin1
+  ti_rprob$tinf = ti_rprob$tin0 + ti_rprob$tin1
+  ti_shops$tinf = ti_shops$tin0 + ti_shops$tin1
+
+  ti_egrow$sinf = ti_egrow$n_f / ti_egrow$tinf
+  ti_ceipg$sinf = ti_ceipg$n_f / ti_ceipg$tinf
+  ti_simpl$sinf = ti_simpl$n_f / ti_simpl$tinf
+  ti_cinpl$sinf = ti_cinpl$n_f / ti_cinpl$tinf
+  ti_sprob$sinf = ti_sprob$n_f / ti_sprob$tinf
+  ti_pinpl$sinf = ti_pinpl$n_f / ti_pinpl$tinf
+  ti_hprob$sinf = ti_hprob$n_f / ti_hprob$tinf
+  ti_rprob$sinf = ti_rprob$n_f / ti_rprob$tinf
+  ti_shops$sinf = ti_shops$n_f / ti_shops$tinf
+
+  ti_egrow$sfi0 = ti_egrow$n_f / ti_egrow$tfi0
+  ti_ceipg$sfi0 = ti_ceipg$n_f / ti_ceipg$tfi0
+  ti_simpl$sfi0 = ti_simpl$n_f / ti_simpl$tfi0
+  ti_cinpl$sfi0 = ti_cinpl$n_f / ti_cinpl$tfi0
+  ti_sprob$sfi0 = ti_sprob$n_f / ti_sprob$tfi0
+  ti_pinpl$sfi0 = ti_pinpl$n_f / ti_pinpl$tfi0
+  ti_hprob$sfi0 = ti_hprob$n_f / ti_hprob$tfi0
+  ti_rprob$sfi0 = ti_rprob$n_f / ti_rprob$tfi0
+  ti_shops$sfi0 = ti_shops$n_f / ti_shops$tfi0
+
+  ti_egrow$sfi1 = ti_egrow$n_f / ti_egrow$tfi1
+  ti_ceipg$sfi1 = ti_ceipg$n_f / ti_ceipg$tfi1
+  ti_simpl$sfi1 = ti_simpl$n_f / ti_simpl$tfi1
+  ti_cinpl$sfi1 = ti_cinpl$n_f / ti_cinpl$tfi1
+  ti_sprob$sfi1 = ti_sprob$n_f / ti_sprob$tfi1
+  ti_pinpl$sfi1 = ti_pinpl$n_f / ti_pinpl$tfi1
+  ti_hprob$sfi1 = ti_hprob$n_f / ti_hprob$tfi1
+  ti_rprob$sfi1 = ti_rprob$n_f / ti_rprob$tfi1
+  ti_shops$sfi1 = ti_shops$n_f / ti_shops$tfi1
+
+  ti_egrow$sin0 = ti_egrow$n_0 / ti_egrow$tin0
+  ti_ceipg$sin0 = ti_ceipg$n_0 / ti_ceipg$tin0
+  ti_simpl$sin0 = ti_simpl$n_0 / ti_simpl$tin0
+  ti_cinpl$sin0 = ti_cinpl$n_0 / ti_cinpl$tin0
+  ti_sprob$sin0 = ti_sprob$n_0 / ti_sprob$tin0
+  ti_pinpl$sin0 = ti_pinpl$n_0 / ti_pinpl$tin0
+  ti_hprob$sin0 = ti_hprob$n_0 / ti_hprob$tin0
+  ti_rprob$sin0 = ti_rprob$n_0 / ti_rprob$tin0
+  ti_shops$sin0 = ti_shops$n_0 / ti_shops$tin0
+
+  ti_egrow$sin1 = (ti_egrow$n_f - ti_egrow$n_0) / ti_egrow$tin1
+  ti_ceipg$sin1 = (ti_ceipg$n_f - ti_ceipg$n_0) / ti_ceipg$tin1
+  ti_simpl$sin1 = (ti_simpl$n_f - ti_simpl$n_0) / ti_simpl$tin1
+  ti_cinpl$sin1 = (ti_cinpl$n_f - ti_cinpl$n_0) / ti_cinpl$tin1
+  ti_sprob$sin1 = (ti_sprob$n_f - ti_sprob$n_0) / ti_sprob$tin1
+  ti_pinpl$sin1 = (ti_pinpl$n_f - ti_pinpl$n_0) / ti_pinpl$tin1
+  ti_hprob$sin1 = (ti_hprob$n_f - ti_hprob$n_0) / ti_hprob$tin1
+  ti_rprob$sin1 = (ti_rprob$n_f - ti_rprob$n_0) / ti_rprob$tin1
+  ti_shops$sin1 = (ti_shops$n_f - ti_shops$n_0) / ti_shops$tin1
+#+END_SRC
+
+#+RESULTS:
+
+*** Plot
+#+BEGIN_SRC R :session :results output
+  tcap=50000
+
+  ti_datalines = list(f_cap(f_ctable(ti_egrow,256,8,3), tcap),
+                   f_cap(f_ctable(ti_ceipg,256,8,3), tcap),
+
+                   f_cap(f_ctable(ti_simpl,  1,8,3), tcap),
+                   f_cap(f_ctable(ti_cinpl,  1,8,3), tcap),
+
+                   f_cap(ti_sprob, tcap),
+                   f_cap(ti_pinpl, tcap),
+
+                   f_cap(f_htable(ti_hprob, 64), tcap),
+
+                   f_cap(ti_rprob, tcap),
+
+                   f_cap(f_htable(ti_shops, 62), tcap)
+                   )
+
+  ti_l = length(ti_datalines)
+#+END_SRC
+
+#+RESULTS:
+
+**** Mixed Plot
+#+BEGIN_SRC R :session :results output graphics :file plots/temp.pdf :bg "white"
+  par(mfrow=c(2,3))  #two plots next to each other
+
+  header = "Memory per Alpha"
+  y='mem'
+  x='al'
+  xrange <- range(.8,1)
+  yrange <- range(0,3) #grows_bfs$fti)
+  plot  (xrange, yrange,
+         yaxs='i',
+         col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab=expression(paste("load factor  ", 1-epsilon)))
+  title(ylab="memory factor (in min necessary)")
+  for (i in 1:ti_l)
+  {
+    epsilon <- (ti_datalines[[i]][,'al']-1.)/ti_datalines[[i]][,'al']
+    xline   <- 1.-epsilon
+    lines(xline, ti_datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+  header = "Find+ Microbenchmark"
+  y='tfi0'
+  yrange <- range(0,250) #grows_bfs$fti)
+  plot  (xrange, yrange,
+         yaxs='i',
+         col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab=expression(paste("load factor  ", 1-epsilon)))
+  title(ylab="time per op   in ns")
+  for (i in 1:ti_l)
+  {
+    epsilon <- (ti_datalines[[i]][,'al']-1.)/ti_datalines[[i]][,'al']
+    xline   <- 1.-epsilon
+    yline   <- ti_datalines[[i]][,y] / ti_datalines[[i]][,'n_f']*1000000
+    lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+  header = "Find- Microbenchmark"
+  y='tfi1'
+  #yrange <- range(0,egrow$tfi) #grows_bfs$fti)
+  plot  (xrange, yrange,
+         yaxs='i',
+         col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab=expression(paste("load factor  ", 1-epsilon)))
+  title(ylab="time per op   in ns")
+
+  for (i in 1:ti_l)
+  {
+    epsilon <- (ti_datalines[[i]][,'al']-1.)/ti_datalines[[i]][,'al']
+    xline   <- 1.-epsilon
+    yline   <- ti_datalines[[i]][,'tfi1'] / ti_datalines[[i]][,'n_f']*1000000
+    lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+  y='sinf'
+  header = "Insert Microbenchmark"
+  yrange <- range(0, 2)#egrow[egrow$cap==tcap, y])
+  plot  (xrange, yrange,
+         yaxs='i',
+         col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab=expression(paste("load factor  ", 1-epsilon)))
+  title(ylab="Throughput")
+
+  normalizer = ti_datalines[[2]][,y]
+  for (i in 1:ti_l)
+  {
+    epsilon <- (ti_datalines[[i]][,'al']-1.)/ti_datalines[[i]][,'al']
+    xline   <- 1.-epsilon
+    lines(xline, ti_datalines[[i]][,y]/normalizer, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+  y='tinf'
+  header = "Insert Microbenchmark"
+  xrange <- range(0.8, 1)
+  yrange <- range(0, 250)
+  plot  (xrange, yrange,
+         yaxs='i',
+         col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab=expression(paste("load factor  ", 1-epsilon)))
+  title(ylab="time per op * epsilon   in ns")
+
+  for (i in 1:ti_l)
+  {
+    epsilon <- (ti_datalines[[i]][,'al']-1.)/ti_datalines[[i]][,'al']
+    yline   <- ti_datalines[[i]][,y]/ti_datalines[[i]][,'n_f']*1000000*epsilon
+    lines(1-epsilon, yline , col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+  y='in_err'
+  header = "Errors"
+  xrange <- range(0.8, 1.)
+  yrange <- range(0, 10000 )
+  plot  (xrange, yrange, col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab="alpha")
+  title(ylab="Errors")
+
+  for (i in 1:ti_l)
+  {
+    epsilon <- (ti_datalines[[i]][,'al']-1.)/ti_datalines[[i]][,'al']
+    xline   <- 1.-epsilon
+    lines(xline, ti_datalines[[i]][,y] , col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+  #dev.off()
+
+#+END_SRC
+
+#+RESULTS:
+[[file:plots/temp.pdf]]
+
+**** Find+ Benchmark
+#+BEGIN_SRC R :session :results output graphics :file plots/ti_find_s.pdf :bg "white"
+  x='al'
+  xrange <- range(.8,1)
+
+  header = "Find+ Microbenchmark"
+  y='tfi0'
+  yrange <- range(0,250) #grows_bfs$fti)
+  plot  (xrange, yrange,
+         yaxs='i',
+         col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab=expression(paste("load factor  ", 1-epsilon)))
+  title(ylab="time per op   in ns")
+  for (i in 1:ti_l)
+  {
+    epsilon <- (ti_datalines[[i]][,'al']-1.)/ti_datalines[[i]][,'al']
+    xline   <- 1.-epsilon
+    yline   <- ti_datalines[[i]][,y] / ti_datalines[[i]][,'n_f']*1000000
+    lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+  #dev.off()
+
+#+END_SRC
+
+#+RESULTS:
+[[file:plots/ti_find_s.pdf]]
+
+**** Find- Benchmark
+#+BEGIN_SRC R :session :results output graphics :file plots/ti_find_u.pdf :bg "white"
+  x='al'
+  xrange <- range(.8,1)
+
+  header = "Find- Microbenchmark"
+  y='tfi1'
+  yrange <- range(0,250) #grows_bfs$fti)
+  plot  (xrange, yrange,
+         yaxs='i',
+         col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab=expression(paste("load factor  ", 1-epsilon)))
+  title(ylab="time per op   in ns")
+
+  for (i in 1:ti_l)
+  {
+    epsilon <- (ti_datalines[[i]][,'al']-1.)/ti_datalines[[i]][,'al']
+    xline   <- 1.-epsilon
+    yline   <- ti_datalines[[i]][,'tfi1'] / ti_datalines[[i]][,'n_f']*1000000
+    lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+  #dev.off()
+
+#+END_SRC
+
+#+RESULTS:
+[[file:plots/ti_find_u.pdf]]
+
+**** Insert Benchmark
+#+BEGIN_SRC R :session :results output graphics :file plots/ti_insert.pdf :bg "white"
+  #par(mfrow=c(1,2))  #two plots next to each other
+
+  x='al'
+  xrange <- range(.8,1)
+
+  header = "Insert Microbenchmark"
+  y='tinf'
+  yrange <- range(0, 250)
+  plot  (xrange, yrange,
+         yaxs='i',
+         col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab=expression(paste("load factor  ", 1-epsilon)))
+  title(ylab="time per op * epsilon   in ns")
+
+  for (i in 1:ti_l)
+  {
+    epsilon <- (ti_datalines[[i]][,'al']-1.)/ti_datalines[[i]][,'al']
+    yline   <- ti_datalines[[i]][,y]/ti_datalines[[i]][,'n_f']*1000000*epsilon
+    lines(1-epsilon, yline , col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+  #dev.off()
+
+#+END_SRC
+
+#+RESULTS:
+[[file:plots/ti_insert.pdf]]
+
+** CRAWL TEST
+*** Reading Data
+#+begin_src R :session :results output
+  colc <- c('it', 'al', 'bs', 'tl', 'nh', 'f_cap', 'cap', 'time', 'mult', 'ind', 'err', 'mem', 'mx_mem')
+  folder = "../../132tests/27_03/"
+
+  cw_egrow_raw      <- read.table(paste(folder, "ceg2l.crawl"         , sep="") , comment.char = "#", col.names = colc)
+  cw_ceipg_raw      <- read.table(paste(folder, "ceipg2l.crawl"       , sep="") , comment.char = "#", col.names = colc)
+  cw_simpl_raw      <- read.table(paste(folder, "csimple.crawl"       , sep="") , comment.char = "#", col.names = colc)
+  cw_cinpl_raw      <- read.table(paste(folder, "cinplace.crawl"      , sep="") , comment.char = "#", col.names = colc)
+
+  colp <- c('it', 'al',                   'f_cap', 'cap', 'time', 'mult', 'ind', 'err', 'mem', 'mx_mem')
+  cw_sprob_raw      <- read.table(paste(folder, "spaceprob.crawl",      sep="") , comment.char = "#", col.names = colp)
+  colp <- c('it', 'al', 'bufs',           'f_cap', 'cap', 'time', 'mult', 'ind', 'err', 'mem', 'mx_mem')
+  cw_pinpl_raw      <- read.table(paste(folder, "inplaceprob.crawl",      sep="") , comment.char = "#", col.names = colp)
+
+  colh <- c('it', 'al', 'ns',             'f_cap', 'cap', 'time', 'mult', 'ind', 'err', 'mem', 'mx_mem')
+  cw_hprob_raw      <- read.table(paste(folder, "hopprob.crawl", sep="") , comment.char = "#", col.names = colh)
+
+  colp <- c('it', 'al', 'mdis',           'f_cap', 'cap', 'time', 'mult', 'ind', 'err', 'mem', 'mx_mem')
+  cw_rprob_raw      <- read.table(paste(folder, "robinprob.crawl",      sep="") , comment.char = "#", col.names = colp)
+
+  colh <- c('it', 'al', 'ns', 'rat',      'f_cap', 'cap', 'time', 'mult', 'ind', 'err', 'mem', 'mx_mem')
+  cw_shops_raw      <- read.table(paste(folder, "spacehopscotch.crawl", sep="") , comment.char = "#", col.names = colh)
+
+  loc_groupby <- function(d)
+  {
+      return( aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean) )
+  }
+
+  d <- cw_egrow_raw
+  cw_egrow = aggregate(d, by=list(d$bs, d$tl, d$nh, d$al), FUN=mean)
+  d <- cw_ceipg_raw
+  cw_ceipg = aggregate(d, by=list(d$bs, d$tl, d$nh, d$al), FUN=mean)
+  d <- cw_simpl_raw
+  cw_simpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$al), FUN=mean)
+  d <- cw_cinpl_raw
+  cw_cinpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$al), FUN=mean)
+  d <- cw_sprob_raw
+  cw_sprob = aggregate(d, by=list(d$al), FUN=mean)
+  d <- cw_pinpl_raw
+  cw_pinpl = aggregate(d, by=list(d$al), FUN=mean)
+  d <- cw_hprob_raw
+  cw_hprob = aggregate(d, by=list(d$ns, d$al), FUN=mean)
+  d <- cw_rprob_raw
+  cw_rprob = aggregate(d, by=list(d$al), FUN=mean)
+  d <- cw_shops_raw
+  cw_shops = aggregate(d, by=list(d$ns, d$rat, d$al), FUN=mean)
+#+end_src
+
+#+RESULTS:
+
+*** Shared Plot
+
+#+BEGIN_SRC R :session :results output graphics :file plots/crawl.pdf :bg "white"
+  #pdf("crawl132_27_03_plot.pdf", width=5, height=5)
+
+  datalines = list(f_ctable(cw_egrow,256,8,3),
+                   f_ctable(cw_ceipg,256,8,3),
+
+                   f_ctable(cw_simpl,  1,8,3),
+                   f_ctable(cw_cinpl,  1,8,3),
+
+                   cw_sprob,
+                   cw_pinpl,
+
+                   f_htable(cw_hprob, 64),
+
+                   cw_rprob)
+
+  l=length(datalines)
+
+  par(mfrow=c(1,1))
+
+  header = "Word Count Throughput"
+  y='time'
+  x='al'
+  xrange <- range(.8, 1)
+  yrange <- range(0,1000) #grows_bfs$fti)
+  plot  (xrange, yrange,
+         yaxs='i',
+         col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab=expression(1/epsilon))
+  title(ylab=expression(paste("Throughput   in ", M*ops/sec)))
+
+  for (i in 1:l)
+  {
+    xline <- 1.- (datalines[[i]][,x]-1.)/datalines[[i]][,x]
+    yline <- datalines[[i]][,y]/(datalines[[i]][,'mult'] + datalines[[i]][,'ind']) *1000000
+    lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+  #dev.off()
+
+#+END_SRC
+
+#+RESULTS:
+[[file:plots/crawl.pdf]]
+
+** MIX   TEST
+*** Reading Data
+#+begin_src R :session :results output
+  colc <- c('it', 'al', 'bs', 'tl', 'nh', 'f_cap', 'cap', 'pat', 'n_0', 'n_f' , 'tpre', 'tmix', 'in_err', 'mem')
+  folder = "../../132tests/27_03/"
+
+  mx_egrow_raw      <- read.table(paste(folder, "ceg2l.mix"         , sep="") , comment.char = "#", col.names = colc)
+  mx_ceipg_raw      <- read.table(paste(folder, "ceipg2l.mix"       , sep="") , comment.char = "#", col.names = colc)
+  mx_simpl_raw      <- read.table(paste(folder, "csimple.mix"       , sep="") , comment.char = "#", col.names = colc)
+  mx_cinpl_raw      <- read.table(paste(folder, "cinplace.mix"      , sep="") , comment.char = "#", col.names = colc)
+
+  colp <- c('it', 'al',                   'f_cap', 'cap', 'pat', 'n_0', 'n_f', 'tpre', 'tmix', 'in_err', 'mem')
+  mx_sprob_raw      <- read.table(paste(folder, "spaceprob.mix",      sep="") , comment.char = "#", col.names = colp)
+  colp <- c('it', 'al', 'bufs',           'f_cap', 'cap', 'pat', 'n_0', 'n_f', 'tpre', 'tmix', 'in_err', 'mem')
+  mx_pinpl_raw      <- read.table(paste(folder, "inplaceprob.mix",    sep="") , comment.char = "#", col.names = colp)
+
+  colh <- c('it', 'al', 'ns',             'f_cap', 'cap', 'pat', 'n_0', 'n_f', 'tpre', 'tmix', 'in_err', 'mem')
+  mx_hprob_raw      <- read.table(paste(folder, "hopprob.mix", sep="") , comment.char = "#", col.names = colh)
+
+  colp <- c('it', 'al',           'mdis', 'f_cap', 'cap', 'pat', 'n_0', 'n_f', 'tpre', 'tmix', 'in_err', 'mem')
+  mx_rprob_raw      <- read.table(paste(folder, "robinprob.mix",      sep="") , comment.char = "#", col.names = colp)
+
+  colh <- c('it', 'al', 'ns', 'rat',      'f_cap', 'cap', 'pat', 'n_0', 'n_f', 'tpre', 'tmix', 'in_err', 'mem')
+  mx_shops_raw      <- read.table(paste(folder, "spacehopscotch.mix", sep="") , comment.char = "#", col.names = colh)
+
+  loc_groupby <- function(d)
+  {
+      return( aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean) )
+  }
+
+  d <- mx_egrow_raw
+  mx_egrow = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al, d$pat), FUN=mean)
+  d <- mx_ceipg_raw
+  mx_ceipg = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al, d$pat), FUN=mean)
+  d <- mx_simpl_raw
+  mx_simpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al, d$pat), FUN=mean)
+  d <- mx_cinpl_raw
+  mx_cinpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al, d$pat), FUN=mean)
+
+  d <- mx_sprob_raw
+  mx_sprob = aggregate(d, by=list(d$cap, d$al, d$pat), FUN=mean)
+  d <- mx_pinpl_raw
+  mx_pinpl = aggregate(d, by=list(d$cap, d$al, d$pat), FUN=mean)
+
+  d <- mx_hprob_raw
+  mx_hprob = aggregate(d, by=list(d$ns, d$cap, d$al, d$pat), FUN=mean)
+
+  d <- mx_rprob_raw
+  mx_rprob = aggregate(d, by=list(d$cap, d$al, d$pat), FUN=mean)
+
+  d <- mx_shops_raw
+  mx_shops = aggregate(d, by=list(d$ns, d$rat, d$cap, d$al, d$pat), FUN=mean)
+#+end_src
+
+#+RESULTS:
+
+*** Additional Columns
+#+begin_src R :session :results output
+  mx_egrow$smix = mx_egrow$n_f / mx_egrow$tmix
+  mx_ceipg$smix = mx_ceipg$n_f / mx_ceipg$tmix
+  mx_simpl$smix = mx_simpl$n_f / mx_simpl$tmix
+  mx_cinpl$smix = mx_cinpl$n_f / mx_cinpl$tmix
+  mx_sprob$smix = mx_sprob$n_f / mx_sprob$tmix
+  mx_pinpl$smix = mx_pinpl$n_f / mx_pinpl$tmix
+  mx_hprob$smix = mx_hprob$n_f / mx_hprob$tmix
+  mx_rprob$smix = mx_rprob$n_f / mx_rprob$tmix
+  mx_shops$smix = mx_shops$n_f / mx_shops$tmix
+
+  mx_egrow$ttmix = mx_egrow$tmix / mx_egrow$n_f * 1000000
+  mx_ceipg$ttmix = mx_ceipg$tmix / mx_ceipg$n_f * 1000000
+  mx_simpl$ttmix = mx_simpl$tmix / mx_simpl$n_f * 1000000
+  mx_cinpl$ttmix = mx_cinpl$tmix / mx_cinpl$n_f * 1000000
+  mx_sprob$ttmix = mx_sprob$tmix / mx_sprob$n_f * 1000000
+  mx_pinpl$ttmix = mx_pinpl$tmix / mx_pinpl$n_f * 1000000
+  mx_hprob$ttmix = mx_hprob$tmix / mx_hprob$n_f * 1000000
+  mx_rprob$ttmix = mx_rprob$tmix / mx_rprob$n_f * 1000000
+  mx_shops$ttmix = mx_shops$tmix / mx_shops$n_f * 1000000
+#+end_src
+
+#+RESULTS:
+
+*** Shared Plot
+#+BEGIN_SRC R :session :results output graphics :file plots/mix.pdf :bg "white"
+
+  #pdf("mix132_27_03_plot.pdf", width=10, height=7)
+
+  tcap=5000000
+  tal =1.1
+  datalines = list(f_al(f_cap(f_ctable(mx_egrow,256,8,3), tcap), tal),
+                   f_al(f_cap(f_ctable(mx_ceipg,256,8,3), tcap), tal),
+
+                   f_al(f_cap(f_ctable(mx_simpl,  1,8,3), tcap), tal),
+                   f_al(f_cap(f_ctable(mx_cinpl,  1,8,3), tcap), tal),
+
+                   f_al(f_cap(mx_sprob, tcap), tal),
+                   f_al(f_cap(mx_pinpl, tcap), tal),
+
+                   f_al(f_cap(f_htable(mx_hprob, 64), tcap), tal),
+
+                   f_al(f_cap(mx_rprob, tcap), tal),
+
+                   f_al(f_cap(f_htable(mx_shops, 62), tcap), tal))
+
+  l=length(datalines)
+
+  par(mfrow=c(1,1))  #two plots next to each other
+
+  header = "Mixed Tests Insert and Successful Finds"
+  y='ttmix'
+  x='pat'
+  xrange <- range(0,100)
+  yrange <- range(0, 1200)
+  plot  (x=NULL, y=NULL, xlim=c(0,100), ylim=c(0,1400),
+         xaxs='i', yaxs='i',
+         col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab="fraction of insert operations   in %")
+  title(ylab="average time per operation   in ns")
+  for (i in 1:l)
+  {
+    xline <- datalines[[i]][,x] * 10
+    yline <- datalines[[i]][,y]
+    lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+  #dev.off()
+
+#+END_SRC
+
+#+RESULTS:
+[[file:plots/mix.pdf]]
+
+** EPS   TEST
+*** Reading Data
+#+begin_src R :session :results output
+  colc <- c('it', 'bs', 'tl', 'nh', 'f_cap', 'n_step', 'win', 'al', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
+  folder = "../../132tests/27_03/"
+
+  ep_egrow_raw      <- read.table(paste(folder, "ceg2l.eps"         , sep="") , comment.char = "#", col.names = colc)
+  ep_ceipg_raw      <- read.table(paste(folder, "ceipg2l.eps"       , sep="") , comment.char = "#", col.names = colc)
+  ep_simpl_raw      <- read.table(paste(folder, "csimple.eps"       , sep="") , comment.char = "#", col.names = colc)
+  ep_cinpl_raw      <- read.table(paste(folder, "cinplace.eps"         , sep="") , comment.char = "#", col.names = colc)
+
+  colp <- c('it',                   'f_cap', 'n_step', 'win', 'al', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
+  ep_sprob_raw      <- read.table(paste(folder, "spaceprob.eps",      sep="") , comment.char = "#", col.names = colp)
+  colp <- c('it', 'bufs',           'f_cap', 'n_step', 'win', 'al', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
+  ep_pinpl_raw      <- read.table(paste(folder, "inplaceprob.eps",    sep="") , comment.char = "#", col.names = colp)
+
+  colh <- c('it', 'ns',             'f_cap', 'n_step', 'win', 'al', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
+  ep_hprob_raw      <- read.table(paste(folder, "hopprob.eps",        sep="") , comment.char = "#", col.names = colh)
+
+  colp <- c('it', 'mdis',           'f_cap', 'n_step', 'win', 'al', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
+  ep_rprob_raw      <- read.table(paste(folder, "robinprob.eps",      sep="") , comment.char = "#", col.names = colp)
+
+  colh <- c('it', 'ns', 'rat',      'f_cap', 'n_step', 'win', 'al', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
+  ep_shops_raw      <- read.table(paste(folder, "spacehopscotch.eps", sep="") , comment.char = "#", col.names = colh)
+
+  loc_groupby <- function(d)
+  {
+      return( aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean) )
+  }
+
+  d <- ep_egrow_raw
+  ep_egrow = aggregate(d, by=list(d$bs, d$tl, d$nh, d$al), FUN=mean)
+  d <- ep_ceipg_raw
+  ep_ceipg = aggregate(d, by=list(d$bs, d$tl, d$nh, d$al), FUN=mean)
+  d <- ep_simpl_raw
+  ep_simpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$al), FUN=mean)
+  d <- ep_cinpl_raw
+  ep_cinpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$al), FUN=mean)
+
+  d <- ep_sprob_raw
+  ep_sprob = aggregate(d, by=list(d$al), FUN=mean)
+  d <- ep_pinpl_raw
+  ep_pinpl = aggregate(d, by=list(d$al), FUN=mean)
+  d <- ep_hprob_raw
+  ep_hprob = aggregate(d, by=list(d$ns, d$al), FUN=mean)
+  d <- ep_rprob_raw
+  ep_rprob = aggregate(d, by=list(d$al), FUN=mean)
+  d <- ep_shops_raw
+  ep_shops = aggregate(d, by=list(d$ns, d$rat, d$al), FUN=mean)
+#+end_src
+
+#+RESULTS:
+
+*** Plots
+#+BEGIN_SRC R :session :results output graphics
+  datalines = list(f_ctable(ep_egrow,256,8,3),
+                   f_ctable(ep_ceipg,256,8,3),
+
+                   f_ctable(ep_simpl,  1,8,3),
+                   f_ctable(ep_cinpl,  1,8,3),
+
+                   ep_sprob,
+                   ep_pinpl,
+
+                   f_htable(ep_hprob, 64),
+
+                   ep_rprob#,
+                   #hhh(ep_shops, 62)
+                   )
+  l=length(datalines)
+#+END_SRC
+
+**** Combined Plots
+#+BEGIN_SRC R :session :results output graphics :file plots/temp.pdf :bg "white"
+
+  #pdf("eps132_27_03_plot.pdf", width=10, height=7)
+
+  par(mfrow=c(3,1))  #two plots next to each other
+  header="Normalized Insertion Time"
+  y='tin'
+  x='al'
+  xrange <- range(0.8,1)
+  yrange <- range(0,80) #grows_bfs$fti)
+  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab=expression(paste("load factor  ", 1-epsilon)))
+  title(ylab=expression(paste("time x ", epsilon, "   in ns")))
+
+  for (i in 1:l)
+  {
+    epsilon <- (datalines[[i]][,x]-1.)/datalines[[i]][,x]
+    xline   <- 1.-epsilon
+    lines(xline, datalines[[i]][,y]*epsilon, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+
+  header="Successful Find Operation"
+  y='tfi'
+  yrange <- range(0,200) #grows_bfs$fti)
+  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab=expression(paste("load factor  ", 1-epsilon)))
+  title(ylab="time   in ns")
+
+  for (i in 1:l)
+  {
+    epsilon <- (datalines[[i]][,x]-1.)/datalines[[i]][,x]
+    xline   <- 1.-epsilon
+    lines(xline, datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+
+  header="Unsuccessful Find Operation"
+  y='tfu'
+  yrange <- range(0,400) #grows_bfs$fti)
+  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab=expression(paste("load factor  ", 1-epsilon)))
+  title(ylab="time   in ns")
+
+  for (i in 1:l)
+  {
+    epsilon <- (datalines[[i]][,x]-1.)/datalines[[i]][,x]
+    xline   <- 1.-epsilon
+    lines(xline, datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+  #dev.off()
+#+END_SRC
+
+#+RESULTS:
+[[file:plots/temp.pdf]]
+
+**** Insert
+#+BEGIN_SRC R :session :results output graphics :file plots/eps_insert.pdf :bg "white"
+
+  #pdf("eps132_27_03_plot.pdf", width=10, height=7)
+
+  header="Normalized Insertion Time"
+  y='tin'
+  x='al'
+  xrange <- range(0.8,1)
+  yrange <- range(0,80) #grows_bfs$fti)
+  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab=expression(paste("load factor  ", 1-epsilon)))
+  title(ylab=expression(paste("time x ", epsilon, "   in ns")))
+
+  for (i in 1:l)
+  {
+    epsilon <- (datalines[[i]][,x]-1.)/datalines[[i]][,x]
+    xline   <- 1.-epsilon
+    lines(xline, datalines[[i]][,y]*epsilon, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+  #dev.off()
+#+END_SRC
+
+#+RESULTS:
+[[file:plots/eps_insert.pdf]]
+
+**** Find+
+#+BEGIN_SRC R :session :results output graphics :file plots/eps_find_s.pdf :bg "white"
+
+  #pdf("eps132_27_03_plot.pdf", width=10, height=7)
+  x='al'
+  xrange <- range(0.8,1)
+
+  header="Successful Find Operation"
+  y='tfi'
+  yrange <- range(0,200) #grows_bfs$fti)
+  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab=expression(paste("load factor  ", 1-epsilon)))
+  title(ylab="time   in ns")
+
+  for (i in 1:l)
+  {
+    epsilon <- (datalines[[i]][,x]-1.)/datalines[[i]][,x]
+    xline   <- 1.-epsilon
+    lines(xline, datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+  #dev.off()
+#+END_SRC
+
+#+RESULTS:
+[[file:plots/eps_find_s.pdf]]
+
+**** Combined Plots
+#+BEGIN_SRC R :session :results output graphics :file plots/eps_find_u.pdf :bg "white"
+  #pdf("eps132_27_03_plot.pdf", width=10, height=7)
+
+  x='al'
+  xrange <- range(0.8,1)
+
+  header="Unsuccessful Find Operation"
+  y='tfu'
+  yrange <- range(0,400) #grows_bfs$fti)
+  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab=expression(paste("load factor  ", 1-epsilon)))
+  title(ylab="time   in ns")
+
+  for (i in 1:l)
+  {
+    epsilon <- (datalines[[i]][,x]-1.)/datalines[[i]][,x]
+    xline   <- 1.-epsilon
+    lines(xline, datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+  lines  (c(-1000, 10000000),c(0,0), col="black" )
+
+  #dev.off()
+#+END_SRC
+
+#+RESULTS:
+[[file:plots/eps_find_u.pdf]]
