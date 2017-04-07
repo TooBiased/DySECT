@@ -42,7 +42,7 @@ endif()
 #### HASH TABLES ###############################################################
 
 set(HASH_TABLES_LIST "ceg2l;csimple;chomogeneous2l;cindependent2l;cinplace;ceipg2l")
-set(NON_CUCKOO_LIST  "linprob;spaceprob;robinprob;hopprob;std_unordered;inplaceprob;testtab")
+set(NON_CUCKOO_LIST  "linprob;spaceprob;robinprob;ripprob;hopprob;hipprob;std_unordered;inplaceprob;testtab")
 
 find_package(tslHopscotch)
 if (TSLHOPSCOTCH_FOUND)

@@ -13,6 +13,7 @@
      !SPACEPROB       && \
      !INPLACEPROB     && \
      !ROBINPROB       && \
+     !RIPPROB         && \
      !HOPPROB         && \
      !HIPPROB         && \
      !HOPSCOTCH       && \
@@ -51,6 +52,12 @@
 #define TRIV_CONFIG
 #include "include/prob_robin.h"
 #define  HASHTYPE RobinProb
+#endif // ROBINPROB
+
+#ifdef RIPPROB
+#define TRIV_CONFIG
+#include "include/prob_robin.h"
+#define  HASHTYPE RobInPlaceProb
 #endif // ROBINPROB
 
 #ifdef HOPPROB
