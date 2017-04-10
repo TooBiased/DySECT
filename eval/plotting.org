@@ -24,7 +24,7 @@ title("Regression of MPG on Weight")
 #+END_SRC
 
 #+RESULTS:
-: /home/maier/PHD/SpaceEfficientHashing/Implementation/loctests/eval
+: /data/HashTables/Space-Grow-Table/eval
 
 ** Define Filters
 #+BEGIN_SRC R :session
@@ -353,7 +353,10 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 [[file:plots/temp.pdf]]
 
 **** Find+ Benchmark
-#+BEGIN_SRC R :session :results output graphics :file plots/ti_find_s.pdf :bg "white"
+#+BEGIN_SRC R :session :results output
+#graphics :file plots/ti_find_s.pdf :bg "white"
+  pdf(file="plots/ti_find_s.pdf", width=5, height=4)
+
   x='al'
   xrange <- range(.8,1)
 
@@ -373,15 +376,19 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
     yline   <- ti_datalines[[i]][,y] / ti_datalines[[i]][,'n_f']*1000000
     lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
   }
-  #dev.off()
+  dev.off()
 
 #+END_SRC
 
 #+RESULTS:
-[[file:plots/ti_find_s.pdf]]
+: pdf
+:   2
 
 **** Find- Benchmark
-#+BEGIN_SRC R :session :results output graphics :file plots/ti_find_u.pdf :bg "white"
+#+BEGIN_SRC R :session :results output
+#graphics :file plots/ti_find_u.pdf :bg "white"
+  pdf(file="plots/ti_find_u.pdf", width=5, height=4)
+
   x='al'
   xrange <- range(.8,1)
 
@@ -403,16 +410,17 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
     lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
   }
 
-  #dev.off()
-
+  dev.off()
 #+END_SRC
 
 #+RESULTS:
-[[file:plots/ti_find_u.pdf]]
+: pdf
+:   2
 
 **** Insert Benchmark
-#+BEGIN_SRC R :session :results output graphics :file plots/ti_insert.pdf :bg "white"
-  #par(mfrow=c(1,2))  #two plots next to each other
+#+BEGIN_SRC R :session :results output
+#graphics :file plots/ti_insert.pdf :bg "white"
+  pdf(file="plots/ti_insert.pdf", width=10, height=6)
 
   x='al'
   xrange <- range(.8,1)
@@ -434,12 +442,13 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
     lines(1-epsilon, yline , col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
   }
 
-  #dev.off()
+  dev.off()
 
 #+END_SRC
 
 #+RESULTS:
-[[file:plots/ti_insert.pdf]]
+: pdf
+:   2
 
 ** CRAWL TEST
 *** Reading Data
@@ -495,8 +504,10 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 
 *** Shared Plot
 
-#+BEGIN_SRC R :session :results output graphics :file plots/crawl.pdf :bg "white"
-  #pdf("crawl132_27_03_plot.pdf", width=5, height=5)
+#+BEGIN_SRC R :session :results output
+#graphics :file plots/crawl.pdf :bg "white"
+
+  pdf(file="plots/crawl.pdf", width=10, height=6)
 
   datalines = list(f_ctable(cw_egrow,256,8,3),
                    f_ctable(cw_ceipg,256,8,3),
@@ -519,13 +530,13 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
   y='time'
   x='al'
   xrange <- range(.8, 1)
-  yrange <- range(0,1000) #grows_bfs$fti)
+  yrange <- range(0,800) #grows_bfs$fti)
   plot  (xrange, yrange,
          yaxs='i',
          col="black", type="n", main=header, ann=FALSE)
   title(main=header)
   title(xlab=expression(1/epsilon))
-  title(ylab=expression(paste("Throughput   in ", M*ops/sec)))
+  title(ylab="Time per operation   in ns")
 
   for (i in 1:l)
   {
@@ -534,12 +545,13 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
     lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
   }
 
-  #dev.off()
+  dev.off()
 
 #+END_SRC
 
 #+RESULTS:
-[[file:plots/crawl.pdf]]
+: pdf
+:   2
 
 ** MIX   TEST
 *** Reading Data
@@ -623,9 +635,10 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 #+RESULTS:
 
 *** Shared Plot
-#+BEGIN_SRC R :session :results output graphics :file plots/mix.pdf :bg "white"
+#+BEGIN_SRC R :session :results output
+#graphics :file plots/mix.pdf :bg "white"
 
-  #pdf("mix132_27_03_plot.pdf", width=10, height=7)
+  pdf("plots/mix.pdf", width=10, height=6)
 
   tcap=5000000
   tal =1.1
@@ -652,8 +665,8 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
   y='ttmix'
   x='pat'
   xrange <- range(0,100)
-  yrange <- range(0, 1200)
-  plot  (x=NULL, y=NULL, xlim=c(0,100), ylim=c(0,1400),
+  yrange <- range(0, 1000)
+  plot  (x=NULL, y=NULL, xlim=xrange, ylim=yrange,
          xaxs='i', yaxs='i',
          col="black", type="n", main=header, ann=FALSE)
   title(main=header)
@@ -666,12 +679,13 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
     lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
   }
 
-  #dev.off()
+  dev.off()
 
 #+END_SRC
 
 #+RESULTS:
-[[file:plots/mix.pdf]]
+: pdf
+:   2
 
 ** EPS   TEST
 *** Reading Data
@@ -745,6 +759,8 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
   l=length(datalines)
 #+END_SRC
 
+#+RESULTS:
+
 **** Combined Plots
 #+BEGIN_SRC R :session :results output graphics :file plots/temp.pdf :bg "white"
 
@@ -807,9 +823,10 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 [[file:plots/temp.pdf]]
 
 **** Insert
-#+BEGIN_SRC R :session :results output graphics :file plots/eps_insert.pdf :bg "white"
+#+BEGIN_SRC R :session :results output
+#graphics :file plots/eps_insert.pdf :bg "white"
 
-  #pdf("eps132_27_03_plot.pdf", width=10, height=7)
+  pdf("plots/eps_insert.pdf", width=10, height=6)
 
   header="Normalized Insertion Time"
   y='tin'
@@ -827,22 +844,24 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
     xline   <- 1.-epsilon
     lines(xline, datalines[[i]][,y]*epsilon, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
   }
-  #dev.off()
+  dev.off()
 #+END_SRC
 
 #+RESULTS:
-[[file:plots/eps_insert.pdf]]
+: pdf
+:   2
 
 **** Find+
-#+BEGIN_SRC R :session :results output graphics :file plots/eps_find_s.pdf :bg "white"
+#+BEGIN_SRC R :session :results output
+#graphics :file plots/eps_find_s.pdf :bg "white"
 
-  #pdf("eps132_27_03_plot.pdf", width=10, height=7)
+  pdf("plots/eps_find_s.pdf", width=5, height=4)
   x='al'
   xrange <- range(0.8,1)
 
   header="Successful Find Operation"
   y='tfi'
-  yrange <- range(0,200) #grows_bfs$fti)
+  yrange <- range(0,300) #grows_bfs$fti)
   plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
   title(main=header)
   title(xlab=expression(paste("load factor  ", 1-epsilon)))
@@ -854,22 +873,24 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
     xline   <- 1.-epsilon
     lines(xline, datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
   }
-  #dev.off()
+  dev.off()
 #+END_SRC
 
 #+RESULTS:
-[[file:plots/eps_find_s.pdf]]
+: pdf
+:   2
 
-**** Combined Plots
-#+BEGIN_SRC R :session :results output graphics :file plots/eps_find_u.pdf :bg "white"
-  #pdf("eps132_27_03_plot.pdf", width=10, height=7)
+**** Find-
+#+BEGIN_SRC R :session :results output
+#graphics :file plots/eps_find_u.pdf :bg "white"
+  pdf("plots/eps_find_u.pdf", width=5, height=4)
 
   x='al'
   xrange <- range(0.8,1)
 
   header="Unsuccessful Find Operation"
   y='tfu'
-  yrange <- range(0,400) #grows_bfs$fti)
+  yrange <- range(0,300) #grows_bfs$fti)
   plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
   title(main=header)
   title(xlab=expression(paste("load factor  ", 1-epsilon)))
@@ -883,8 +904,9 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
   }
   lines  (c(-1000, 10000000),c(0,0), col="black" )
 
-  #dev.off()
+  dev.off()
 #+END_SRC
 
 #+RESULTS:
-[[file:plots/eps_find_u.pdf]]
+: pdf
+:   2
