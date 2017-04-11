@@ -493,7 +493,7 @@ public:
                     for (size_t tti = 0; tti < bucket_size; ++tti)
                     {
                         auto ttk = table[i+tti].first;
-                        if (h(k) == ind) return 1;
+                        if (h(ttk) == ind) return 1;
                     }
                     nh_data.getAcc(ind).unset((i-ind)/bucket_size);
                     return 1;
