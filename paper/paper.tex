@@ -27,7 +27,7 @@
 \Copyright{Tobias Maier and Peter Sanders}%mandatory, please use full first names. LIPIcs license is "CC-BY";  http://creativecommons.org/licenses/by/3.0/
 
 \subjclass{Dummy classification -- please refer to \url{http://www.acm.org/about/class/ccs98-html}}% mandatory: Please choose ACM 1998 classifications from http://www.acm.org/about/class/ccs98-html . E.g., cite as "F.1.1 Models of Computation".
-\keywords{Dynamic data-structures, Open addressing, Closed hashing}% mandatory: Please provide 1-5 keywords
+\keywords{Dynamic data-structures, Open addressing, Closed hashing, Cuckoo hashing, Dense hash tables}% mandatory: Please provide 1-5 keywords
 % Author macros::end %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %Editor-only macros:: begin (do not touch as author)%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -59,25 +59,26 @@
 \begin{abstract}
 A lot of previous work concentrates on optimizing the speed and space
 efficiency of hash tables.  Additionally many practical
-implementations exist.  Modern displacement strategies can fill a
-given table to more than 95\% before the performance begins to decrease
+implementations exist.  Modern open addressing techniques can fill a
+given table to more than 95\% before the performance deteriorates
 significantly.  But once the threshold is met, copying and migrating
 the whole table still seems to be the most efficient answer.
 
 To achieve any kind of efficiency, each such migration must be
 amortized by newly inserted elements.  Therefore, each migration has
 to increase the capacity by a significant amount -- usually, this
-means doubling the capacity.  Growing by a constant factor
+means doubling the capacity.  Growing by large factor
 $\gamma$ often leads to bad space efficiency because the newly grown table
 is only filled to less than a factor of $\gamma^{-1}$.
 
-The space efficiency is even worse during the migration, where both
-the new and the old table coexist at the same time causing a massive
-space overhead.  To solve both of these issues, we propose the a new
-hash table architecture that supports dynamic growing while keeping a
-strict size constraint $\alpha \cdot n$ throughout its lifetime.  Even
-under these conditions, we can guarantee constant lookup times, and
-amortized insertion times, independent of $n$.
+The space efficiency is even worse during the migration, where
+oftentimes both the new and the old table coexist at the same time
+causing a massive space overhead.  To solve both of these issues, we
+propose the a new hash table architecture that supports dynamic
+growing while keeping a strict size constraint $\alpha \cdot n$
+throughout its lifetime.  Even under these conditions, we can
+guarantee constant lookup times, and amortized insertion times,
+independent of $n$.
  \end{abstract}
 
 %% \section{Typesetting instructions -- please read carefully}
@@ -186,7 +187,7 @@ possible with any of the growing techniques used currently.
 
 \section{Preliminaries}
 A hash table is a data-structure, which stores key-value-pairs
-(\(\langle key, data \rangle\)) and offers the following functions:
+($\langle key, data \rangle$) and offers the following functions:
 \verb~insert~ stores a given key-value pair, \verb~find~ given a key returns if
 said key was stored, and if so it returns the stored value, and
 \verb~erase~ which deletes a previously inserted element (if present).
@@ -211,18 +212,18 @@ on the necessary memory.
   mem_{open}  (n,m) &\geq^* m\cdot size(pointer) + n\cdot size(element)\\
 \end{align*}
 
-For large elements (\(\gg size(pointer)\)), one can simply use open
+For large elements ($\gg size(pointer)$), one can simply use open
 hashing, to reduce the relevant memory factor.  Therefore, we restrict
 ourselves to the common case of elements whose size is comparable to
 that of a pointer.  For our experiments we use 128bit elements (64bit
 keys and 64bit values).  In these instances closed addressing
-introduces a significant memory overhead (at least \(\times1.5\)),
+introduces a significant memory overhead (at least $\times1.5$),
 therefore, we only consider closed hash tables for the purpose of this
 paper. For closed hash tables, the memory efficiency is directly
 dependent on the element density.
 
 \subsection{$\alpha$-Space Efficient Hash Tables}
-We call a hashing technique \(\alpha\)-space efficient when it can
+We call a hashing technique $\alpha$-space efficient when it can
 work effectively using at most $\alpha \cdot size_{\min} + O(1)$
 memory (TODO DEFINE WORKING EFFICIENTLY FURTHER i.e. constant average
 running time or just look at experiments or inserting the last 10\%
@@ -248,46 +249,47 @@ reference) the previous section is specifically targeted for
 statically sized hash tables.  As detailed in Motivation (TODO
 REFERENCE) our goal is to construct a hash table which can efficiently
 (and tightly) grow with the number of inserted elements. Therefore, we
-want to define the notion of an \(\alpha\)-space efficient dynamic
+want to define the notion of an $\alpha$-space efficient dynamic
 table.
 
-We call a hash table implementation dynamically \(\alpha\)-space
+We call a hash table implementation dynamically $\alpha$-space
 efficient if an instantiated table can grow arbitrarily large over its
-original capacity, while remaining smaller than \(\alpha\cdot
-mem_{necessary}\) at all times.  \[mem_{curr} \leq \alpha\cdot
-max(n_{curr})\cdot size(element)\]
+original capacity, while remaining smaller than $\alpha\cdot
+mem_{necessary}$ at all times.
+\[mem_{curr} \leq \alpha\cdot max(n_{curr})\cdot size(element)\]
 
 One point of discussion while defining dynamic space efficiency is the
 space consumption during hash table operations.  During a table
-migration both the source (\(t_{source}\)) and the target
-(\(t_{target}\)) table are allocated, thus using \(mem =
-(m_{source}+m_{target})\cdot size(cell)\) space.  This is especially
+migration both the source ($t_{source}$) and the target
+($t_{target}$) table are allocated, thus using $mem =
+(m_{source}+m_{target})\cdot size(cell)$ space.  This is especially
 prohibiting if all elements are held in one table, then at least
-\(2\cdot m\cdot size(element)\) is necessary for each migration.
+$2\cdot m\cdot size(element)$ is necessary for each migration.
 
 Our definition of dynamic space efficiency does not enforce size
 reduction due to the deletion of elements, but it enforces that the
 memory used by deleted elements must be reused (no tombstones).
 
-\paragraph{Trivial Examples}
+\paragraph*{Trivial Examples}
 One simple example of this is a linear probing table, which grows by a
 factor of two, whenever 50\% of the table is filled. Here the table is
 at least 25\% filled (immediately after growing), therefore, the table
-is 6-space efficient (during the grow operation there are \((4+2)+n\)
+is 6-space efficient (during the grow operation there are $(4+2)+n$
 cells). Another example would be a cuckoo table which doubles in size
 whenever it surpasses 95\%, fill rate. This would be a
 $0.95^{-1}+0.45^{-1}\approx 3.2$-space efficient table.
 
 \subsection{Cuckoo Hashing}
-Cuckoo hashing is a technique to resolve hash conflicts in an closed hashing hash table. Its main draw is that it guarantees constant
+Cuckoo hashing is a technique to resolve hash conflicts in an closed
+hashing hash table. Its main draw is that it guarantees constant
 lookup times even in densely filled tables. The article TODO by TODO
 (probably mitzenmacher with or without dietzfelbinger) et al. gives a
 good overview over many cuckoo hashing variants.  The distinguishing
-technique of cuckoo hashing is, that $H$ hash functions (\(h_1, ... ,
-h_H\)) are used to find $H$ independent possible positions. Each
+technique of cuckoo hashing is, that $H$ hash functions ($h_1, ... ,
+h_H$) are used to find $H$ independent possible positions. Each
 element is stored in one of its positions.  Even if all possible
-positions are occupied one can often move elements to create space for the
-current element. We call this displacing elements.
+positions are occupied one can often move elements to create space for
+the current element. We call this displacing elements.
 
 Bucket cuckoo hashing is a variant, where the cells of the hash table
 are grouped into buckets of size $B$ ($m/B$ buckets).  Each element
@@ -326,35 +328,34 @@ When randomly probing the table we expect to find a free cell after $\frac{1}{1-
 \section{DySECT Space Efficient Growing, by Splitting the Table}
 Our goal is to build an efficiently growing data structure, that
 remains space efficient at all times.  A commonly used growing
-technique is to double the previous size by migrating all elements
-into a table which has two times the original size.  Of course this is
+technique is to increase the size by migrating all elements
+into a larger new table.  Of course this is
 not memory efficient.  A natural thought which occurs is to double
 only part of the data structure.  This idea together with the
 balancing ability of multiple hash functions is what will achieve the
 described functionality.
 
 \subsection{Description}
-We use a two level approach (shown in TODO FIGREFRENCE) to allow
-differentiated growing between table parts.  The first level consists
-of a table which stores pointers to $T$ second level tables. The
-second level tables consist of buckets that store elements.
+We use multiple ($T$) subtables (shown in TODO FIGREFRENCE) to allow
+differentiated growing between table parts.  The subtables consist of
+buckets that store elements.
 
 Comparable to classic cuckoo hashing, each element has $H$ associated
 buckets ($H$ number of hash functions), these can be in the same, or
-in different sub tables.  Each inserted element lies in one of its
+in different subtables.  Each inserted element lies in one of its
 associated buckets.  To find a bucket associated with an
-element $e$, we compute \(e\)s hash value using the appropriated hash function
+element $e$, we compute $e$s hash value using the appropriated hash function
 $h_i(e)$. We split that hash value into two parts, then we use the
-first part to chose a second level table, and the second part to
+first part to chose a subtable, and the second part to
 choose one of the contained buckets.
 
-To understand the performance of this hash table, it is important to
-realize that when the hash table is used regularly, the first level
-table will always remain cached. This is important, because otherwise lookups
-would cause unnecessary cache misses that would not have happened in a
-single level hash table.  Because of this we expect the average number
-of cache misses during hash table operations to be similar to those of
-a normal cuckoo hash table.
+%% To understand the performance of this hash table, it is important to
+%% realize that when the hash table is used regularly, the first level
+%% table will always remain cached. This is important, because otherwise lookups
+%% would cause unnecessary cache misses that would not have happened in a
+%% single level hash table.  Because of this we expect the average number
+%% of cache misses during hash table operations to be similar to those of
+%% a normal cuckoo hash table.
 
 \subsection{Growing}
 When the table contains enough elements, that the memory constraint
@@ -362,14 +363,14 @@ can be kept, we migrate a subtable.  We migrate subtables in order
 from the first to the last, therefore, no subtable can be more than
 twice as large as any other.
 
-Assume that all subtables have $s=m/tl$ cells. We can grow the first
-subtable once $\alpha\cdot n > m+2s$.  Doubling the size of a second
-level table increases the global number of cells from $m_{old} =
-tl\cdot s$ to $m_{new} = m_{old}+s = (tl+1)\cdot s$ (factor:
-$\frac{tl+1}{tl}$).  Note that all subsequent grows migrate one of the
-smaller tables, until all tables have the same size again.  Therefore,
-each grow until then increase the capacity by the same absolute amount
-(smaller factor).
+Assume that all subtables have $s=m/T$ cells. When $\alpha\cdot n >
+m+2s$ We can grow the first subtable while keeping the size
+constraint.  Doubling the size of a subtable increases the global
+number of cells from $m_{old} = T\cdot s$ to $m_{new} = m_{old}+s =
+(T+1)\cdot s$ (factor: $\frac{T+1}{T}$).  Note that all subsequent
+grows migrate one of the smaller tables, until all tables have the
+same size again.  Therefore, each grow until then increase the
+capacity by the same absolute amount (smaller factor).
 
 From a theoretical point of view, the cost of growing the subtable is
 amortized by element insertions.  There are at least $\alpha^{-1}
@@ -404,12 +405,12 @@ elements are reinserted into another data structure and global memory
 bounds are necessary (other data structures grow while the hash table
 shrinks).
 
-Shrinking can work similarly to growing. We replace a second level
-table with a smaller one by migrating elements from one to the
-other.  During this migration we join elements from two buckets into
-one. Therefore, it is possible for a bucket to overfill.  We reinsert
-these elements at the end of the migration.  Obviously, this can only
-apply to at most half the migrated elements.
+Shrinking can work similarly to growing. We replace a subtable with a
+smaller one by migrating elements from one to the other.  During this
+migration we join elements from two buckets into one. Therefore, it is
+possible for a bucket to overfill.  We reinsert these elements at the
+end of the migration.  Obviously, this can only apply to at most half
+the migrated elements.
 
 When triggering the size reduction, one has to make sure that the
 migration is amortized. Therefore, a grow operation cannot immediately
@@ -437,7 +438,7 @@ the table.  The hash function we use computes 64bit hash values
 (i.e. xxHash TODO).  We split these 64bit value into two 32bit hash
 values. All common bucket hash table sizes can be addressed using 32
 bits. They can address up to $2^{32}$ buckets which achieves a
-capacity for \(2^{35} \approx 34\) billion elements (bucket size 8),
+capacity for $2^{35} \approx 34$ billion elements (bucket size 8),
 at that point a hash table consumes 512GiB memory.
 
 When $H > 2$ we can use \emph{double hashing} to further reduce the number
@@ -462,24 +463,24 @@ density and the running times in different ways.
 
 \subsubsection*{Imbalance through Inhomogeneous Table Resolution}
 \label{sec:inhom_res}
-By growing individual second level tables we introduce a size imbalance
+By growing subtables individualy we introduce a size imbalance
 between subtables.  Large tables contain more buckets, but the number
 of elements hashed to the table itself is not dependent on its size,
 therefore, it is difficult to spread elements evenly among buckets.
 Uneven bucket fill ratios can lead to longer insertion times.
 
-If there are $n$ elements in a table with \emph{tl} second level tables,
+If there are $n$ elements in a hash table with $T$ subtables,
 $j$ of which have size $2s$ the others have size $s$. If elements are
 spread equally among buckets then all small tables have around
-$n/(tl+j)$ elements, and the bigger tables have $2n/(tl+j)$ elements.
-For each table there are about $kn/tl$ elements associated to one of
+$n/(T+j)$ elements, and the bigger tables have $2n/(T+j)$ elements.
+For each table there are about $Hn/T$ elements associated to one of
 its buckets.  This shows that having more hash functions can lead to a
 better balance.
 
-For two hash functions ($k=2$) and only one grown table ($j=1$) this
-means that $\approx 2n/(tl+1)$ should be stored in the first table.
+For two hash functions ($H=2$) and only one grown table ($j=1$) this
+means that $\approx 2n/(T+1)$ should be stored in the first table.
 These are nearly all elements associated to a bucket in the first
-table ($\approx 2n/tl$). So to distribute elements evenly nearly all
+table ($\approx 2n/T$). So to distribute elements evenly nearly all
 elements would have to be stored there.
 
 \subsubsection*{Imbalance through Size Changes}
@@ -515,7 +516,16 @@ efficiency.  To show that our ideas work from a practical point of
 view we use a wide portfolio of both micro-benchmarks and practical
 experiments.
 
-\subsection{Comparison Implementations}
+\subsection{Methodology and Comparison Implementations}
+
+\subsubsection*{Choice of Constants}
+In our tests, we use three hash functions ($H=3$) and a bucket size of
+($B=8$). These values have consistently outperformed other
+possibilities.  We chose to use 256 subtables for all our tests
+($T=256$).  The number of subtables only plays a minor role for the
+running time.
+
+\subsubsection*{Comparison Implementations}
 To put the performance of our solution into perspective, we
 implemented and tested several other options for space efficient
 hashing.  We use our own implementations, since most hash tables found
@@ -523,7 +533,7 @@ online do not support strict space-efficiency.  In Appendix TODO we
 show that our implementations are at least competitive with
 implementations found .
 
-\textbf{Linear Probing} is the most common hashing technique outside of
+\paragraph*{Linear Probing} is the most common hashing technique outside of
 hashing with chaining.  It is commonly accepted to be inefficient for
 higher load factors because search distances can become large.  In
 practice, this fact is counteracted by its cache-efficiency making
@@ -543,7 +553,7 @@ Our implementation of the migration is highly cache efficient, but
 all elements have to be moved.  This makes repeated migrations inefficient
 especially for small $\alpha$.
 
-\textbf{Hopscotch Hashing} is a technique similar to linear probing where
+\paragraph*{Hopscotch Hashing} is a technique similar to linear probing where
 elements are moved when they are too far from their original hash
 position.  Additionally, hopscotch hashing introduces an acceleration
 data structure which uses bitmaps to store neighborhood data. This
@@ -559,24 +569,41 @@ the neighborhood data -- to show its overall performance tendencies.
 Growing hopscotch tables is done similar to the technique described
 under linear probing.
 
-\textbf{Robin Hood Hashing} is another technique based on linear probing. The
+\paragraph*{Robin Hood Hashing} is another technique based on linear probing. The
 goal of this technique is to improve find performance by minimizing
 the maximum/average displacement distance.  The drawback of this technique is
 that insertions have to compute the hash of each element that is
 skipped by the insertion.
 
-\textbf{Classic Bucket Cuckoo Hashing} is the technique we adopted to design
-our hashing technique.  It has clear advantages for space efficient
-tables.  Like our variant it offers constant lookup and deletion
-times.  In contrast to our variant, it does not suffer from any
-imbalances caused either by table resolution or by local growing
+\paragraph*{Classic Bucket Cuckoo Hashing} is the technique we adopted to
+design our hashing technique.  It has clear advantages for space
+efficient tables.  Like our variant it offers constant lookup and
+deletion times.  In contrast to our variant, it does not suffer from
+any imbalances caused either by table resolution or by local growing
 operations.  Growing works similar to the linear probing table above.
+Similar to DySECT, $H=3$ and $B=8$ have turned out to be an optimum
+for performance.
 
-\subsection{Hardware}
+\subsubsection*{Hardware}
 We test our implementation on two very different systems, first a
 consumer level desktop computer \ldots{}
 
-\subsection{Tests with a Static Table Size}
+\subsection{Influence of Fill Ratio under a Static Table Size}
+\label{sec:exp_eps}
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\textwidth]{../eval/plots/eps_insert.pdf}
+  \caption{\label{fig:eps_insert}Insert timings at different fill
+    degrees into a non-growing table.}
+\end{figure}
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.49\textwidth]{../eval/plots/eps_find_s.pdf}
+  \includegraphics[width=0.49\textwidth]{../eval/plots/eps_find_u.pdf}
+  \caption{Timings for find operations with different fill degrees
+    (\emph{left:}successful, \emph{right:}unsuccessful).}
+  \label{fig:eps_find}
+\end{figure}
 Our hash table is designed for space efficient growing, therefore, its
 main advantages show in dynamic workloads.  We still performed some
 tests with a static table size.  With these measurements, we can
@@ -603,15 +630,16 @@ cuckoo hashing.  Hopscotch hashing fails earlier than all other
 tables, because its bitmaps become to small, to store the neighborhood
 information.
 
-DySECT fails earlier than cuckoo hashing.  The cause for this is
-twofold. First, our architecture ($T$ subtables with power of two
-sizes) does not allow exactly $24M$ cells, therefore, our table is
-slightly more full. Secondly, to get close to $24M$ cells, we have
-$110$ large subtables (twice the size of the others).  This introduces
-inhomogeneous table resolution (see \ref{sec:inhom_res}), which
-decreases our performance compared to cuckoo hashing.  This test shows
-the influence of inhomogeneous table resolution without the influence
-of size changes, and the connected table imbalance.
+DySECTs performance degrades earlier than cuckoo hashing.  The cause
+for this is twofold. First, our architecture -- $T$ subtables with power
+of two sizes -- does not allow exactly
+$24M$ cells , therefore, our table is slightly more full. Secondly, to
+get close to $24M$ cells, we have $110$ large subtables (twice the
+size of the others).  This introduces inhomogeneous table resolution
+(see \ref{sec:inhom_res}), which decreases our performance compared to
+cuckoo hashing.  This test shows the influence of inhomogeneous table
+resolution without the influence of size changes, and the connected
+table imbalance.
 
 Figure~\ref{fig:eps_find} shows that linear probing variants have bad
 performance on find operations on highly filled tables.  It also shows
@@ -622,33 +650,81 @@ effects, do not affect cuckoo variants like DySECT, that have
 guaranteed constant running times for all find operations --
 independant of the fill degree.
 
-\subsubsection*{Constant Sized Table Under Varying Fill Degree}
-\begin{figure}
-  \includegraphics[width=\textwidth]{../eval/plots/eps_insert.pdf}
-  \caption{Insert timings at different fill degrees into a non-growing table.}
-  \label{fig:eps_insert}
-\end{figure}
-\begin{figure}
-  \includegraphics[width=0.48\textwidth]{../eval/plots/eps_find_s.pdf}
-  \includegraphics[width=0.48\textwidth]{../eval/plots/eps_find_u.pdf}
-  \caption{Timings for find operations with different fill degrees (\emph{left:}successful, \emph{right:}unsuccessful).}
-  \label{fig:eps_find}
-\end{figure}
-
-\subsubsection*{Constructing a Table with Growing}
-
-
-\begin{figure}
+\subsection{Constructing a Table with Growing}
+\label{sec:exp_ti}
+\begin{figure}[ht]
+  \centering
   \includegraphics[width=\textwidth]{../eval/plots/ti_insert.pdf}
-  \caption{Average time per insert operation during the construction of a dynamic table.}
-  \label{fig:ti_insert}
+  \caption{\label{fig:ti_insert}Average time per insert operation
+    during the construction of a dynamic table.}
 \end{figure}
-\begin{figure}
-  \includegraphics[width=0.48\textwidth]{../eval/plots/ti_find_s.pdf}
-  \includegraphics[width=0.48\textwidth]{../eval/plots/ti_find_u.pdf}
-  \caption{Timings for find operations on the grown table (from Figure~\ref{fig:ti_insert}; \emph{left:}successful, \emph{right:}unsuccessful).}
-  \label{fig:ti_find}
+%% \begin{figure}
+%%   \includegraphics[width=0.48\textwidth]{../eval/plots/ti_find_s.pdf}
+%%   \includegraphics[width=0.48\textwidth]{../eval/plots/ti_find_u.pdf}
+%%   \caption{Timings for find operations on the grown table (from Figure~\ref{fig:ti_insert}; \emph{left:}successful, \emph{right:}unsuccessful).}
+%%   \label{fig:ti_find}
+%% \end{figure}
+In this test $20M$ elements are inserted into a previously empty
+table. All tables are initialized expecting 50\,000 elements, thus
+growing is necessary, to fit all elements.  The tables are configured,
+to guarantee a load factor of
+$\varepsilon$. Figure~\ref{fig:ti_insert} shows the performance in
+relation to $\varepsilon$.  Insertion times are normalized similar to
+Figure~\ref{fig:eps_insert} (divided by $\frac{1}{\varepsilon}$) to
+make them more readable.
+
+We see that DySECT performs by far the best even with less filled
+tables.  Here we achieve a speedup of TODO$\%$ over the next best
+solution (blabla vs. linear probing blabla at $\varepsilon = 0.$ bla).
+On denser instances, we can increase this margin to TODO$\%$ (blabla
+vs we'll see blabla at $\varepsilon = 0.$ bla).  With shrinking
+$\varepsilon$, we see that insertion times start to degrade for our
+competitors.  DySECT remains close to $O(\frac{1}/{\varepsilon})$ even
+for fill degrees up to 97.5$\%$ (TODO check).
+
+We also measured the performance of find operations on the created
+tables, they are similar to the performance on the static table in
+Section~\ref{sec:exp_eps} (see Figure~\ref{fig:eps_find}), therefore,
+we omit plotting them for space reasons.
+
+\subsection{Word Count a Practical use Case}
+One of the most common use cases for hash tables -- dynamic hash
+tables in particular -- is to unify data elements with the same key.
+Oftentimes it is unclear how many unique keys are present (how large
+the table will get).  In these cases, only dynamic hash tables can
+remain space efficient.  In the following test, we take the first
+block of the common crawl data-set (TODO REFERENCE) and compute a word
+count of the contained words.  The chosen block contains around 240M
+words, with around 20M unique words.
+
+For the test, we hash each word and insert it together with a counter.
+Subsequent insertions of a reocurring word increase this counter.
+Similar to the growing benchmark, we start with an empty table
+initialized for 50\,000 elements.  The performance results can be seen
+in Figure~\ref{fig:crawl}.  We do not use any normalization since --
+on average -- each word is repeated 12 times, therefore, most inserts
+will actually behave like successful find operations (returning an
+iterator to the contained element).  Our DySECT table manages to
+dominate the field, similar to the growing test in
+Section~\ref{sec:exp_ti}.  This is a hint to the fact, that insert
+performance is important even in find intensive workloads.  This
+insight is intensified in the following test
+(Section~\ref{sec:exp_mix}).
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\textwidth]{../eval/plots/crawl.pdf}
+  \caption{\label{fig:crawl} }
 \end{figure}
+
+\subsection{Combining insert and find operations}
+In this test, we simulate an application in progress.  We use tables
+with a minimum load factor of $\varepsilon = 0.9xx$ (TODO choose one).
+The test starts a decently filled table (TODO M elements).  On this
+table we perform a mixture of insert and find operations.  Even on
+
+
+
 
 %%
 %% Bibliography
