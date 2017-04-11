@@ -150,6 +150,8 @@ int main(int argn, char** argc)
     const size_t      cap   = c.intArg("-cap"  , 1000);
     const size_t      steps = c.intArg("-steps", 512);
     const double      alpha = c.doubleArg("-alpha", 1.1);
+    const double      eps   = c.doubleArg("-eps", -1.0);
+    if (eps > 0.) alpha = 1./(1.-eps);
 
     const std::string inf   = c.strArg("-in"   , "/home/maier/WorkEnv/tobias.org");
     const std::string outf  = c.strArg("-out"  , "");
