@@ -269,6 +269,8 @@ struct Chooser
         {
         case 64:
             return executeN<Functor,64>(c, std::forward<Types>(param)...);
+        case 128:
+            return executeN<Functor,128>(c, std::forward<Types>(param)...);
         // case 8:
         //     return executeN<Functor, 8>(c, std::forward<Types>(param)...);
         // case 16:

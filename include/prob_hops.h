@@ -93,7 +93,8 @@ private:
     using This_t = HopsProb<K,D,HF,Conf>;
     using Base_t = typename ProbTraits<This_t>::Base_t;
 
-    static constexpr size_t nh_size = Conf::NeighborSize;
+    static constexpr size_t nh_size = (Conf::NeighborSize <= 64) ?
+                                       Conf::NeighborSize : 64;
     using AugData_t = AugmentData<nh_size>;
 
     friend Base_t;
@@ -326,7 +327,9 @@ private:
     using Base_t = typename ProbTraits<This_t>::Base_t;
 
     static constexpr size_t nh_size = Conf::NeighborSize;
-    using AugData_t = AugmentData<nh_size>;
+    static constexpr size_t bitset_size = (nh_size < 64) ? nh_size : 64;
+    static constexpr size_t bucket_size = (nh_size < 64) ? 1 : nh_size/64;
+    using AugData_t = AugmentData<bitset_size>;
 
     friend Base_t;
 
@@ -349,9 +352,11 @@ public:
         table = std::unique_ptr<value_intern[]>(temp);
 
         capacity = (cap) ? cap*alpha : 2048*alpha;
+        capacity = capacity/bucket_size;
+        capacity = capacity*bucket_size;
         thresh   = (cap) ? cap*beta  : 2048*beta;
 
-        factor = double(capacity-nh_size)/double(1ull << 32);
+        factor = double(capacity/bucket_size-bitset_size)/double(1ull << 32);
 
         std::fill(table.get(), table.get()+capacity, value_intern());
         nh_data.clear_init(capacity);
@@ -394,15 +399,18 @@ public:
         auto   aug  = nh_data.getAcc(ind);
         size_t bits = aug.getNHood();
 
-        for (size_t i = ind; bits; ++i, bits>>=1)
+        for (size_t i = ind; bits; i+=bucket_size, bits>>=1)
         {
             if (!(bits & 1)) continue;
             else
             {
-                auto temp = table[i];
-                if ( temp.first == t.first )
+                for (size_t ti = 0; ti<bucket_size; ++ti)
                 {
-                    return std::make_pair(make_iterator(&table[i]), false);
+                    auto temp = table[i+ti];
+                    if ( temp.first == t.first )
+                    {
+                        return std::make_pair(make_iterator(&table[i]), false);
+                    }
                 }
             }
         }
@@ -420,7 +428,7 @@ public:
                     if (!successful) break;
                 }
                 table[ti] = t;
-                aug.set(ti-ind);
+                aug.set((ti-ind)/bucket_size);
                 inc_n();
                 return std::make_pair(make_iterator(&table[ti]), true);
             }
@@ -433,13 +441,16 @@ public:
         auto ind = h(k);
         size_t bits = nh_data.getNHood(ind);
 
-        for (size_t i = ind; bits; ++i, bits>>=1)
+        for (size_t i = ind; bits; i+=bucket_size, bits>>=1)
         {
             if (!(bits & 1)) continue;
-            auto temp = table[i];
-            if ( temp.first == k )
+            for (size_t ti = 0; ti < bucket_size; ++ti)
             {
-                return make_iterator(&table[i]);
+                auto temp = table[i+ti];
+                if ( temp.first == k )
+                {
+                    return make_iterator(&table[i+ti]);
+                }
             }
         }
         return Base_t::end();
@@ -450,13 +461,16 @@ public:
         auto ind = h(k);
         size_t bits = nh_data.getNHood(ind);
 
-        for (size_t i = ind; bits; ++i, bits>>=1)
+        for (size_t i = ind; bits; i+=bucket_size, bits>>=1)
         {
             if (!(bits & 1)) continue;
-            auto temp = table[i];
-            if ( temp.first == k )
+            for (size_t ti = 0; ti < bucket_size; ++ti)
             {
-                return make_citerator(&table[i]);
+                auto temp = table[i+ti];
+                if ( temp.first == k )
+                {
+                    return make_citerator(&table[i+ti]);
+                }
             }
         }
         return Base_t::cend();
@@ -467,15 +481,23 @@ public:
         auto ind = h(k);
         size_t bits = nh_data.getNHood(ind);
 
-        for (size_t i = ind; bits; ++i, bits>>=1)
+        for (size_t i = ind; bits; i+=bucket_size, bits>>=1)
         {
             if (!(bits&1)) continue;
-            auto tempk = table[i].first;
-            if ( tempk == k )
+            for (size_t ti = 0; ti < bucket_size; ++ti)
             {
-                nh_data.getAcc(ind).unset(i-ind);
-                table[i] = std::make_pair(0,0);
-                return 1;
+                auto tempk = table[i + ti].first;
+                if ( tempk == k )
+                {
+                    table[i] = std::make_pair(0,0);
+                    for (size_t tti = 0; tti < bucket_size; ++tti)
+                    {
+                        auto ttk = table[i+tti].first;
+                        if (h(k) == ind) return 1;
+                    }
+                    nh_data.getAcc(ind).unset((i-ind)/bucket_size);
+                    return 1;
+                }
             }
         }
         return 0;
@@ -483,31 +505,35 @@ public:
 
 private:
     inline size_t index(size_t i) const
-    { return double(bitmask & i) * factor; }
+    { return size_t(double(bitmask & i) * factor) * bucket_size; }
     inline size_t mod  (size_t i) const
     { return i; }
 
     inline void grow()
     {
         //auto ntable = This_t(n, alpha);
-
         size_t osize = capacity;
 
         capacity = n*alpha;
-        n = 0;
-        factor   = double(capacity-nh_size)/double(1ull << 32);
-        thresh   = n * beta;
+        capacity = capacity/bucket_size;
+        capacity = capacity*bucket_size;
+        thresh   = n*beta;
+
+        factor = double(capacity/bucket_size-bitset_size)/double(1ull << 32);
 
         std::fill(table.get()+osize, table.get()+capacity, value_intern());
         nh_data.clear_init(capacity);
 
         std::vector<value_intern> buffer;
 
+        n = 0;
+
         for (int i = osize; i >= 0; --i)
         {
             auto current  = table[i];
             if (current.first)
             {
+                table[i] = value_intern();
                 if (h(current.first) > size_t(i))
                     insert(current);
                 else
@@ -531,11 +557,25 @@ private:
             if (ind + nh_size > pos)
             {
                 auto aug = nh_data.getAcc(ind);
-                aug.unset(i  -ind);
-                aug.set  (pos-ind);
+                table[i] = std::make_pair(0,0);
+
+                // Make sure, the same bucket does not store another element
+                // hashed to ind! Then delete the bit
+                // This is not technically correct, since it might look in the
+                // next bucket, but faster this way, and additional bits don't
+                // hurt.
+                bool other = false;
+                for (size_t ti = 0; ti < bucket_size; ++ti)
+                {
+                    if (h(table[i+ti].first) == ind) other = true;
+                }
+                if (! other)
+                    aug.unset((i  -ind)/bucket_size);
+
+                aug.set  ((pos-ind)/bucket_size);
 
                 table[pos] = current;
-                table[i]   = std::make_pair(0,0);
+                //table[i]   = std::make_pair(0,0);
                 if (i < goal) return std::make_pair(true, i);
                 else return move_gap(i, goal);
             }
