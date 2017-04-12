@@ -170,7 +170,8 @@ int main(int argn, char** argc)
     const size_t      steps = c.intArg("-steps", 512);
     const std::string name  = c.strArg("-out"  , "");
     const double      alpha = c.doubleArg("-alpha", 1.1);
-    const double      eps   = c.doubleArg("-eps", -1.0);
+    const double      load  = c.doubleArg("-load" , 2.0);
+    const double      eps   = c.doubleArg("-eps"  , 1.0-load);
     if (eps > 0.) alpha = 1./(1.-eps);
 
     return Chooser::execute<Test,no_hist_count> (c, it, n, n0, cap, pattern, steps, alpha, name);

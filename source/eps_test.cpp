@@ -38,7 +38,7 @@ struct Test
         Table::print_init_header(out);
         print(out, "n_step" , 9);
         print(out, "win"    , 5);
-        print(out, "alpha"  , 6);
+        print(out, "load"   , 6);
         print(out, "t_in"   , 8);
         print(out, "t_fip"  , 8);
         print(out, "t_fin"  , 8);
@@ -51,29 +51,29 @@ struct Test
 
     inline void print_timing(std::ostream& out,
                              size_t i,
-                             size_t n,
+                             size_t ncurr,
                              size_t win,
-                             double alpha,
+                             double load,
                              double tin,
                              double tfip,
                              double tfin,
                              size_t in_err,
                              size_t fi_err,
-                             size_t keysize,
+                             size_t n,
                              Table& table)
     {
         print(out, i     , 4);
         table.print_init_data(out);
-        print(out, n     , 9);
+        print(out, ncurr , 9);
         print(out, win   , 5);
-        print(out, alpha , 6);
+        print(out, load  , 6);
         print(out, tin   , 8);
         print(out, tfip  , 8);
         print(out, tfin  , 8);
         print(out, in_err, 6);
         print(out, fi_err, 6);
         #ifdef MALLOC_COUNT
-        print(out, malloc_count_current() - keysize*8, 7);
+        print(out, malloc_count_current() - n*8 -win*16, 7);
         #endif
         out << std::endl;
     }
@@ -94,12 +94,11 @@ struct Test
     }
 
     int operator()(size_t it, size_t n, size_t steps,
-                   double alpha, double alstp, size_t win, std::string name)
+                   double eps, double epstp, size_t win, std::string name)
     {
         constexpr size_t range = (1ull<<63) -1;
 
-        size_t keysize = double(n)*alpha;
-        size_t* inkeys = new size_t[keysize];
+        size_t* inkeys = new size_t[n];
         size_t* fikeys = new size_t[win<<1];
 
         std::uniform_int_distribution<uint64_t> dis(1,range);
@@ -116,22 +115,23 @@ struct Test
         {
             // prepare execution randomize each iteration seperately
             // to take variance into account
-            for (size_t i = 0; i < keysize; ++i)
+            for (size_t i = 0; i < n; ++i)
             {
                 inkeys[i] = dis(re);
             }
-            Table table(keysize, 1.0, steps);
+            Table table(n, 1.0, steps);
 
             size_t in_errors = 0ull;
             size_t fi_errors = 0ull;
 
             size_t j       = 0;
 
-            size_t nxt_blk = n;
-            double ta      = alpha;
-            prepare_find_keys(fikeys, inkeys, win, n);
+            double tlf     = 1.-eps;
+            size_t nxt_blk = n*tlf;
 
-            while (nxt_blk + win < keysize)
+            prepare_find_keys(fikeys, inkeys, win, nxt_blk);
+
+            while (nxt_blk + win < n)
             {
                 for (; j < nxt_blk; ++j)
                 {
@@ -161,13 +161,13 @@ struct Test
                 double d_fin = std::chrono::duration_cast<std::chrono::nanoseconds> (t4 - t3).count()/double(win);
 
                 if (in_errors > 100) break;
-                print_timing(*file, i, nxt_blk, win, ta, d_in, d_fip, d_fin,
-                             in_errors, fi_errors, keysize, table);
+                print_timing(*file, i, nxt_blk, win, tlf, d_in, d_fip, d_fin,
+                             in_errors, fi_errors, n, table);
 
-                prepare_find_keys(fikeys, inkeys, win, n);
+                tlf += epstp;
+                nxt_blk = n*tlf;
 
-                ta -= alstp;
-                nxt_blk = double(keysize)/ta;
+                prepare_find_keys(fikeys, inkeys, win, nxt_blk);
             }
 
         }
@@ -185,13 +185,15 @@ int main(int argn, char** argc)
     const size_t      n     = c.intArg("-n"       , 2000000);
     const size_t      steps = c.intArg("-steps"   , 512);
     const std::string name  = c.strArg("-out"     , "");
-    const double      alpha = c.doubleArg("-alpha", 1.2);
-    const double      eps   = c.doubleArg("-eps", -1.0);
-    if (eps > 0.) alpha = 1./(1.-eps);
+    const double      alpha = c.doubleArg("-alpha", 0.1);
+    const double      load  = c.doubleArg("-load" , 1.0-(alpha-1.0)/alpha);
+    const double      eps   = c.doubleArg("-eps"  , 1.0-load);
 
-    const double      alstp = c.doubleArg("-alsteps", 0.005);
+    const double      epstp = c.doubleArg("-epsteps", 0.005);
     const size_t      win   = c.intArg("-win"     , 1000);
 
+    if (eps < 0.) { std::cout << "please input eps" << std::endl; return 8;}
+
     return Chooser::execute<Test,no_hist_count>
-        (c, it, n, steps, alpha, alstp, win, name);
+        (c, it, n, steps, eps, epstp, win, name);
 }

@@ -150,15 +150,16 @@ struct Test
             print_timing(*file, i, alpha, cap, n0, n, d_in0, d_in1, d_fn0, d_fn1,
                          in_errors, fin_errors, table);
 
-            size_t temp0 = 0;
-            size_t temp1 = 0;
-            for (auto it = table.begin(); it != table.end(); it++)
-            {
-                if (it->second < 100000)
-                    ++temp1;
-                ++temp0;
-            }
-            std::cout << temp1 << "/" << temp0 << std::endl;
+            // Iterator Test
+            // size_t temp0 = 0;
+            // size_t temp1 = 0;
+            // for (auto it = table.begin(); it != table.end(); it++)
+            // {
+            //     if (it->second < 100000)
+            //         ++temp1;
+            //     ++temp0;
+            // }
+            // std::cout << temp1 << "/" << temp0 << std::endl;
         }
 
         delete[] keys;
@@ -178,7 +179,8 @@ int main(int argn, char** argc)
     const size_t      steps = c.intArg("-steps", 512);
     const std::string name  = c.strArg("-out"  , "");
     const double      alpha = c.doubleArg("-alpha", 1.1);
-    const double      eps   = c.doubleArg("-eps", -1.0);
+    const double      load  = c.doubleArg("-load" , 2.0);
+    const double      eps   = c.doubleArg("-eps"  , 1.0-load);
     if (eps > 0.) alpha = 1./(1.-eps);
 
     return Chooser::execute<Test,no_hist_count> (c, it, n, n0, cap, steps, alpha, name);
