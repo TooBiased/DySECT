@@ -298,7 +298,7 @@ struct Chooser
              , Types&& ... param)
     {
         #ifdef SPECIAL_HOPSCOTCH
-        double ratio = c.doubleArg("-alpha", HopscotchConfig<>::GrowRatio_d);
+        double ratio = c.doubleArg("-rat", HopscotchConfig<>::GrowRatio_d);
         if (ratio < 1.101)
         {
             return executeNR<Functor, NS, std::ratio<11,10> >

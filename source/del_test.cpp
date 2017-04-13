@@ -149,15 +149,15 @@ struct Test
 int main(int argn, char** argc)
 {
     CommandLine c(argn, argc);
-    const size_t      it    = c.intArg("-it"   , 5);
-    const size_t      n     = c.intArg("-n"    , 1000000);
-    const size_t      win   = c.intArg("-pre"  , n/2);
-    const size_t      cap   = c.intArg("-cap"  , win);
-    const size_t      steps = c.intArg("-steps", 512);
+    size_t      it    = c.intArg("-it"   , 5);
+    size_t      n     = c.intArg("-n"    , 1000000);
+    size_t      win   = c.intArg("-pre"  , n/2);
+    size_t      cap   = c.intArg("-cap"  , win);
+    size_t      steps = c.intArg("-steps", 512);
     const std::string name  = c.strArg("-out"  , "");
-    const double      alpha = c.doubleArg("-alpha", 1.1);
-    const double      load  = c.doubleArg("-load" , 2.0);
-    const double      eps   = c.doubleArg("-eps"  , 1.0-load);
+    double      alpha = c.doubleArg("-alpha", 1.1);
+    double      load  = c.doubleArg("-load" , 2.0);
+    double      eps   = c.doubleArg("-eps"  , 1.0-load);
     if (eps > 0.) alpha = 1./(1.-eps);
 
     return Chooser::execute<Test,no_hist_count> (c, it, n, win, cap, steps, alpha, name);

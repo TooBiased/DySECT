@@ -181,13 +181,13 @@ struct Test
 int main(int argn, char** argc)
 {
     CommandLine c(argn, argc);
-    const size_t      it    = c.intArg("-it"      , 5);
-    const size_t      n     = c.intArg("-n"       , 2000000);
-    const size_t      steps = c.intArg("-steps"   , 512);
+    size_t      it    = c.intArg("-it"      , 5);
+    size_t      n     = c.intArg("-n"       , 2000000);
+    size_t      steps = c.intArg("-steps"   , 512);
     const std::string name  = c.strArg("-out"     , "");
-    const double      alpha = c.doubleArg("-alpha", 0.1);
-    const double      load  = c.doubleArg("-load" , 1.0-(alpha-1.0)/alpha);
-    const double      eps   = c.doubleArg("-eps"  , 1.0-load);
+    double      alpha = c.doubleArg("-alpha", 0.1);
+    double      load  = c.doubleArg("-load" , 1.0-(alpha-1.0)/alpha);
+    double      eps   = c.doubleArg("-eps"  , 1.0-load);
 
     const double      epstp = c.doubleArg("-epsteps", 0.005);
     const size_t      win   = c.intArg("-win"     , 1000);

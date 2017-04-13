@@ -146,12 +146,12 @@ struct Test
 int main(int argn, char** argc)
 {
     CommandLine c(argn, argc);
-    const size_t      it    = c.intArg("-it"   , 5);
-    const size_t      cap   = c.intArg("-cap"  , 1000);
-    const size_t      steps = c.intArg("-steps", 512);
-    const double      alpha = c.doubleArg("-alpha", 1.1);
-    const double      load  = c.doubleArg("-load" , 2.0);
-    const double      eps   = c.doubleArg("-eps"  , 1.0-load);
+    size_t      it    = c.intArg("-it"   , 5);
+    size_t      cap   = c.intArg("-cap"  , 1000);
+    size_t      steps = c.intArg("-steps", 512);
+    double      alpha = c.doubleArg("-alpha", 1.1);
+    double      load  = c.doubleArg("-load" , 2.0);
+    double      eps   = c.doubleArg("-eps"  , 1.0-load);
     if (eps > 0.) alpha = 1./(1.-eps);
 
     const std::string inf   = c.strArg("-in"   , "/home/maier/WorkEnv/tobias.org");

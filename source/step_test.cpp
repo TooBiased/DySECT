@@ -222,13 +222,13 @@ struct Test
 int main(int argn, char** argc)
 {
     CommandLine c(argn, argc);
-    const size_t      n     = c.intArg("-n"    , 1000000);
-    const size_t      cap   = c.intArg("-cap"  , 10000);
-    const size_t      steps = c.intArg("-steps", 512);
+    size_t      n     = c.intArg("-n"    , 1000000);
+    size_t      cap   = c.intArg("-cap"  , 10000);
+    size_t      steps = c.intArg("-steps", 512);
     const std::string name  = c.strArg("-out"  , "temp");
-    const double      alpha = c.doubleArg("-alpha", 1.1);
-    const double      load  = c.doubleArg("-load" , 2.0);
-    const double      eps   = c.doubleArg("-eps"  , 1.0-load);
+    double      alpha = c.doubleArg("-alpha", 1.1);
+    double      load  = c.doubleArg("-load" , 2.0);
+    double      eps   = c.doubleArg("-eps"  , 1.0-load);
     if (eps > 0.) alpha = 1./(1.-eps);
 
     return Chooser::execute<Test,hist_count> (c, n, cap, steps, alpha, name);
