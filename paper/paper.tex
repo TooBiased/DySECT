@@ -1,3 +1,5 @@
+% -*- mode: latex; mode:writegood mode: flyspell; ispell-local-dictionary: "en_US"; coding: utf-8 -*-
+
 \documentclass[a4paper,UKenglish]{lipics-v2016}
 %This is a template for producing LIPIcs articles.
 %See lipics-manual.pdf for further information.
@@ -63,11 +65,7 @@ addressing techniques can fill a given table to more than 95\% before
 the performance deteriorates significantly.  But once the threshold is
 met, copying and migrating the whole table still seems to be the most
 efficient answer.
-
-To achieve any kind of efficiency, each such migration must be
-amortized by newly inserted elements.  Therefore, each migration has
-to increase the capacity by a significant amount -- usually, this
-means doubling the capacity.  Growing by a large factor $\gamma$ leads
+Growing by a constant factor $\gamma$ often leads
 to bad space efficiency because the newly grown table is only filled
 less than a factor of $\gamma^{-1}$.
 
@@ -79,6 +77,12 @@ growing while keeping a strict size constraint $\alpha \cdot n$
 throughout its lifetime.  Even under these conditions, we can
 guarantee constant lookup times, and amortized insertion times,
 independent of $n$.
+
+We achieve this goal by splitting the hash table into subtables that
+grow independent from each other.  The cuckoo load balancing
+algorithm can move elements from one table to the other.  This makes
+sure that growing one subtable increases insertion opportunities even
+for elements that are not hashed into this one table.
  \end{abstract}
 
 %% \section{Typesetting instructions -- please read carefully}
@@ -151,7 +155,7 @@ Being approximately TODO \ldots{} \% faster than common hash table
 techniques under the same circumstances.
 
 \section{Motivation}
-\label{sec:motication}
+\label{sec:motivation}
 Space efficiency is a major factor for the development of new hashing
 techniques.  The goal has long been to make hash tables work better in
 high load scenarios.  Modern hashing techniques like Hopscotch, Robin
@@ -177,18 +181,74 @@ the problem's domain and thus also works in cases where estimating the
 number of elements can be hard.  To achieve space efficiency in
 scenarios where the final size is not known the hash table has to grow
 closely with the actual number of elements.  This is not efficient
-with any of the current techniques used for hashing and mgration.
+with any of the current techniques used for hashing and migration.
 
 \section{Related Work}
-As previously stated, there has been a lot of research on hash tables,
-since they were introduced in the 1950s.
+The usage of hash tables, and other hashing based algorithms has a
+long history in computer science.  The classical methods results can
+be found in all major algorithm textbooks (TODO ...).
+
+Over the last one and a half decades, the field has regained
+attention, both from theoretical and the practical point of view.  The
+initial point of innovation was the power of two
+choices~\cite{ThePowerOfTwoChoicesInRandomizedLoadBalancing}.
+This concept led to the development of cuckoo hashing by Pagh and
+Rodler~\cite{CuckooHashing}.  This technique reopened research into
+more space efficient hash tables.  It proofed theoretically
+interesting, because probabilistic bounds for the maximum fill degree
+are highly non-trivial TODO SOME BOUNDS PAPERS.
+
+Cuckoo hashing spawned many variants, that further improve its
+performance.  The most notable one is probably bucket cuckoo hashing
+($d$-ary cuckoo hashing), a variant that groups cells together in
+buckets thus improving cache usage, and increasing displacement
+opportunities TODO BUNCH OF PAPERS.  This further improves the maximum
+fill degree. Nowadays, bucket cuckoo hashing is by far the most common
+variant. There are even further variations on bucket cuckoo hashing,
+like the generalization to continuous buckets.
+
+Further adaptations to cuckoo hashing include: a de-amortization
+technique that allows a provable worst case analysis of
+insertions~\cite{UsingAQueueToDeAmortizeCuckooHashingInHardware,
+  DeAmortizedCuckooHashingProvableWorstCasePerformanceAndExperimentalResults};
+and multiple concurrent implementations either powered by bucket
+locking, transactional
+memory~\cite{AlgorithmicImprovementsForFastConcurrentCuckooHashing},
+or fully lock-less~\cite{LockFreeCuckooHashing}.
+
+Some non-cuckoo space efficient hash tables continue to use linear
+probing variants.  Robin Hood hashing is a technique that was
+originally introduced in 1985 by Celis et
+al.~\cite{RobinHoodHashing}. It has regained some popularity in
+recent years -- mainly for its interesting theoretical
+properties and the possibility to reduce the inherent variance of
+linear probing.  Hopscotch~\cite{HopscotchHashing} hashing is a
+technique, that originated in the area of concurrent hash tables, but
+it can also lead to some densely filled hash tables.  For this reason
+it is often used as a technique to achieve space efficient hash
+tables.  This is only possible in a small number of circumstances, as
+the stored bitmaps used in hopscotch hashing produce a significant
+memory overhead.
+
+All these publications show that there is a clear interest in the
+development of space efficient hash tables.  Dynamic hash tables on the
+other hand seem to be considered a solved problem.  There is an
+important paper by Dietzfelbinger at
+al.~\cite{DynamicPerfectHashingUpperAndLowerBounds} that takes on the
+problem of dynamic hash tables from a theoretical perspective.  The
+paper predates cuckoo hashing, and much of the attention for space
+efficient hashing. Thus all memory bounds presented are given without
+tight constant factors.  This lack of development is where we pick up
+and offer fast solutions that support dynamic growing with tight space
+bounds.
 
 \section{Preliminaries}
 A hash table is a data-structure, which stores key-value-pairs
 ($\langle key, data \rangle$) and offers the following functions:
-\verb~insert~ -- stores a given key-value pair; \verb~find~ -- given a key returns if
-said key was stored, and if so it returns the stored value; and
-\verb~erase~ -- deletes a previously inserted element (if present).
+\verb~insert~ -- stores a given key-value pair; \verb~find~ -- given a
+key returns if said key was stored, and if so it returns the stored
+value; and \verb~erase~ -- deletes a previously inserted element (if
+present).
 
 An alternative model which is sometimes used in literature considers
 arbitrary elements instead of key value pairs.  In that model, the key
@@ -280,9 +340,7 @@ elements must be reused.
 \subsection{Cuckoo Hashing}
 Cuckoo hashing is a technique to resolve hash conflicts in a closed
 hashing hash table. Its main draw is that it guarantees constant
-lookup times even in densely filled tables. The article TODO by TODO
-(probably mitzenmacher with or without dietzfelbinger) et al. gives a
-good overview over many cuckoo hashing variants.  The distinguishing
+lookup times even in densely filled tables.  The distinguishing
 technique of cuckoo hashing is, that $H$ hash functions ($h_1, ... ,
 h_H$) are used to find $H$ independent possible positions. Each
 element is stored in one of its positions.  Even if all possible
@@ -386,8 +444,8 @@ capacity by the same absolute amount (smaller factor).
 The cost of growing the subtable is amortized by all insertions that
 happened since the last subtable migration.  There are at least
 $\alpha^{-1} \cdot s = \Omega(s)$ insertions between two migrations.
-One migration takes $\Theta(s)$ time.  Appart from being amortized,
-the migration is efficient in practise because it accesses cells in a
+One migration takes $\Theta(s)$ time.  Apart from being amortized,
+the migration is efficient in practice because it accesses cells in a
 linear fashion making it really cache efficient.  Even in the target
 table cells are accessed linearly.  Because of the way we assign
 elements to buckets, one original bucket is split into two target
@@ -472,7 +530,7 @@ and memory overcommiting.  The idea is that the operating system will
 usually allow larger memory allocations than the machine has memory,
 with the anticipation that not all the allocated memory will actually
 be used.  Only memory pages, that are actually used will be mapped
-from virtual to physical memory pages.  Thus from a strict reasource
+from virtual to physical memory pages.  Thus from a strict resource
 point of view, the memory is not yet used.  Therefore, we can also
 implement the subtables as sections within one huge allocation.  This
 has the advantage, that the offset for each table can be quickly
@@ -500,7 +558,7 @@ density and the running times in different ways.
 
 \subsubsection*{Imbalance through Inhomogeneous Table Resolution}
 \label{sec:inhom_res}
-By growing subtables individualy we introduce a size imbalance
+By growing subtables individually we introduce a size imbalance
 between subtables.  Large tables contain more buckets, but the number
 of elements hashed to the table itself is not dependent on its size,
 therefore, it is difficult to spread elements evenly among buckets.
@@ -521,7 +579,7 @@ elements associated to a bucket in the first table ($\approx 2n/T$)
 have to be stored there.
 
 \subsubsection*{Imbalance through Size Changes}
-In addition to the problem of inhomogenous tables, there is an
+In addition to the problem of inhomogeneous tables, there is an
 inherent balancing problem introduced by resizing subtables. It is
 clear, that a newly grown table is not filled as densely as other
 tables.  Since we double the table size, grown tables can only be
@@ -658,7 +716,7 @@ probing variants, but not as long, as for classic cuckoo hashing.
 Hopscotch hashing fails earlier than all other tables, because its
 bitmaps become to small, to store the neighborhood information.
 
-DySECTs performance degrades earlier than cuckoo hashing.  One reason
+DySECT's performance degrades earlier than cuckoo hashing.  One reason
 for this is that our hash table consists of $T$ subtables with power
 of two sizes and thus does not allow exactly $20M$ cells.  Therefore,
 our table is slightly more full.  Another reason is that to get close
@@ -674,7 +732,7 @@ linear probing.  This is where the acceleration data-structure used by
 hopscotch tables can significantly improve performance.  Both of these
 effects, do not affect cuckoo variants like DySECT, that have
 guaranteed constant running times for all find operations --
-independant of the fill degree.
+independent of the fill degree.
 
 \subsection{Constructing a Table with Growing}
 \label{sec:exp_ti}
@@ -724,7 +782,7 @@ block of the common crawl data-set (TODO REFERENCE) and compute a word
 count of the contained words.  The chosen block contains around 240M
 words, with around 20M unique words. For the test, we hash each word
 and insert it's hash together with a counter.  Subsequent insertions
-of a reocurring word increase this counter.  Similar to the growing
+of a re-occurring word increase this counter.  Similar to the growing
 benchmark, we start with an empty table initialized for 50\,000
 elements.
 
@@ -767,20 +825,29 @@ which have usually significantly better performance than unsuccessful
 ones (especially for linear probing; see Figure~\ref{fig:eps_find}).
 
 \subsection{Conclusion}
-\subsubsection*{Future Work}
-Our Experiments clearly show, that practical running times can be
-reached while growing dynamically.  But we were unable, to prove tight
-theoretical performance bounds.
+Our Experiments have shown that our DySECT hash table is by far the
+best performing hash table on all instances that make use of its
+dynamic capabilities.  It performs up to TODO $\%$ better, than the
+next best performing table.
+
+
+.........
+
+
+But there remains much to do. We were unable, to prove tight
+theoretical performance and density bounds.
 
 Even in practice, there remains a lot of open design space.  One could
-use a similar aproach to dynamically grow different cuckoo hashing
+use a similar approach to dynamically grow different cuckoo hashing
 variants e.g. concurrent cuckoo tables similar to Li et
 al.~\cite{AlgorithmicImprovementsForFastConcurrentCuckooHashing} or
 Nguyen and Tsigas~\cite{LockFreeCuckooHashing}; or a de-amortized
 table proposed by Kirsch and
-Mitzenmacher~\cite{UsingAQueueToDeamortizeCuckooHashingInHardware},
+Mitzenmacher~\cite{UsingAQueueToDeAmortizeCuckooHashingInHardware},
 and refined by Arbitman et
 al.~\cite{DeAmortizedCuckooHashingProvableWorstCasePerformanceAndExperimentalResults}.
+
+............
 
 %%
 %% Bibliography
@@ -788,7 +855,7 @@ al.~\cite{DeAmortizedCuckooHashingProvableWorstCasePerformanceAndExperimentalRes
 
 %% Either use bibtex (recommended),
 
-\bibliography{lipics-v2016-sample-article}
+\bibliography{paper}
 
 %% .. or use the thebibliography environment explicitely
 
