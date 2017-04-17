@@ -146,7 +146,7 @@ struct Test
             {
                 if (pcount < pattern)
                 {
-                    if (! table.insert(ikeys[icount++], icount).second) ++errors;
+                    if (! table.insert(ikeys[icount++], i).second) ++errors;
                 }
                 else
                 {
