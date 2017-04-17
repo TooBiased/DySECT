@@ -78,6 +78,7 @@ title("Regression of MPG on Weight")
 
 ** Common Stuff
 #+BEGIN_SRC R :session
+folder="../130tests/13_04/"
 col_vec = list("black", "black",
                "dodgerblue2", "dodgerblue2",
                "red2", "red2",
@@ -97,7 +98,7 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 *** Reading Data
 #+begin_src R :session :results output
   colc <- c('it', 'al', 'bs', 'tl', 'nh', 'f_cap', 'cap', 'n_0', 'n_f' , 'tin0', 'tin1', 'tfi0', 'tfi1', 'in_err', 'fi_err', 'mem')
-  folder = "../132tests/27_03/"
+  #folder = "../132tests/27_03/"
 
   ti_egrow_raw      <- read.table(paste(folder, "ceg2l.time"         , sep="") , comment.char = "#", col.names = colc)
   ti_ceipg_raw      <- read.table(paste(folder, "ceipg2l.time"       , sep="") , comment.char = "#", col.names = colc)
@@ -381,8 +382,8 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 #+END_SRC
 
 #+RESULTS:
-: pdf
-:   2
+: null device
+:           1
 
 **** Find- Benchmark
 #+BEGIN_SRC R :session :results output
@@ -414,8 +415,8 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 #+END_SRC
 
 #+RESULTS:
-: pdf
-:   2
+: null device
+:           1
 
 **** Insert Benchmark
 #+BEGIN_SRC R :session :results output
@@ -447,14 +448,14 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 #+END_SRC
 
 #+RESULTS:
-: pdf
-:   2
+: null device
+:           1
 
 ** CRAWL TEST
 *** Reading Data
 #+begin_src R :session :results output
   colc <- c('it', 'al', 'bs', 'tl', 'nh', 'f_cap', 'cap', 'time', 'mult', 'ind', 'err', 'mem', 'mx_mem')
-  folder = "../132tests/27_03/"
+  #folder = "../132tests/27_03/"
 
   cw_egrow_raw      <- read.table(paste(folder, "ceg2l.crawl"         , sep="") , comment.char = "#", col.names = colc)
   cw_ceipg_raw      <- read.table(paste(folder, "ceipg2l.crawl"       , sep="") , comment.char = "#", col.names = colc)
@@ -535,7 +536,7 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
          yaxs='i',
          col="black", type="n", main=header, ann=FALSE)
   title(main=header)
-  title(xlab=expression(1/epsilon))
+  title(xlab=expression(1-1/epsilon))
   title(ylab="Time per operation   in ns")
 
   for (i in 1:l)
@@ -550,14 +551,14 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 #+END_SRC
 
 #+RESULTS:
-: pdf
-:   2
+: null device
+:           1
 
 ** MIX   TEST
 *** Reading Data
 #+begin_src R :session :results output
   colc <- c('it', 'al', 'bs', 'tl', 'nh', 'f_cap', 'cap', 'pat', 'n_0', 'n_f' , 'tpre', 'tmix', 'in_err', 'mem')
-  folder = "../132tests/27_03/"
+  #folder = "../132tests/27_03/"
 
   mx_egrow_raw      <- read.table(paste(folder, "ceg2l.mix"         , sep="") , comment.char = "#", col.names = colc)
   mx_ceipg_raw      <- read.table(paste(folder, "ceipg2l.mix"       , sep="") , comment.char = "#", col.names = colc)
@@ -640,8 +641,8 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 
   pdf("plots/mix.pdf", width=10, height=6)
 
-  tcap=5000000
-  tal =1.1
+  tcap=50000
+  tal =1.05263
   datalines = list(f_al(f_cap(f_ctable(mx_egrow,256,8,3), tcap), tal),
                    f_al(f_cap(f_ctable(mx_ceipg,256,8,3), tcap), tal),
 
@@ -665,7 +666,7 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
   y='ttmix'
   x='pat'
   xrange <- range(0,100)
-  yrange <- range(0, 1000)
+  yrange <- range(0, 2500)
   plot  (x=NULL, y=NULL, xlim=xrange, ylim=yrange,
          xaxs='i', yaxs='i',
          col="black", type="n", main=header, ann=FALSE)
@@ -684,58 +685,58 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 #+END_SRC
 
 #+RESULTS:
-: pdf
-:   2
+: null device
+:           1
 
 ** EPS   TEST
 *** Reading Data
 #+begin_src R :session :results output
-  colc <- c('it', 'bs', 'tl', 'nh', 'f_cap', 'n_step', 'win', 'al', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
-  folder = "../132tests/27_03/"
+  colc <- c('it', 'bs', 'tl', 'nh', 'f_cap', 'n_step', 'win', 'eps', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
+  #folder = "../132tests/27_03/"
 
   ep_egrow_raw      <- read.table(paste(folder, "ceg2l.eps"         , sep="") , comment.char = "#", col.names = colc)
   ep_ceipg_raw      <- read.table(paste(folder, "ceipg2l.eps"       , sep="") , comment.char = "#", col.names = colc)
   ep_simpl_raw      <- read.table(paste(folder, "csimple.eps"       , sep="") , comment.char = "#", col.names = colc)
   ep_cinpl_raw      <- read.table(paste(folder, "cinplace.eps"         , sep="") , comment.char = "#", col.names = colc)
 
-  colp <- c('it',                   'f_cap', 'n_step', 'win', 'al', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
+  colp <- c('it',                   'f_cap', 'n_step', 'win', 'eps', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
   ep_sprob_raw      <- read.table(paste(folder, "spaceprob.eps",      sep="") , comment.char = "#", col.names = colp)
-  colp <- c('it', 'bufs',           'f_cap', 'n_step', 'win', 'al', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
+  colp <- c('it', 'bufs',           'f_cap', 'n_step', 'win', 'eps', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
   ep_pinpl_raw      <- read.table(paste(folder, "inplaceprob.eps",    sep="") , comment.char = "#", col.names = colp)
 
-  colh <- c('it', 'ns',             'f_cap', 'n_step', 'win', 'al', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
+  colh <- c('it', 'ns',             'f_cap', 'n_step', 'win', 'eps', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
   ep_hprob_raw      <- read.table(paste(folder, "hopprob.eps",        sep="") , comment.char = "#", col.names = colh)
 
-  colp <- c('it', 'mdis',           'f_cap', 'n_step', 'win', 'al', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
+  colp <- c('it', 'mdis',           'f_cap', 'n_step', 'win', 'eps', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
   ep_rprob_raw      <- read.table(paste(folder, "robinprob.eps",      sep="") , comment.char = "#", col.names = colp)
 
-  colh <- c('it', 'ns', 'rat',      'f_cap', 'n_step', 'win', 'al', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
+  colh <- c('it', 'ns', 'rat',      'f_cap', 'n_step', 'win', 'eps', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
   ep_shops_raw      <- read.table(paste(folder, "spacehopscotch.eps", sep="") , comment.char = "#", col.names = colh)
 
   loc_groupby <- function(d)
   {
-      return( aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean) )
+      return( aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$eps), FUN=mean) )
   }
 
   d <- ep_egrow_raw
-  ep_egrow = aggregate(d, by=list(d$bs, d$tl, d$nh, d$al), FUN=mean)
+  ep_egrow = aggregate(d, by=list(d$bs, d$tl, d$nh, d$eps), FUN=mean)
   d <- ep_ceipg_raw
-  ep_ceipg = aggregate(d, by=list(d$bs, d$tl, d$nh, d$al), FUN=mean)
+  ep_ceipg = aggregate(d, by=list(d$bs, d$tl, d$nh, d$eps), FUN=mean)
   d <- ep_simpl_raw
-  ep_simpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$al), FUN=mean)
+  ep_simpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$eps), FUN=mean)
   d <- ep_cinpl_raw
-  ep_cinpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$al), FUN=mean)
+  ep_cinpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$eps), FUN=mean)
 
   d <- ep_sprob_raw
-  ep_sprob = aggregate(d, by=list(d$al), FUN=mean)
+  ep_sprob = aggregate(d, by=list(d$eps), FUN=mean)
   d <- ep_pinpl_raw
-  ep_pinpl = aggregate(d, by=list(d$al), FUN=mean)
+  ep_pinpl = aggregate(d, by=list(d$eps), FUN=mean)
   d <- ep_hprob_raw
-  ep_hprob = aggregate(d, by=list(d$ns, d$al), FUN=mean)
+  ep_hprob = aggregate(d, by=list(d$ns, d$eps), FUN=mean)
   d <- ep_rprob_raw
-  ep_rprob = aggregate(d, by=list(d$al), FUN=mean)
+  ep_rprob = aggregate(d, by=list(d$eps), FUN=mean)
   d <- ep_shops_raw
-  ep_shops = aggregate(d, by=list(d$ns, d$rat, d$al), FUN=mean)
+  ep_shops = aggregate(d, by=list(d$ns, d$rat, d$eps), FUN=mean)
 #+end_src
 
 #+RESULTS:
@@ -769,7 +770,7 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
   par(mfrow=c(3,1))  #two plots next to each other
   header="Normalized Insertion Time"
   y='tin'
-  x='al'
+  x='eps'
   xrange <- range(0.8,1)
   yrange <- range(0,80) #grows_bfs$fti)
   plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
@@ -779,9 +780,7 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 
   for (i in 1:l)
   {
-    epsilon <- (datalines[[i]][,x]-1.)/datalines[[i]][,x]
-    xline   <- 1.-epsilon
-    lines(xline, datalines[[i]][,y]*epsilon, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+    lines(datalines[[i]][,x], datepsines[[i]][,y]*(1.-datalines[[i]][,x]), col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
   }
 
 
@@ -795,9 +794,7 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 
   for (i in 1:l)
   {
-    epsilon <- (datalines[[i]][,x]-1.)/datalines[[i]][,x]
-    xline   <- 1.-epsilon
-    lines(xline, datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+    lines(datalines[[i]][,x], datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
   }
 
 
@@ -811,9 +808,7 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 
   for (i in 1:l)
   {
-    epsilon <- (datalines[[i]][,x]-1.)/datalines[[i]][,x]
-    xline   <- 1.-epsilon
-    lines(xline, datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+    lines(datalines[[i]][,x], datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
   }
 
   #dev.off()
@@ -830,7 +825,7 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 
   header="Normalized Insertion Time"
   y='tin'
-  x='al'
+  x='eps'
   xrange <- range(0.8,1)
   yrange <- range(0,80) #grows_bfs$fti)
   plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
@@ -840,23 +835,21 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 
   for (i in 1:l)
   {
-    epsilon <- (datalines[[i]][,x]-1.)/datalines[[i]][,x]
-    xline   <- 1.-epsilon
-    lines(xline, datalines[[i]][,y]*epsilon, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+    lines(datalines[[i]][,x], datalines[[i]][,y]*(1.-datalines[[i]][,x]), col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
   }
   dev.off()
 #+END_SRC
 
 #+RESULTS:
-: pdf
-:   2
+: null device
+:           1
 
 **** Find+
 #+BEGIN_SRC R :session :results output
 #graphics :file plots/eps_find_s.pdf :bg "white"
 
   pdf("plots/eps_find_s.pdf", width=5, height=4)
-  x='al'
+  x='eps'
   xrange <- range(0.8,1)
 
   header="Successful Find Operation"
@@ -869,23 +862,21 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 
   for (i in 1:l)
   {
-    epsilon <- (datalines[[i]][,x]-1.)/datalines[[i]][,x]
-    xline   <- 1.-epsilon
-    lines(xline, datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+    lines(datalines[[i]][,x], datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
   }
   dev.off()
 #+END_SRC
 
 #+RESULTS:
-: pdf
-:   2
+: null device
+:           1
 
 **** Find-
 #+BEGIN_SRC R :session :results output
 #graphics :file plots/eps_find_u.pdf :bg "white"
   pdf("plots/eps_find_u.pdf", width=5, height=4)
 
-  x='al'
+  x='eps'
   xrange <- range(0.8,1)
 
   header="Unsuccessful Find Operation"
@@ -898,9 +889,7 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 
   for (i in 1:l)
   {
-    epsilon <- (datalines[[i]][,x]-1.)/datalines[[i]][,x]
-    xline   <- 1.-epsilon
-    lines(xline, datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+    lines(datalines[[i]][,x], datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
   }
   lines  (c(-1000, 10000000),c(0,0), col="black" )
 
@@ -908,5 +897,5 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 #+END_SRC
 
 #+RESULTS:
-: pdf
-:   2
+: null device
+:           1

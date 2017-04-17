@@ -63,7 +63,7 @@ include_directories("/home/maier/RANDOM/malloc_count/")
 #### CONSTRUCT EXECUTABLE ######################################################
 #add_library(mallocc /home/maier/RANDOM/malloc_count/malloc_count.c)
 
-foreach(t time del mix reg eps crawl)
+foreach(t time del mix reg eps crawl mixd)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${t})
   foreach(h ${HASH_TABLES_LIST})  #grows cuckoo hom2lvl triv_grow linprob)
     string(TOUPPER ${h} h_uc)
@@ -74,7 +74,7 @@ foreach(t time del mix reg eps crawl)
   endforeach()
 endforeach()
 
-foreach(t time del mix reg eps crawl)
+foreach(t time del mix reg eps crawl mixd)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${t})
   foreach(h ${NON_CUCKOO_LIST})
     string(TOUPPER ${h} h_uc)

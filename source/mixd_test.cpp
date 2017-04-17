@@ -83,8 +83,11 @@ struct Test
         constexpr size_t range = (1ull<<63) -1;
 
         size_t  p_rep = n/10;
+        bool*   dbool = new bool  [pre+p_rep*pattern];
         size_t* ikeys = new size_t[pre+p_rep*pattern];
-        size_t* fkeys = new size_t[p_rep*(10-pattern)];
+        size_t* dkeys = new size_t[p_rep*(10-pattern)];
+
+        std::fill(dbool, dbool+(pre+p_rep*pattern), false);
 
         std::uniform_int_distribution<uint64_t> dis(1,range);
         std::mt19937_64 re;
@@ -95,7 +98,7 @@ struct Test
         }
         size_t pcount = 0;
         size_t icount = pre-1;
-        size_t fcount = 0;
+        size_t dcount = 0;
         for (size_t i = pre; i < p_rep*10+pre; ++i)
         {
             if (pcount < pattern)
@@ -106,14 +109,18 @@ struct Test
             {
                 std::uniform_int_distribution<uint64_t> find_dis(0,icount);
                 size_t k = find_dis(re);
-                fkeys[fcount++] = ikeys[k];
+                while (dbool[k]) k = find_dis(re);
+                dbool[k] = true;
+                dkeys[dcount++] = ikeys[k];
             }
             pcount  = (pcount < 9) ? pcount+1 : 0;
         }
+        delete[] dbool;
+
 
         std::ostream* file;
         if (name == "") file = &(std::cout);
-        else file = new std::ofstream(name + ".mix",
+        else file = new std::ofstream(name + ".mixd",
                                       std::ofstream::out | std::ofstream::app);
 
         print_headline(*file);
@@ -134,7 +141,7 @@ struct Test
             auto t1 = std::chrono::high_resolution_clock::now();
             pcount = 0;
             icount = pre;
-            fcount = 0;
+            dcount = 0;
             for (size_t i = pre; i < p_rep*10+pre; ++i)
             {
                 if (pcount < pattern)
@@ -143,8 +150,7 @@ struct Test
                 }
                 else
                 {
-                    auto temp = table.find(fkeys[fcount++]);
-                    if (temp == table.end()) ++ferrors;
+                    if (! table.erase (dkeys[dcount++])) ++ferrors;
                 }
                 pcount  = (pcount < 9) ? pcount+1 : 0;
             }
@@ -159,7 +165,7 @@ struct Test
         }
 
         delete[] ikeys;
-        delete[] fkeys;
+        delete[] dkeys;
 
         return 0;
     }
