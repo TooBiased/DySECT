@@ -459,12 +459,14 @@ private:
         std::vector<value_intern> buffer;
 
         size_type distance   = 0;
-        for (int i = index; i >= 0; ++i)
+        for (int i = index; i >= 0; --i)
         {
             auto temp = table[i];
 
             if (!temp.first)
                 continue;
+
+            table[i] = value_intern();
 
             auto nind = h(temp.first);
             if (nind < size_type(i)) { buffer.push_back(temp); continue; }

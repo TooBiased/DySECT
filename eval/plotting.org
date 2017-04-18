@@ -24,54 +24,64 @@ title("Regression of MPG on Weight")
 #+END_SRC
 
 #+RESULTS:
-: /data/HashTables/Space-Grow-Table/eval
+: /home/maier/PHD/SpaceEfficientHashing/Implementation/eval
 
 ** Define Filters
 #+BEGIN_SRC R :session
-    maskBS <- function (d, bs = 8)
-    {
-        return (d$bs == bs)
-    }
-    maskTL <- function (d, tl = 256)
-    {
-        return (d$tl == tl)
-    }
-    maskAL <- function (d, al = 1.1)
-    {
-        return (d$al == al)
-    }
-    maskNH <- function (d, nh = 2)
-    {
-        return (d$nh == nh)
-    }
-    maskCAP <- function (d, cap = 1)
-    {
-        return (d$cap == cap)
-    }
-    maskNS <- function(d, ns = 32)
-    {
-        return (d$ns ==ns)
-    }
+  maskBS <- function (d, bs = 8)
+  {
+      return (d$bs == bs)
+  }
+  maskTL <- function (d, tl = 256)
+  {
+      return (d$tl == tl)
+  }
+  maskAL <- function (d, al = 1.1)
+  {
+      return (d$al == al)
+  }
+  maskNH <- function (d, nh = 2)
+  {
+      return (d$nh == nh)
+  }
+  maskCAP <- function (d, cap = 1)
+  {
+      return (d$cap == cap)
+  }
+  maskNS <- function(d, ns = 32)
+  {
+      return (d$ns ==ns)
+  }
 
-    f_ctable <- function (d, ltl, lbs, lnh)
-    {
-        return (d[maskTL(d,ltl) & maskBS(d,lbs) & maskNH(d,lnh), ])
-    }
+  f_ctable <- function (d, ltl, lbs, lnh)
+  {
+      return (d[maskTL(d,ltl) & maskBS(d,lbs) & maskNH(d,lnh), ])
+  }
 
-    f_htable <- function (d, lns)
-    {
-        return (d[maskNS(d,lns),])
-    }
+  f_htable <- function (d, lns)
+  {
+      return (d[maskNS(d,lns),])
+  }
 
-    f_cap    <- function (d, lcap)
-    {
-        return (d[maskCAP(d, lcap), ])
-    }
+  f_cap    <- function (d, lcap)
+  {
+      return (d[maskCAP(d, lcap), ])
+  }
 
-    f_al     <- function (d, lal)
-    {
-        return (d[maskAL(d, lal), ])
-    }
+  f_al     <- function (d, lal)
+  {
+      return (d[maskAL(d, lal), ])
+  }
+
+  f_ierr    <- function (d)
+  {
+      return (d[d$in_err<100, ])
+  }
+
+  f_err     <- function (d)
+  {
+      return (d[d$err<100, ])
+  }
 #+END_SRC
 
 #+RESULTS:
@@ -82,15 +92,23 @@ folder="../130tests/13_04/"
 col_vec = list("black", "black",
                "dodgerblue2", "dodgerblue2",
                "red2", "red2",
-               "forestgreen",
-               "darkorange",
+               "forestgreen", "forestgreen",
+               "darkorange", "darkorange",
                "darkgreen")
-pch_vec = list(15,15,16,16,17,17, 4, 9,13)
-lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
+pch_vec = list(15,15,16,16,17,17, 4, 4, 9, 9,13)
+lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2)
+
+lnames=c("DySECT", "Cuckoo", "Lin Prob", "Hopscotch", "Robin Hood")
+lcol  =c("black", "dodgerblue2", "red2", "forestgreen", "darkorange")
+lpch  =c(15,16,17,4,9)
 #+END_SRC
 
 #+RESULTS:
-| 2 | 1 | 2 | 1 | 2 | 1 | 2 | 2 | 2 |
+| 15 |
+| 16 |
+| 17 |
+|  4 |
+|  9 |
 
 
 * INDIVIDUAL TESTS
@@ -98,7 +116,7 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 *** Reading Data
 #+begin_src R :session :results output
   colc <- c('it', 'al', 'bs', 'tl', 'nh', 'f_cap', 'cap', 'n_0', 'n_f' , 'tin0', 'tin1', 'tfi0', 'tfi1', 'in_err', 'fi_err', 'mem')
-  #folder = "../132tests/27_03/"
+  folder = "../130tests/13_04/"
 
   ti_egrow_raw      <- read.table(paste(folder, "ceg2l.time"         , sep="") , comment.char = "#", col.names = colc)
   ti_ceipg_raw      <- read.table(paste(folder, "ceipg2l.time"       , sep="") , comment.char = "#", col.names = colc)
@@ -112,9 +130,11 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 
   colh <- c('it', 'al', 'ns',             'f_cap', 'cap', 'n_0', 'n_f', 'tin0', 'tin1', 'tfi0', 'tfi1', 'in_err', 'fi_err', 'mem')
   ti_hprob_raw      <- read.table(paste(folder, "hopprob.time", sep="") , comment.char = "#", col.names = colh)
+  ti_hiprb_raw      <- read.table(paste(folder, "hipprob.time", sep="") , comment.char = "#", col.names = colh)
 
   colp <- c('it', 'al',           'mdis', 'f_cap', 'cap', 'n_0', 'n_f', 'tin0', 'tin1', 'tfi0', 'tfi1', 'in_err', 'fi_err', 'mem')
   ti_rprob_raw      <- read.table(paste(folder, "robinprob.time",      sep="") , comment.char = "#", col.names = colp)
+  ti_riprb_raw      <- read.table(paste(folder, "robinprob.time",      sep="") , comment.char = "#", col.names = colp)
 
   colh <- c('it', 'al', 'ns', 'rat',      'f_cap', 'cap', 'n_0', 'n_f', 'tin0', 'tin1', 'tfi0', 'tfi1', 'in_err', 'fi_err', 'mem')
   ti_shops_raw      <- read.table(paste(folder, "spacehopscotch.time", sep="") , comment.char = "#", col.names = colh)
@@ -139,8 +159,12 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
   ti_pinpl = aggregate(d, by=list(d$cap, d$al), FUN=mean)
   d <- ti_hprob_raw
   ti_hprob = aggregate(d, by=list(d$ns, d$cap, d$al), FUN=mean)
+  d <- ti_hiprb_raw
+  ti_hiprb = aggregate(d, by=list(d$ns, d$cap, d$al), FUN=mean)
   d <- ti_rprob_raw
   ti_rprob = aggregate(d, by=list(d$cap, d$al), FUN=mean)
+  d <- ti_riprb_raw
+  ti_riprb = aggregate(d, by=list(d$cap, d$al), FUN=mean)
   d <- ti_shops_raw
   ti_shops = aggregate(d, by=list(d$ns, d$rat, d$cap, d$al), FUN=mean)
 #+end_src
@@ -156,7 +180,9 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
   ti_sprob$tinf = ti_sprob$tin0 + ti_sprob$tin1
   ti_pinpl$tinf = ti_pinpl$tin0 + ti_pinpl$tin1
   ti_hprob$tinf = ti_hprob$tin0 + ti_hprob$tin1
+  ti_hiprb$tinf = ti_hiprb$tin0 + ti_hiprb$tin1
   ti_rprob$tinf = ti_rprob$tin0 + ti_rprob$tin1
+  ti_riprb$tinf = ti_riprb$tin0 + ti_riprb$tin1
   ti_shops$tinf = ti_shops$tin0 + ti_shops$tin1
 
   ti_egrow$sinf = ti_egrow$n_f / ti_egrow$tinf
@@ -166,7 +192,9 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
   ti_sprob$sinf = ti_sprob$n_f / ti_sprob$tinf
   ti_pinpl$sinf = ti_pinpl$n_f / ti_pinpl$tinf
   ti_hprob$sinf = ti_hprob$n_f / ti_hprob$tinf
+  ti_hiprb$sinf = ti_hiprb$n_f / ti_hiprb$tinf
   ti_rprob$sinf = ti_rprob$n_f / ti_rprob$tinf
+  ti_riprb$sinf = ti_riprb$n_f / ti_riprb$tinf
   ti_shops$sinf = ti_shops$n_f / ti_shops$tinf
 
   ti_egrow$sfi0 = ti_egrow$n_f / ti_egrow$tfi0
@@ -176,7 +204,9 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
   ti_sprob$sfi0 = ti_sprob$n_f / ti_sprob$tfi0
   ti_pinpl$sfi0 = ti_pinpl$n_f / ti_pinpl$tfi0
   ti_hprob$sfi0 = ti_hprob$n_f / ti_hprob$tfi0
+  ti_hiprb$sfi0 = ti_hiprb$n_f / ti_hiprb$tfi0
   ti_rprob$sfi0 = ti_rprob$n_f / ti_rprob$tfi0
+  ti_riprb$sfi0 = ti_riprb$n_f / ti_riprb$tfi0
   ti_shops$sfi0 = ti_shops$n_f / ti_shops$tfi0
 
   ti_egrow$sfi1 = ti_egrow$n_f / ti_egrow$tfi1
@@ -186,7 +216,9 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
   ti_sprob$sfi1 = ti_sprob$n_f / ti_sprob$tfi1
   ti_pinpl$sfi1 = ti_pinpl$n_f / ti_pinpl$tfi1
   ti_hprob$sfi1 = ti_hprob$n_f / ti_hprob$tfi1
+  ti_hiprb$sfi1 = ti_hiprb$n_f / ti_hiprb$tfi1
   ti_rprob$sfi1 = ti_rprob$n_f / ti_rprob$tfi1
+  ti_riprb$sfi1 = ti_riprb$n_f / ti_riprb$tfi1
   ti_shops$sfi1 = ti_shops$n_f / ti_shops$tfi1
 
   ti_egrow$sin0 = ti_egrow$n_0 / ti_egrow$tin0
@@ -196,7 +228,9 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
   ti_sprob$sin0 = ti_sprob$n_0 / ti_sprob$tin0
   ti_pinpl$sin0 = ti_pinpl$n_0 / ti_pinpl$tin0
   ti_hprob$sin0 = ti_hprob$n_0 / ti_hprob$tin0
+  ti_hiprb$sin0 = ti_hiprb$n_0 / ti_hiprb$tin0
   ti_rprob$sin0 = ti_rprob$n_0 / ti_rprob$tin0
+  ti_riprb$sin0 = ti_riprb$n_0 / ti_riprb$tin0
   ti_shops$sin0 = ti_shops$n_0 / ti_shops$tin0
 
   ti_egrow$sin1 = (ti_egrow$n_f - ti_egrow$n_0) / ti_egrow$tin1
@@ -206,7 +240,9 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
   ti_sprob$sin1 = (ti_sprob$n_f - ti_sprob$n_0) / ti_sprob$tin1
   ti_pinpl$sin1 = (ti_pinpl$n_f - ti_pinpl$n_0) / ti_pinpl$tin1
   ti_hprob$sin1 = (ti_hprob$n_f - ti_hprob$n_0) / ti_hprob$tin1
+  ti_hiprb$sin1 = (ti_hiprb$n_f - ti_hiprb$n_0) / ti_hiprb$tin1
   ti_rprob$sin1 = (ti_rprob$n_f - ti_rprob$n_0) / ti_rprob$tin1
+  ti_riprb$sin1 = (ti_riprb$n_f - ti_riprb$n_0) / ti_riprb$tin1
   ti_shops$sin1 = (ti_shops$n_f - ti_shops$n_0) / ti_shops$tin1
 #+END_SRC
 
@@ -216,20 +252,23 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 #+BEGIN_SRC R :session :results output
   tcap=50000
 
-  ti_datalines = list(f_cap(f_ctable(ti_egrow,256,8,3), tcap),
-                   f_cap(f_ctable(ti_ceipg,256,8,3), tcap),
+  ti_datalines = list(
+                   f_ierr(f_cap(f_ctable(ti_egrow,256,8,3), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_ceipg,256,8,3), tcap)),
 
-                   f_cap(f_ctable(ti_simpl,  1,8,3), tcap),
-                   f_cap(f_ctable(ti_cinpl,  1,8,3), tcap),
+                   f_ierr(f_cap(f_ctable(ti_simpl,  1,8,3), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_cinpl,  1,8,3), tcap)),
 
-                   f_cap(ti_sprob, tcap),
-                   f_cap(ti_pinpl, tcap),
+                   f_ierr(f_cap(ti_sprob, tcap)),
+                   f_ierr(f_cap(ti_pinpl, tcap)),
 
-                   f_cap(f_htable(ti_hprob, 64), tcap),
+                   f_ierr(f_cap(f_htable(ti_hprob, 64), tcap)),
+                   f_ierr(f_cap(f_htable(ti_hiprb, 64), tcap)),
 
-                   f_cap(ti_rprob, tcap),
+                   f_ierr(f_cap(ti_rprob, tcap)),
+                   f_ierr(f_cap(ti_riprb, tcap))#,
 
-                   f_cap(f_htable(ti_shops, 62), tcap)
+                   #f_cap(f_htable(ti_shops, 62), tcap)
                    )
 
   ti_l = length(ti_datalines)
@@ -359,11 +398,11 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
   pdf(file="plots/ti_find_s.pdf", width=5, height=4)
 
   x='al'
-  xrange <- range(.8,1)
+  xrange <- range(.85,1)
 
   header = "Find+ Microbenchmark"
   y='tfi0'
-  yrange <- range(0,250) #grows_bfs$fti)
+  yrange <- range(0,350) #grows_bfs$fti)
   plot  (xrange, yrange,
          yaxs='i',
          col="black", type="n", main=header, ann=FALSE)
@@ -377,6 +416,9 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
     yline   <- ti_datalines[[i]][,y] / ti_datalines[[i]][,'n_f']*1000000
     lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
   }
+
+  legend(.85, 335, lnames, lty=1, col=lcol, pch=lpch)
+
   dev.off()
 
 #+END_SRC
@@ -391,11 +433,11 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
   pdf(file="plots/ti_find_u.pdf", width=5, height=4)
 
   x='al'
-  xrange <- range(.8,1)
+  xrange <- range(.85,1)
 
   header = "Find- Microbenchmark"
   y='tfi1'
-  yrange <- range(0,250) #grows_bfs$fti)
+  yrange <- range(0,350) #grows_bfs$fti)
   plot  (xrange, yrange,
          yaxs='i',
          col="black", type="n", main=header, ann=FALSE)
@@ -411,6 +453,8 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
     lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
   }
 
+  #legend(.85, 385, lnames, lty=1, col=lcol, pch=lpch)
+
   dev.off()
 #+END_SRC
 
@@ -421,10 +465,10 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 **** Insert Benchmark
 #+BEGIN_SRC R :session :results output
 #graphics :file plots/ti_insert.pdf :bg "white"
-  pdf(file="plots/ti_insert.pdf", width=10, height=6)
+  pdf(file="plots/ti_insert.pdf", width=10, height=4)
 
   x='al'
-  xrange <- range(.8,1)
+  xrange <- range(.85,1)
 
   header = "Insert Microbenchmark"
   y='tinf'
@@ -442,6 +486,8 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
     yline   <- ti_datalines[[i]][,y]/ti_datalines[[i]][,'n_f']*1000000*epsilon
     lines(1-epsilon, yline , col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
   }
+
+  legend(.85, 240, lnames, lty=1, col=lcol, pch=lpch)
 
   dev.off()
 
@@ -469,9 +515,11 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 
   colh <- c('it', 'al', 'ns',             'f_cap', 'cap', 'time', 'mult', 'ind', 'err', 'mem', 'mx_mem')
   cw_hprob_raw      <- read.table(paste(folder, "hopprob.crawl", sep="") , comment.char = "#", col.names = colh)
+  cw_hiprb_raw      <- read.table(paste(folder, "hipprob.crawl", sep="") , comment.char = "#", col.names = colh)
 
   colp <- c('it', 'al', 'mdis',           'f_cap', 'cap', 'time', 'mult', 'ind', 'err', 'mem', 'mx_mem')
   cw_rprob_raw      <- read.table(paste(folder, "robinprob.crawl",      sep="") , comment.char = "#", col.names = colp)
+  cw_riprb_raw      <- read.table(paste(folder, "robinprob.crawl",      sep="") , comment.char = "#", col.names = colp)
 
   colh <- c('it', 'al', 'ns', 'rat',      'f_cap', 'cap', 'time', 'mult', 'ind', 'err', 'mem', 'mx_mem')
   cw_shops_raw      <- read.table(paste(folder, "spacehopscotch.crawl", sep="") , comment.char = "#", col.names = colh)
@@ -495,8 +543,12 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
   cw_pinpl = aggregate(d, by=list(d$al), FUN=mean)
   d <- cw_hprob_raw
   cw_hprob = aggregate(d, by=list(d$ns, d$al), FUN=mean)
+  d <- cw_hiprb_raw
+  cw_hiprb = aggregate(d, by=list(d$ns, d$al), FUN=mean)
   d <- cw_rprob_raw
   cw_rprob = aggregate(d, by=list(d$al), FUN=mean)
+  d <- cw_riprb_raw
+  cw_riprb = aggregate(d, by=list(d$al), FUN=mean)
   d <- cw_shops_raw
   cw_shops = aggregate(d, by=list(d$ns, d$rat, d$al), FUN=mean)
 #+end_src
@@ -508,20 +560,22 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 #+BEGIN_SRC R :session :results output
 #graphics :file plots/crawl.pdf :bg "white"
 
-  pdf(file="plots/crawl.pdf", width=10, height=6)
+  pdf(file="plots/crawl.pdf", width=10, height=4)
 
-  datalines = list(f_ctable(cw_egrow,256,8,3),
-                   f_ctable(cw_ceipg,256,8,3),
+  datalines = list(f_err(f_ctable(cw_egrow,256,8,3)),
+                   f_err(f_ctable(cw_ceipg,256,8,3)),
 
-                   f_ctable(cw_simpl,  1,8,3),
-                   f_ctable(cw_cinpl,  1,8,3),
+                   f_err(f_ctable(cw_simpl,  1,8,3)),
+                   f_err(f_ctable(cw_cinpl,  1,8,3)),
 
-                   cw_sprob,
-                   cw_pinpl,
+                   f_err(cw_sprob),
+                   f_err(cw_pinpl),
 
-                   f_htable(cw_hprob, 64),
+                   f_err(f_htable(cw_hprob, 64)),
+                   f_err(f_htable(cw_hiprb, 64)),
 
-                   cw_rprob)
+                   f_err(cw_rprob),
+                   f_err(cw_riprb))
 
   l=length(datalines)
 
@@ -530,13 +584,13 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
   header = "Word Count Throughput"
   y='time'
   x='al'
-  xrange <- range(.8, 1)
+  xrange <- range(.85, 1)
   yrange <- range(0,800) #grows_bfs$fti)
   plot  (xrange, yrange,
          yaxs='i',
          col="black", type="n", main=header, ann=FALSE)
   title(main=header)
-  title(xlab=expression(1-1/epsilon))
+  title(xlab=expression(paste("load  ", 1-1/epsilon)))
   title(ylab="Time per operation   in ns")
 
   for (i in 1:l)
@@ -545,6 +599,8 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
     yline <- datalines[[i]][,y]/(datalines[[i]][,'mult'] + datalines[[i]][,'ind']) *1000000
     lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
   }
+
+  legend(.85, 750, lnames, lty=1, col=lcol, pch=lpch)
 
   dev.off()
 
@@ -558,7 +614,7 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 *** Reading Data
 #+begin_src R :session :results output
   colc <- c('it', 'al', 'bs', 'tl', 'nh', 'f_cap', 'cap', 'pat', 'n_0', 'n_f' , 'tpre', 'tmix', 'in_err', 'mem')
-  #folder = "../132tests/27_03/"
+  folder = "../130tests/13_04/"
 
   mx_egrow_raw      <- read.table(paste(folder, "ceg2l.mix"         , sep="") , comment.char = "#", col.names = colc)
   mx_ceipg_raw      <- read.table(paste(folder, "ceipg2l.mix"       , sep="") , comment.char = "#", col.names = colc)
@@ -572,9 +628,11 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 
   colh <- c('it', 'al', 'ns',             'f_cap', 'cap', 'pat', 'n_0', 'n_f', 'tpre', 'tmix', 'in_err', 'mem')
   mx_hprob_raw      <- read.table(paste(folder, "hopprob.mix", sep="") , comment.char = "#", col.names = colh)
+  mx_hiprb_raw      <- read.table(paste(folder, "hipprob.mix", sep="") , comment.char = "#", col.names = colh)
 
   colp <- c('it', 'al',           'mdis', 'f_cap', 'cap', 'pat', 'n_0', 'n_f', 'tpre', 'tmix', 'in_err', 'mem')
   mx_rprob_raw      <- read.table(paste(folder, "robinprob.mix",      sep="") , comment.char = "#", col.names = colp)
+  mx_riprb_raw      <- read.table(paste(folder, "robinprob.mix",        sep="") , comment.char = "#", col.names = colp)
 
   colh <- c('it', 'al', 'ns', 'rat',      'f_cap', 'cap', 'pat', 'n_0', 'n_f', 'tpre', 'tmix', 'in_err', 'mem')
   mx_shops_raw      <- read.table(paste(folder, "spacehopscotch.mix", sep="") , comment.char = "#", col.names = colh)
@@ -600,9 +658,13 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 
   d <- mx_hprob_raw
   mx_hprob = aggregate(d, by=list(d$ns, d$cap, d$al, d$pat), FUN=mean)
+  d <- mx_hiprb_raw
+  mx_hiprb = aggregate(d, by=list(d$ns, d$cap, d$al, d$pat), FUN=mean)
 
   d <- mx_rprob_raw
   mx_rprob = aggregate(d, by=list(d$cap, d$al, d$pat), FUN=mean)
+  d <- mx_riprb_raw
+  mx_riprb = aggregate(d, by=list(d$cap, d$al, d$pat), FUN=mean)
 
   d <- mx_shops_raw
   mx_shops = aggregate(d, by=list(d$ns, d$rat, d$cap, d$al, d$pat), FUN=mean)
@@ -619,7 +681,9 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
   mx_sprob$smix = mx_sprob$n_f / mx_sprob$tmix
   mx_pinpl$smix = mx_pinpl$n_f / mx_pinpl$tmix
   mx_hprob$smix = mx_hprob$n_f / mx_hprob$tmix
+  mx_hiprb$smix = mx_hiprb$n_f / mx_hiprb$tmix
   mx_rprob$smix = mx_rprob$n_f / mx_rprob$tmix
+  mx_riprb$smix = mx_riprb$n_f / mx_riprb$tmix
   mx_shops$smix = mx_shops$n_f / mx_shops$tmix
 
   mx_egrow$ttmix = mx_egrow$tmix / mx_egrow$n_f * 1000000
@@ -629,7 +693,9 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
   mx_sprob$ttmix = mx_sprob$tmix / mx_sprob$n_f * 1000000
   mx_pinpl$ttmix = mx_pinpl$tmix / mx_pinpl$n_f * 1000000
   mx_hprob$ttmix = mx_hprob$tmix / mx_hprob$n_f * 1000000
+  mx_hiprb$ttmix = mx_hiprb$tmix / mx_hiprb$n_f * 1000000
   mx_rprob$ttmix = mx_rprob$tmix / mx_rprob$n_f * 1000000
+  mx_riprb$ttmix = mx_riprb$tmix / mx_riprb$n_f * 1000000
   mx_shops$ttmix = mx_shops$tmix / mx_shops$n_f * 1000000
 #+end_src
 
@@ -639,24 +705,27 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 #+BEGIN_SRC R :session :results output
 #graphics :file plots/mix.pdf :bg "white"
 
-  pdf("plots/mix.pdf", width=10, height=6)
+  pdf("plots/mix.pdf", width=5, height=4)
 
   tcap=50000
   tal =1.05263
-  datalines = list(f_al(f_cap(f_ctable(mx_egrow,256,8,3), tcap), tal),
-                   f_al(f_cap(f_ctable(mx_ceipg,256,8,3), tcap), tal),
+  datalines = list(f_ierr(f_al(f_cap(f_ctable(mx_egrow,256,8,3), tcap), tal)),
+                   f_ierr(f_al(f_cap(f_ctable(mx_ceipg,256,8,3), tcap), tal)),
 
-                   f_al(f_cap(f_ctable(mx_simpl,  1,8,3), tcap), tal),
-                   f_al(f_cap(f_ctable(mx_cinpl,  1,8,3), tcap), tal),
+                   f_ierr(f_al(f_cap(f_ctable(mx_simpl,  1,8,3), tcap), tal)),
+                   f_ierr(f_al(f_cap(f_ctable(mx_cinpl,  1,8,3), tcap), tal)),
 
-                   f_al(f_cap(mx_sprob, tcap), tal),
-                   f_al(f_cap(mx_pinpl, tcap), tal),
+                   f_ierr(f_al(f_cap(mx_sprob, tcap), tal)),
+                   f_ierr(f_al(f_cap(mx_pinpl, tcap), tal)),
 
-                   f_al(f_cap(f_htable(mx_hprob, 64), tcap), tal),
+                   f_ierr(f_al(f_cap(f_htable(mx_hprob, 64), tcap), tal)),
+                   f_ierr(f_al(f_cap(f_htable(mx_hiprb, 64), tcap), tal)),
 
-                   f_al(f_cap(mx_rprob, tcap), tal),
+                   f_ierr(f_al(f_cap(mx_rprob, tcap), tal)),
+                   f_ierr(f_al(f_cap(mx_riprb, tcap), tal))#,
 
-                   f_al(f_cap(f_htable(mx_shops, 62), tcap), tal))
+                   #f_al(f_cap(f_htable(mx_shops, 62), tcap), tal)
+)
 
   l=length(datalines)
 
@@ -666,7 +735,7 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
   y='ttmix'
   x='pat'
   xrange <- range(0,100)
-  yrange <- range(0, 2500)
+  yrange <- range(0, 3000)
   plot  (x=NULL, y=NULL, xlim=xrange, ylim=yrange,
          xaxs='i', yaxs='i',
          col="black", type="n", main=header, ann=FALSE)
@@ -680,6 +749,157 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
     lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
   }
 
+  legend(2, 2900, lnames, lty=1, col=lcol, pch=lpch)
+
+  dev.off()
+
+#+END_SRC
+
+#+RESULTS:
+: null device
+:           1
+
+** MIXD   TEST
+*** Reading Data
+#+begin_src R :session :results output
+  colc <- c('it', 'al', 'bs', 'tl', 'nh', 'f_cap', 'cap', 'pat', 'n_0', 'n_f' , 'tpre', 'tmix', 'in_err', 'mem')
+  folder = "../130tests/18_04/"
+
+  md_egrow_raw      <- read.table(paste(folder, "ceg2l.mixd"         , sep="") , comment.char = "#", col.names = colc)
+  md_ceipg_raw      <- read.table(paste(folder, "ceipg2l.mixd"       , sep="") , comment.char = "#", col.names = colc)
+  md_simpl_raw      <- read.table(paste(folder, "csimple.mixd"       , sep="") , comment.char = "#", col.names = colc)
+  md_cinpl_raw      <- read.table(paste(folder, "cinplace.mixd"      , sep="") , comment.char = "#", col.names = colc)
+
+  colp <- c('it', 'al',                   'f_cap', 'cap', 'pat', 'n_0', 'n_f', 'tpre', 'tmix', 'in_err', 'mem')
+  md_sprob_raw      <- read.table(paste(folder, "spaceprob.mixd",      sep="") , comment.char = "#", col.names = colp)
+  colp <- c('it', 'al', 'bufs',           'f_cap', 'cap', 'pat', 'n_0', 'n_f', 'tpre', 'tmix', 'in_err', 'mem')
+  md_pinpl_raw      <- read.table(paste(folder, "inplaceprob.mixd",    sep="") , comment.char = "#", col.names = colp)
+
+  colh <- c('it', 'al', 'ns',             'f_cap', 'cap', 'pat', 'n_0', 'n_f', 'tpre', 'tmix', 'in_err', 'mem')
+  md_hprob_raw      <- read.table(paste(folder, "hopprob.mixd", sep="") , comment.char = "#", col.names = colh)
+  md_hiprb_raw      <- read.table(paste(folder, "hipprob.mixd", sep="") , comment.char = "#", col.names = colh)
+
+  colp <- c('it', 'al',           'mdis', 'f_cap', 'cap', 'pat', 'n_0', 'n_f', 'tpre', 'tmix', 'in_err', 'mem')
+  md_rprob_raw      <- read.table(paste(folder, "robinprob.mixd",      sep="") , comment.char = "#", col.names = colp)
+  md_riprb_raw      <- read.table(paste(folder, "robinprob.mixd",        sep="") , comment.char = "#", col.names = colp)
+
+  colh <- c('it', 'al', 'ns', 'rat',      'f_cap', 'cap', 'pat', 'n_0', 'n_f', 'tpre', 'tmix', 'in_err', 'mem')
+  md_shops_raw      <- read.table(paste(folder, "spacehopscotch.mixd", sep="") , comment.char = "#", col.names = colh)
+
+  loc_groupby <- function(d)
+  {
+      return( aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean) )
+  }
+
+  d <- md_egrow_raw
+  md_egrow = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al, d$pat), FUN=mean)
+  d <- md_ceipg_raw
+  md_ceipg = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al, d$pat), FUN=mean)
+  d <- md_simpl_raw
+  md_simpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al, d$pat), FUN=mean)
+  d <- md_cinpl_raw
+  md_cinpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al, d$pat), FUN=mean)
+
+  d <- md_sprob_raw
+  md_sprob = aggregate(d, by=list(d$cap, d$al, d$pat), FUN=mean)
+  d <- md_pinpl_raw
+  md_pinpl = aggregate(d, by=list(d$cap, d$al, d$pat), FUN=mean)
+
+  d <- md_hprob_raw
+  md_hprob = aggregate(d, by=list(d$ns, d$cap, d$al, d$pat), FUN=mean)
+  d <- md_hiprb_raw
+  md_hiprb = aggregate(d, by=list(d$ns, d$cap, d$al, d$pat), FUN=mean)
+
+  d <- md_rprob_raw
+  md_rprob = aggregate(d, by=list(d$cap, d$al, d$pat), FUN=mean)
+  d <- md_riprb_raw
+  md_riprb = aggregate(d, by=list(d$cap, d$al, d$pat), FUN=mean)
+
+  d <- md_shops_raw
+  md_shops = aggregate(d, by=list(d$ns, d$rat, d$cap, d$al, d$pat), FUN=mean)
+#+end_src
+
+#+RESULTS:
+
+*** Additional Columns
+#+begin_src R :session :results output
+  md_egrow$smix = md_egrow$n_f / md_egrow$tmix
+  md_ceipg$smix = md_ceipg$n_f / md_ceipg$tmix
+  md_simpl$smix = md_simpl$n_f / md_simpl$tmix
+  md_cinpl$smix = md_cinpl$n_f / md_cinpl$tmix
+  md_sprob$smix = md_sprob$n_f / md_sprob$tmix
+  md_pinpl$smix = md_pinpl$n_f / md_pinpl$tmix
+  md_hprob$smix = md_hprob$n_f / md_hprob$tmix
+  md_hiprb$smix = md_hiprb$n_f / md_hiprb$tmix
+  md_rprob$smix = md_rprob$n_f / md_rprob$tmix
+  md_riprb$smix = md_riprb$n_f / md_riprb$tmix
+  md_shops$smix = md_shops$n_f / md_shops$tmix
+
+  md_egrow$ttmix = md_egrow$tmix / md_egrow$n_f * 1000000
+  md_ceipg$ttmix = md_ceipg$tmix / md_ceipg$n_f * 1000000
+  md_simpl$ttmix = md_simpl$tmix / md_simpl$n_f * 1000000
+  md_cinpl$ttmix = md_cinpl$tmix / md_cinpl$n_f * 1000000
+  md_sprob$ttmix = md_sprob$tmix / md_sprob$n_f * 1000000
+  md_pinpl$ttmix = md_pinpl$tmix / md_pinpl$n_f * 1000000
+  md_hprob$ttmix = md_hprob$tmix / md_hprob$n_f * 1000000
+  md_hiprb$ttmix = md_hiprb$tmix / md_hiprb$n_f * 1000000
+  md_rprob$ttmix = md_rprob$tmix / md_rprob$n_f * 1000000
+  md_riprb$ttmix = md_riprb$tmix / md_riprb$n_f * 1000000
+  md_shops$ttmix = md_shops$tmix / md_shops$n_f * 1000000
+#+end_src
+
+#+RESULTS:
+
+*** Shared Plot
+#+BEGIN_SRC R :session :results output
+#graphics :file plots/mix.pdf :bg "white"
+
+  pdf("plots/mixd.pdf", width=5, height=4)
+
+  tcap=50000
+  tal =1.05263
+  datalines = list(f_ierr(f_al(f_cap(f_ctable(md_egrow,256,8,3), tcap), tal)),
+                   f_ierr(f_al(f_cap(f_ctable(md_ceipg,256,8,3), tcap), tal)),
+
+                   f_ierr(f_al(f_cap(f_ctable(md_simpl,  1,8,3), tcap), tal)),
+                   f_ierr(f_al(f_cap(f_ctable(md_cinpl,  1,8,3), tcap), tal)),
+
+                   f_ierr(f_al(f_cap(md_sprob, tcap), tal)),
+                   f_ierr(f_al(f_cap(md_pinpl, tcap), tal)),
+
+                   f_ierr(f_al(f_cap(f_htable(md_hprob, 64), tcap), tal)),
+                   f_ierr(f_al(f_cap(f_htable(md_hiprb, 64), tcap), tal)),
+
+                   f_ierr(f_al(f_cap(md_rprob, tcap), tal)),
+                   f_ierr(f_al(f_cap(md_riprb, tcap), tal))#,
+
+#                   f_al(f_cap(f_htable(md_shops, 62), tcap), tal)
+)
+
+  l=length(datalines)
+
+  par(mfrow=c(1,1))  #two plots next to each other
+
+  header = "Mixed Tests Insert and Erase"
+  y='ttmix'
+  x='pat'
+  xrange <- range(50,100)
+  yrange <- range(0, 5500)
+  plot  (x=NULL, y=NULL, xlim=xrange, ylim=yrange,
+         xaxs='i', yaxs='i',
+         col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab="fraction of insert operations   in %")
+  title(ylab="average time per operation   in ns")
+  for (i in 1:l)
+  {
+    xline <- datalines[[i]][,x] * 10
+    yline <- datalines[[i]][,y]
+    lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+  #legend(52, 5400, lnames, lty=1, col=lcol, pch=lpch)
+
   dev.off()
 
 #+END_SRC
@@ -692,7 +912,7 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 *** Reading Data
 #+begin_src R :session :results output
   colc <- c('it', 'bs', 'tl', 'nh', 'f_cap', 'n_step', 'win', 'eps', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
-  #folder = "../132tests/27_03/"
+  folder = "../130tests/18_04/"
 
   ep_egrow_raw      <- read.table(paste(folder, "ceg2l.eps"         , sep="") , comment.char = "#", col.names = colc)
   ep_ceipg_raw      <- read.table(paste(folder, "ceipg2l.eps"       , sep="") , comment.char = "#", col.names = colc)
@@ -706,9 +926,11 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 
   colh <- c('it', 'ns',             'f_cap', 'n_step', 'win', 'eps', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
   ep_hprob_raw      <- read.table(paste(folder, "hopprob.eps",        sep="") , comment.char = "#", col.names = colh)
+  ep_hiprb_raw      <- read.table(paste(folder, "hipprob.eps",        sep="") , comment.char = "#", col.names = colh)
 
   colp <- c('it', 'mdis',           'f_cap', 'n_step', 'win', 'eps', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
   ep_rprob_raw      <- read.table(paste(folder, "robinprob.eps",      sep="") , comment.char = "#", col.names = colp)
+  ep_riprb_raw      <- read.table(paste(folder, "robinprob.eps",      sep="") , comment.char = "#", col.names = colp)
 
   colh <- c('it', 'ns', 'rat',      'f_cap', 'n_step', 'win', 'eps', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
   ep_shops_raw      <- read.table(paste(folder, "spacehopscotch.eps", sep="") , comment.char = "#", col.names = colh)
@@ -733,8 +955,12 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
   ep_pinpl = aggregate(d, by=list(d$eps), FUN=mean)
   d <- ep_hprob_raw
   ep_hprob = aggregate(d, by=list(d$ns, d$eps), FUN=mean)
+  d <- ep_hiprb_raw
+  ep_hiprb = aggregate(d, by=list(d$ns, d$eps), FUN=mean)
   d <- ep_rprob_raw
   ep_rprob = aggregate(d, by=list(d$eps), FUN=mean)
+  d <- ep_riprb_raw
+  ep_riprb = aggregate(d, by=list(d$eps), FUN=mean)
   d <- ep_shops_raw
   ep_shops = aggregate(d, by=list(d$ns, d$rat, d$eps), FUN=mean)
 #+end_src
@@ -753,8 +979,10 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
                    ep_pinpl,
 
                    f_htable(ep_hprob, 64),
+                   f_htable(ep_hiprb, 64),
 
-                   ep_rprob#,
+                   ep_rprob,
+                   ep_riprb#,
                    #hhh(ep_shops, 62)
                    )
   l=length(datalines)
@@ -821,7 +1049,7 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 #+BEGIN_SRC R :session :results output
 #graphics :file plots/eps_insert.pdf :bg "white"
 
-  pdf("plots/eps_insert.pdf", width=10, height=6)
+  pdf("plots/eps_insert.pdf", width=10, height=5)
 
   header="Normalized Insertion Time"
   y='tin'
@@ -837,6 +1065,9 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
   {
     lines(datalines[[i]][,x], datalines[[i]][,y]*(1.-datalines[[i]][,x]), col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
   }
+
+  legend(.8, 75, lnames, lty=1, col=lcol, pch=lpch)
+
   dev.off()
 #+END_SRC
 
@@ -854,7 +1085,7 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 
   header="Successful Find Operation"
   y='tfi'
-  yrange <- range(0,300) #grows_bfs$fti)
+  yrange <- range(0,400) #grows_bfs$fti)
   plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
   title(main=header)
   title(xlab=expression(paste("load factor  ", 1-epsilon)))
@@ -862,8 +1093,11 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 
   for (i in 1:l)
   {
-    lines(datalines[[i]][,x], datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+    lines(datalines[[i]][,x], datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]], cex=0.5)
   }
+
+  legend(.8, 380, lnames, lty=1, col=lcol, pch=lpch)
+
   dev.off()
 #+END_SRC
 
@@ -881,7 +1115,7 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 
   header="Unsuccessful Find Operation"
   y='tfu'
-  yrange <- range(0,300) #grows_bfs$fti)
+  yrange <- range(0,400) #grows_bfs$fti)
   plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
   title(main=header)
   title(xlab=expression(paste("load factor  ", 1-epsilon)))
@@ -889,9 +1123,10 @@ lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 2, 2)
 
   for (i in 1:l)
   {
-    lines(datalines[[i]][,x], datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+    lines(datalines[[i]][,x], datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]], cex=0.5)
   }
-  lines  (c(-1000, 10000000),c(0,0), col="black" )
+
+  #legend(.8, 380, lnames, lty=1, col=lcol, pch=lpch)
 
   dev.off()
 #+END_SRC
