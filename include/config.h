@@ -37,7 +37,7 @@ public:
 class no_hist_count
 {
 public:
-    no_hist_count(size_t) { }
+    no_hist_count(size_t = 0) { }
     void add(size_t) { }
     static constexpr size_t  steps = 0;
     static constexpr size_t* hist  = nullptr;
