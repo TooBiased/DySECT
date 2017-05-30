@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include "prob_base.h"
@@ -92,6 +93,9 @@ public:
 
 
 
+template<class K0, class D0, class HF0, class Conf0>
+class LinProbIndependentBase;
+
 /* Using Classic Linear Probing to Fill a Table Densely ***********************/
 template <class K, class D, class HF = std::hash<K>,
           class Conf = Config<> >
@@ -103,13 +107,15 @@ private:
 
     friend Base_t;
 
+    using weird = LinProbIndependentBase<K,D,HF,Conf>;
+    friend weird;
 public:
     using size_type   = typename Base_t::size_type;
     using key_type    = typename ProbTraits<This_t>::key_type;
     using mapped_type = typename ProbTraits<This_t>::mapped_type;
 
     SpaceLinProb(size_type cap = 0, double size_constraint = 1.1, size_type /*steps*/=0)
-        : Base_t(cap, size_constraint)
+        : Base_t(std::max<size_type>(cap, 500), size_constraint)
     {
         factor = double(capacity-300)/double(1ull << 32);
     }
@@ -123,10 +129,12 @@ private:
     using Base_t::n;
     using Base_t::capacity;
     using Base_t::table;
+    using Base_t::h;
 
     double factor;
 
     static constexpr size_type bitmask = (1ull<<32)-1;
+
 
     // Access Functions ********************************************************
     inline size_type index(size_type i) const { return (bitmask & i)*factor; }
@@ -147,6 +155,26 @@ private:
         }
 
         (*this) = std::move(ntable);
+    }
+
+    // Specialized Deletion stuff **********************************************
+
+    inline void propagate_remove(const size_type hole)
+    {
+        size_type thole = hole;
+        for (size_type i = hole+1; ; ++i)
+        {
+            auto temp = table[i];
+
+            if ( temp.first == 0 ) break;
+            auto tind = h(temp.first);
+            if (tind <= thole)
+            {
+                table[thole] = temp;
+                thole = i;
+            }
+        }
+        table[thole] = std::make_pair(0,0);
     }
 };
 
@@ -290,6 +318,26 @@ private:
             }
             buffer.clear();
         }
+    }
+
+    // Specialized Deletion stuff **********************************************
+
+    inline void propagate_remove(const size_type hole)
+    {
+        size_type thole = hole;
+        for (size_type i = hole+1; ; ++i)
+        {
+            auto temp = table[i];
+
+            if ( temp.first == 0 ) break;
+            auto tind = h(temp.first);
+            if (tind <= thole)
+            {
+                table[thole] = temp;
+                thole = i;
+            }
+        }
+        table[thole] = std::make_pair(0,0);
     }
 
 public:

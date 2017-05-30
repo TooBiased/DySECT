@@ -172,6 +172,11 @@ public:
         out.width(9); out << "f_cap";
         out << std::flush;
     }
+
+    void explicit_grow()
+    {
+        static_cast<Specialized_t*>(this)->grow();
+    }
 };
 
 

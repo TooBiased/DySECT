@@ -2,6 +2,9 @@
 
 #include "prob_base.h"
 
+template <class K, class D, class HF, class Conf>
+class RobProbIndependentBase;
+
 template <class K, class D, class HF = std::hash<K>,
           class Conf = Config<> >
 class RobinProb : public ProbTraits<RobinProb<K,D,HF,Conf> >::Base_t
@@ -12,6 +15,8 @@ private:
 
     friend Base_t;
 
+    using indep_var = RobProbIndependentBase<K,D,HF,Conf>;
+    friend indep_var;
 public:
     using size_type      = typename Base_t::size_type;
     using key_type       = typename ProbTraits<This_t>::key_type;
@@ -21,7 +26,7 @@ public:
 
     RobinProb(size_type cap = 0      , double size_constraint = 1.1,
               size_type /*dis_steps*/ = 0, size_type /*seed*/ = 0)
-        : Base_t(cap, size_constraint),
+        : Base_t(std::max<size_type>(cap, 500), size_constraint),
           pdistance(0)
     {
         factor = double(capacity-300)/double(1ull << 32);

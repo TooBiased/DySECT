@@ -34,8 +34,9 @@ public:
         : tab(parent), re(std::move(rhs.re)), steps(rhs.steps)
     { }
 
-    inline std::pair<int, value_intern*> insert(value_intern t, Hashed_t hash)
+    inline std::pair<int, value_intern*> insert(std::pair<key_type,mapped_type> t, Hashed_t hash)
     {
+
         std::vector<std::pair<value_intern, Bucket_t*> > queue;
         std::uniform_int_distribution<size_t> bin(0,nh-1);
         std::uniform_int_distribution<size_t> bsd(0,tab.bs-1);
@@ -69,9 +70,7 @@ public:
             }
         }
 
-        if (! tb->space()) { return std::make_pair<-1, nullptr>; }
-
-        //hist[queue.size() - 1] += 1;
+        if (! tb->space()) { return std::make_pair(-1, nullptr); }
 
         for (size_t i = queue.size()-1; i > 0; --i)
         {
@@ -82,7 +81,7 @@ public:
 
         }
 
-        value_intern* pos = queue[0].second->insert(t);
+        value_intern* pos = queue[0].second->insertPtr(t);
 
         return std::make_pair((pos) ? i : -1, pos);
     }

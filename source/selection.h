@@ -18,7 +18,10 @@
      !HIPPROB         && \
      !HOPSCOTCH       && \
      !SPACEHOPSCOTCH  && \
-     !STD_UNORDERED)
+     !STD_UNORDERED   && \
+     !STRCTPROB       && \
+     !STRCTCUCKOO     && \
+     !STRCTROBIN)
 #warning WARNING: No table chosen using! CEG2L
 #define CEG2L
 #endif // NO HASHTYPE DEFINED => GROWS
@@ -129,6 +132,24 @@
 #define HASHTYPE STDProb
 #endif // STD_UNORDERED
 
+#ifdef STRCTPROB
+#define TRIV_CONFIG
+#include "include/prob_independent_base.h"
+#define HASHTYPE LinProbIndependentBase
+#endif
+
+#ifdef STRCTCUCKOO
+#define MULTI
+#include "include/cuckoo_simple.h"
+#define HASHTYPE CuckooIndependentBase
+#endif
+
+#ifdef STRCTROBIN
+#define TRIV_CONFIG
+#include "include/prob_independent_base.h"
+#define HASHTYPE RobProbIndependentBase
+#endif
+
 #ifdef MULTI
 #include "include/displacement_strategies/summary.h"
 #endif // MULTI
@@ -156,8 +177,8 @@ struct Chooser
     inline static typename std::result_of<Functor<Config<> >(Types&& ...)>::type
     execute(CommandLine& c, Types&& ... param)
     {
-        return executeD<Functor, Hist, DisBFS>     ( c, std::forward<Types>(param)...);
-        /*
+        //return executeD<Functor, Hist, DisRWalk>     ( c, std::forward<Types>(param)...);
+        ///*
         if      (c.boolArg("-bfs"))
             return executeD<Functor, Hist, DisBFS>     ( c, std::forward<Types>(param)...);
         else if (c.boolArg("-rwalk"))
@@ -166,8 +187,8 @@ struct Chooser
             return executeD<Functor, Hist, DisCycRWalk>( c, std::forward<Types>(param)...);
 
         std::cout << "ERROR: choose displacement Strategy (use triv)" << std::endl;
-        return executeD<Functor, Hist, dstrat_triv>(c, std::forward<Types>(param)...);
-        */
+        return executeD<Functor, Hist, DisBFS>(c, std::forward<Types>(param)...);
+        //*/
     }
 
     template<template<class> class Functor, class Hist, template<class> class Displacer, class ... Types>
@@ -185,10 +206,12 @@ struct Chooser
             return executeDT<Functor, Hist, Displacer,  256> (c, std::forward<Types>(param)...);
         // case 512:
         //     return executeDT<Functor, Hist, Displacer,  512> (c, std::forward<Types>(param)...);
-        // case 1024:
-        //     return executeDT<Functor, Hist, Displacer, 1024> (c, std::forward<Types>(param)...);
+        case 1024:
+            return executeDT<Functor, Hist, Displacer, 1024> (c, std::forward<Types>(param)...);
         // case 2048:
         //     return executeDT<Functor, Hist, Displacer, 2048> (c, std::forward<Types>(param)...);
+        case 4096:
+            return executeDT<Functor, Hist, Displacer, 4096> (c, std::forward<Types>(param)...);
         default:
             constexpr auto ttl = Config<>::tl;
             std::cout << "ERROR: unknown TL value (use "

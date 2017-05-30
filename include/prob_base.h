@@ -223,7 +223,7 @@ ProbBase<SpProb>::erase(const key_type& k)
         {
             dec_n();
             table[ti] = std::make_pair(0,0);
-            propagate_remove(ti);
+            static_cast<SpProb*>(this)->propagate_remove(ti);
             return 1;
         }
     }
