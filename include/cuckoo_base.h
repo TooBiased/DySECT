@@ -161,7 +161,6 @@ private:
 
 public:
     // auxiliary functions for testing *****************************************
-    std::pair<size_type, Bucket_t*> getTable(size_type i);
     void                  clearHist();
     void                  print_init_data(std::ostream& out);
     static void           print_init_header(std::ostream& out)
@@ -353,14 +352,6 @@ inline void CuckooMultiBase<SCuckoo>::print_init_data(std::ostream& out)
     out.width(6); out << nh;
     out.width(9); out << capacity;
     out << std::flush;
-}
-
-template<class SCuckoo>
-inline std::pair<typename CuckooMultiBase<SCuckoo>::size_type,
-                 typename CuckooMultiBase<SCuckoo>::Bucket_t*>
-CuckooMultiBase<SCuckoo>::getTable(size_type i)
-{
-    return static_cast<Specialized_t*>(this)->getTable(i);
 }
 
 template<class SCuckoo>

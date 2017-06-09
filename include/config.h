@@ -51,6 +51,7 @@ struct Config
     static constexpr size_t bs = BS;
     static constexpr size_t tl = TL;
     static constexpr size_t nh = NH;
+    static constexpr size_t sbs = 4;
 
     template <class T>
     using DisStrat_temp = DisStrat<T>;
