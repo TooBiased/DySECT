@@ -15,7 +15,7 @@ set_property(CACHE GROWS_HASHFCT PROPERTY STRINGS XXHASH MURMUR2 MURMUR3 CRC)
 
 include_directories(.)
 
-set (CMAKE_CXX_FLAGS "-std=c++14 -msse4.2 -Wall -Wextra -O3 -g")
+set (CMAKE_CXX_FLAGS "-std=c++14 -msse4.2 -Wall -Wextra -O0 -g")
 
 #### HASH FUNCTIONS ############################################################
 
@@ -42,7 +42,7 @@ endif()
 #### HASH TABLES ###############################################################
 
 set(DYSECT_LIST "ceg2l;ceipg2l")
-set(HASH_TABLES_LIST "ceg2l;csimple;chomogeneous2l;cindependent2l;cinplace;ceipg2l;strctcuckoo")
+set(HASH_TABLES_LIST "ceg2l;csimple;cover;coverip;chomogeneous2l;cindependent2l;cinplace;ceipg2l;strctcuckoo")
 set(NON_CUCKOO_LIST  "linprob;spaceprob;robinprob;ripprob;hopprob;hipprob;std_unordered;inplaceprob;testtab;strctprob;strctrobin")
 
 find_package(tslHopscotch)

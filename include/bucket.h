@@ -176,7 +176,7 @@ inline std::pair<K,D>* Bucket<K,D,BS>::findPtr(const Key& k)
 {
     for (size_t i = 0; i < BS; ++i)
     {
-        if (!elements[i].first )      return nullptr;
+        //if (!elements[i].first )      return nullptr;
         if ( elements[i].first == k ) return &elements[i];
     }
     return nullptr;
@@ -187,7 +187,7 @@ inline const std::pair<K,D>* Bucket<K,D,BS>::findPtr(const Key& k) const
 {
     for (size_t i = 0; i < BS; ++i)
     {
-        if (!elements[i].first )      return nullptr;
+        //if (!elements[i].first )      return nullptr;
         if ( elements[i].first == k ) return &elements[i];
     }
     return nullptr;

@@ -5,6 +5,8 @@
 #if (!TESTTAB         && \
      !CSIMPLE         && \
      !CINPLACE        && \
+     !COVER           && \
+     !COVERIP         && \
      !CEG2L           && \
      !CEIPG2L         && \
      !CHOMOGENEOUS2L  && \
@@ -100,6 +102,18 @@
 #define HASHTYPE CuckooSimple
 #endif // CSIMPLE
 
+#ifdef COVER
+#define MULTI
+#include "include/cuckoo_continous.h"
+#define HASHTYPE cuckoo_overlap
+#endif // CSIMPLE
+
+#ifdef COVERIP
+#define MULTI
+#include "include/cuckoo_continous.h"
+#define HASHTYPE cuckoo_inplace_overlap
+#endif // CSIMPLE
+
 #ifdef CEG2L
 #define MULTI
 //#define QUICK_MULTI
@@ -182,7 +196,7 @@ struct Chooser
         if      (c.boolArg("-bfs"))
             return executeD<Functor, Hist, DisBFS>     ( c, std::forward<Types>(param)...);
         else if (c.boolArg("-rwalk"))
-            return executeD<Functor, Hist, DisRWalk>   ( c, std::forward<Types>(param)...);
+            return executeD<Functor, Hist, DisRWalkOpt>   ( c, std::forward<Types>(param)...);
         else if (c.boolArg("-rwalkcyc"))
             return executeD<Functor, Hist, DisCycRWalk>( c, std::forward<Types>(param)...);
 

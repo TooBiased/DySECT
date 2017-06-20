@@ -1,7 +1,7 @@
 #pragma once
 
 #include "cuckoo_base.h"
-#include "cbucket.h"
+#include "cobucket.h"
 
 template<class K0, class D0, class HF0, class Conf0>
 class CuckooIndependentBase;
@@ -47,7 +47,7 @@ public:
 
         factor      = double(n_subbuckets+1-(bs/sbs))/double(1ull<<32);
 
-        table       = std::make_unique<value_type[]>(n_subbuckets*sbs);
+        table       = std::make_unique<value_intern[]>(n_subbuckets*sbs);
     }
 
     cuckoo_overlap(const cuckoo_overlap&) = delete;
@@ -121,7 +121,6 @@ private:
         if (grow_buffer.size()) return;
         size_type nsize = size_type(double(n)*alpha) / sbs;
         nsize           = std::max(nsize, n_subbuckets+1);
-        capacity        = nsize*bs;
         double nfactor  = double(nsize+1-(bs/sbs))/double(1ull << 32);
         size_type nthresh = n * beta;
 
@@ -132,12 +131,13 @@ private:
 
         n_subbuckets    = nsize;
         table           = std::move(ntable);
+        capacity        = nsize*sbs;
         grow_thresh     = nthresh;
         factor          = nfactor;
         if (grow_buffer.size()) finalize_grow();
     }
 
-    inline void migrate(std::unique_ptr<Bucket_t[]>& target, double nfactor)
+    inline void migrate(std::unique_ptr<value_intern[]>& target, double nfactor)
     {
         for (size_type i = 0; i < capacity; ++i)
         {
@@ -152,7 +152,7 @@ private:
                 {
                     if (! reinterpret_cast<Bucket_t*>
                         (&target[size_type(Ext::loc(hash, ti)*nfactor)*sbs])
-                        .insert(e))
+                        ->insert(e))
                     {
                         grow_buffer.push_back(e);
                     }
@@ -218,7 +218,7 @@ public:
     static constexpr size_type nh  = Conf::nh;
 
     using Hasher_t      = Hasher<K, HF, 0, nh, true, true>;
-    using Bucket_t      = CBucket<K,D,bs>;
+    using Bucket_t      = co_bucket<K,D,bs>;
 
 };
 
@@ -239,7 +239,7 @@ private:
 public:
     iterator_incr(const Table_t& table_)
         : end_ptr(reinterpret_cast<pointer>
-                  (&table_.table[table_.n_buckets-1].elements[bs-1]))
+                  (&table_.table[table_.capacity-1]))
     { }
     iterator_incr(const iterator_incr&) = default;
     iterator_incr& operator=(const iterator_incr&) = default;
@@ -319,7 +319,7 @@ public:
         capacity     = n_subbuckets*sbs;
         grow_thresh  = beta*std::max<size_type>(256ull, cap);
 
-        factor       = double(n_subuckets+1-(bs/sbs))/double(1ull<<32);
+        factor       = double(n_subbuckets+1-(bs/sbs))/double(1ull<<32);
 
         std::fill(table.get(), table.get()+capacity, value_intern());
     }
@@ -419,8 +419,8 @@ private:
                 if (i >= int(off_i) && i < int(off_i + bs))
                 {
                     size_type nbucket = size_type(Ext::loc(hash,ti) * nfactor)*sbs;
-                    if (nbucket >= i ||
-                        ! reinterpret_cast<Bucket_t*>(&table[nbucket])->insert(e));
+                    if (nbucket >= size_type(i) ||
+                        ! reinterpret_cast<Bucket_t*>(&table[nbucket])->insert(e))
                     {
                         grow_buffer.push_back(e);
                     }
@@ -491,7 +491,7 @@ public:
     static constexpr size_type sbs= Conf::sbs;
 
     using Hasher_t      = Hasher<K, HF, 0, nh, true, true>;
-    using Bucket_t      = Bucket<K,D,bs>;
+    using Bucket_t      = co_bucket<K,D,bs>;
 
 };
 
