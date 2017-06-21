@@ -42,6 +42,8 @@ private:
     static constexpr size_type tl = 1;
 
     static constexpr size_type max_size     = 10ull << 30;
+    static constexpr size_type min_buckets  = 4096;
+    static constexpr size_type grow_step    = 32;
 
 public:
     CuckooDeAmortized(size_type cap = 0      , double size_constraint = 1.1,
@@ -52,16 +54,17 @@ public:
         auto temp = reinterpret_cast<Bucket_t*>(operator new (max_size));
         table = std::unique_ptr<Bucket_t[]>(temp);
 
-        n_buckets   = size_type(double(cap)*size_constraint)/bs;
-        n_buckets   = std::max<size_type>(n_buckets, 256);
+        // SET CAPACITY, BITMASKS, THRESHOLD
+        size_type tcap = size_type(double(cap) * size_constraint / double(bs));
+        size_type tbit = min_buckets << 1; while (tbit <= tcap) tbit >>= 1;
+        bitmask_large = tbit - 1;
+        bitmask_small = bitmask_large >> 1;
 
-        capacity    = n_buckets*bs;
-        grow_thresh = beta*std::max<size_type>(256ull, cap);
+        bucket_cutoff = tcap & (~(grow_step-1));
+        capacity      = bucket_cutoff*bs;
+        grow_thresh   = size_type(double(capacity)/alpha);
 
-        factor      = double(n_buckets)/double(1ull<<32);
-
-        //table       = std::make_unique<Bucket_t[]>(n_buckets);
-        std::fill(table.get(), table.get()+n_buckets, Bucket_t());
+        std::fill(table.get(), table.get()+capacity, value_intern());
     }
 
     CuckooDeAmortized(const CuckooDeAmortized&) = delete;
@@ -77,12 +80,11 @@ private:
     using Base_t::alpha;
     using Base_t::hasher;
 
-    size_type n_buckets;
-    double    beta;
-    double    factor;
+    size_type bucket_cutoff;
+    size_type bitmask_large;
+    size_type bitmask_small;
 
-    std::unique_ptr<Bucket_t[]> table;
-    std::vector<value_intern>   grow_buffer;
+    std::unique_ptr<value_intern[]> table;
 
     using Base_t::make_iterator;
     using Base_t::make_citerator;
@@ -98,14 +100,14 @@ public:
 
     inline iterator begin()
     {
-        auto temp = make_iterator(&table[0].elements[0]);
+        auto temp = make_iterator(&table[0]);
         if (! temp->first) temp++;
         return temp;
     }
 
     inline const_iterator cbegin() const
     {
-        auto temp = make_citerator(&table[0].elements[0]);
+        auto temp = make_citerator(&table[0]);
         if (! temp->first) temp++;
         return temp;
     }
@@ -123,8 +125,9 @@ private:
 
     inline Bucket_t* getBucket(Hashed_t h, size_type i) const
     {
-        size_type l = Ext::loc(h,i) * factor;
-        return &(table[l]);
+        size_type l = Ext::loc(h,i) & bitmask_large;
+        if (l > bucket_cutoff) l &= bitmask small;
+        return reinterpret_cast<Bucket_t*>(&(table[l*bs]));
     }
 
 
@@ -133,73 +136,29 @@ private:
 
     inline void grow()
     {
-        // std::cout << "!" << std::flush;
+        size_type ncap    = capacity + grow_steps*bs;
+        size_type ncutoff = bucket_cutoff + grow_step;
+        grow_thresh       = size_type(double(ncap)/alpha);
 
-        if (grow_buffer.size()) return;
-        size_type nsize   = size_type(double(n)*alpha) / bs;
-        nsize             = std::max(nsize, n_buckets+1);
-        capacity          = nsize*bs;
-        double    nfactor = double(nsize)/double(1ull << 32);
-        size_type nthresh = n * beta;
+        std::fill(table.get()+capacity, table.get()+ncap, value_intern());
 
-        //std::cout << n << " " << n_buckets << " -> " << nsize << std::endl;
+        migrate(bucket_cutoff, ncutoff);
 
-        //auto ntable = std::make_unique<Bucket_t[]>(nsize);
-        std::fill(table.get()+n_buckets, table.get()+nsize, Bucket_t());
+        capacity      = ncap;
+        bucket_cutoff = ncutoff;
 
-        migrate(nfactor);
+        if (ncutoff >= bitmask_large)
+        {
+            bitmask_small = bitmask_large;
+            bitmask_large = (bitmask_large<<1) + 1;
+            bucket_cutoff - 0;
+        }
 
-        n_buckets   = nsize;
-        //table       = std::move(ntable);
-        grow_thresh = nthresh;
-        factor      = nfactor;
-        if (grow_buffer.size()) finalize_grow();
-
-        // std::cout << n_buckets << " " << std::flush;
-        // std::cout << grow_thresh << "!" << std::endl;
     }
 
-    inline void migrate(double nfactor)
+    inline void migrate(size_type ocut, size_type ncut)
     {
-        for (int i = n_buckets; i >= 0; --i)
-        {
-            Bucket_t& curr = table[i];
 
-            for (size_type j = 0; j < bs; ++j)
-            {
-                auto e = curr.elements[j];
-                if (! e.first) break;
-                auto hash = hasher(e.first);
-
-                for (size_type ti = 0; ti < nh; ++ti)
-                {
-                    if (i == int (Ext::loc(hash, ti)*factor))
-                    {
-                        auto nbucket = Ext::loc(hash,ti) * nfactor;
-                        if (    (i == nbucket)
-                             || (! table[nbucket].insert(e.first, e.second)) )
-                        {
-                            grow_buffer.push_back(e);
-                        }
-                        break;
-                    }
-                }
-            }
-            curr = Bucket_t();
-        }
-    }
-
-    inline void finalize_grow()
-    {
-        size_type temp = n;
-        for (auto& e : grow_buffer)
-        {
-            insert(e);
-        }
-        n = temp;
-        std::vector<value_intern> tbuf;
-        //grow_buffer.clear();
-        std::swap(tbuf, grow_buffer);
     }
 };
 
@@ -245,8 +204,7 @@ private:
 
 public:
     iterator_incr(const Table_t& table_)
-        : end_ptr(reinterpret_cast<pointer>
-                  (&table_.table[table_.n_buckets-1].elements[bs-1]))
+        : end_ptr(reinterpret_cast<pointer>(&table_.table[table_.capacity -1]))
     { }
     iterator_incr(const iterator_incr&) = default;
     iterator_incr& operator=(const iterator_incr&) = default;
