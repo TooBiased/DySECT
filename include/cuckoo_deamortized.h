@@ -48,23 +48,33 @@ private:
 public:
     CuckooDeAmortized(size_type cap = 0      , double size_constraint = 1.1,
                  size_type dis_steps = 0, size_type seed = 0)
-        : Base_t(size_constraint, dis_steps, seed),
-          beta((size_constraint + 1.)/2.)
+        : Base_t(size_constraint, dis_steps, seed)
     {
-        auto temp = reinterpret_cast<Bucket_t*>(operator new (max_size));
-        table = std::unique_ptr<Bucket_t[]>(temp);
+        auto temp = reinterpret_cast<value_intern*>(operator new (max_size));
+        table = std::unique_ptr<value_intern[]>(temp);
 
         // SET CAPACITY, BITMASKS, THRESHOLD
         size_type tcap = size_type(double(cap) * size_constraint / double(bs));
-        size_type tbit = min_buckets << 1; while (tbit <= tcap) tbit >>= 1;
+        size_type tbit = min_buckets << 1; while (tbit <= tcap) tbit <<= 1;
         bitmask_large = tbit - 1;
         bitmask_small = bitmask_large >> 1;
 
-        bucket_cutoff = tcap & (~(grow_step-1));
-        capacity      = bucket_cutoff*bs;
-        grow_thresh   = size_type(double(capacity)/alpha);
+        size_type doub = tcap -bitmask_small-1;
+        doub /= grow_step;
+        doub *= grow_step;
+
+        //bucket_cutoff = tcap & (~(grow_step-1));
+        //capacity      = bucket_cutoff*bs;
+        capacity      = (doub+bitmask_small+1)*bs;
+        bucket_cutoff = doub+bitmask_small+1;
+        grow_thresh   = size_type(double(capacity+grow_step*bs)/alpha);
 
         std::fill(table.get(), table.get()+capacity, value_intern());
+
+        // std::cout << "cap:" << capacity
+        //           << "  bits:"<< bitmask_small
+        //           << "  bitl:"<< bitmask_large
+        //           << "  cut:" << bucket_cutoff << std::endl;
     }
 
     CuckooDeAmortized(const CuckooDeAmortized&) = delete;
@@ -94,7 +104,7 @@ public:
 
     std::pair<size_type, Bucket_t*> getTable(size_type i)
     {
-        return (! i) ? std::make_pair(n_buckets, table.get())
+        return (! i) ? std::make_pair(bucket_cutoff, table.get())
                      : std::make_pair(0,nullptr);
     }
 
@@ -126,7 +136,7 @@ private:
     inline Bucket_t* getBucket(Hashed_t h, size_type i) const
     {
         size_type l = Ext::loc(h,i) & bitmask_large;
-        if (l > bucket_cutoff) l &= bitmask small;
+        if (l >= bucket_cutoff) l &= bitmask_small;
         return reinterpret_cast<Bucket_t*>(&(table[l*bs]));
     }
 
@@ -136,29 +146,130 @@ private:
 
     inline void grow()
     {
-        size_type ncap    = capacity + grow_steps*bs;
+        // std::cout << "cap:" << capacity
+        //           << " cut:" << bucket_cutoff << std::endl;
+        size_type ncap    = capacity + grow_step*bs;
         size_type ncutoff = bucket_cutoff + grow_step;
-        grow_thresh       = size_type(double(ncap)/alpha);
+        grow_thresh       = size_type(double(ncap+grow_step*bs)/alpha);
 
         std::fill(table.get()+capacity, table.get()+ncap, value_intern());
 
-        migrate(bucket_cutoff, ncutoff);
+        migrate(capacity, ncap);
 
+        //auto ocap = capacity;
+        //auto ocut = bucket_cutoff;
         capacity      = ncap;
         bucket_cutoff = ncutoff;
+
+        //for (size_t i = gable.get)
+
+        // size_type bla = 0;
+        // size_type blu = 0;
+        // for (size_type i = 0; i < capacity; ++i)
+        // {
+        //     auto curr = table[i];
+        //     if (!curr.first) continue;
+        //     ++bla;
+        //     if (Base_t::find(curr.first) == Base_t::end())
+        //     {
+        //         //std::cout << i << std::endl;
+        //         ++blu;
+        //     }
+        // }
+        // std::cout << "n " << n << "  moved " << bla << "  lost " << blu << std::endl;
 
         if (ncutoff >= bitmask_large)
         {
             bitmask_small = bitmask_large;
             bitmask_large = (bitmask_large<<1) + 1;
-            bucket_cutoff - 0;
+            // std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
         }
 
     }
 
-    inline void migrate(size_type ocut, size_type ncut)
+    inline void migrate(size_type , size_type)
     {
+        size_type flag  = bitmask_large  & (~bitmask_small);
+        size_type ptr0  = (bucket_cutoff & bitmask_small) * bs;
 
+        //static size_type counter = 0;
+
+        //for (size_type i = 0; i < grow_step*bs; i+=bs)
+        for (size_type i = 0; i < grow_step; ++i)
+        {
+            // Bucket_t* bucket0_ptr =
+            //     reinterpret_cast<Bucket_t*>(table.get() + ((cap/bs) & bitmask_small) + i);
+            // Bucket_t* bucket1_ptr =
+            //     reinterpret_cast<Bucket_t*>(table.get() + capacity +i);
+            //if (((i/bs)&bitmask_small)%bs) std::cout << "9222222222222222222222222222222222222222222222222222" << std::endl;
+            Bucket_t* bucket0_ptr =
+                reinterpret_cast<Bucket_t*>(table.get()+ptr0+i*bs);
+            Bucket_t* bucket1_ptr =
+                reinterpret_cast<Bucket_t*>(table.get()+capacity+i*bs);
+
+            //static size_type fuck = 0;
+            // if (fuck < 10)
+            // {
+            //     std::cout << capacity << " "
+            //               << off0s+i << " "< bitmask_small << " "
+            //               << bitmask_large << std::endl;
+            //     fuck++;
+            // }
+            // for (size_type k = 0; k < bs; ++k)
+            // {
+            //     if (bucket1_ptr->elements[k].first) std::cout << "fuck " << std::flush;
+            // }
+            size_type c0 = 0;
+            size_type c1 = 0;
+            for (size_type j = 0; j < bs; ++j)
+            {
+                auto curr = bucket0_ptr->elements[j];
+                bucket0_ptr->elements[j] = value_intern();
+                if (!curr.first) break;
+
+                Bucket_t* targets[nh];
+                Hashed_t  hash = hasher(curr.first);
+                getBuckets(hash, targets);
+
+                // bool wtf = false;
+                for (size_type t = 0; t < nh; ++t)
+                {
+                    if (targets[t] == bucket0_ptr)
+                    {
+                        if (Ext::loc(hash, t) & flag)
+                        {
+                            bucket1_ptr->elements[c1++] = curr;
+                            // if (bucket1_ptr != reinterpret_cast<Bucket_t*>(table.get() + (Ext::loc(hash, t) & bitmask_large)*bs))
+                            //     std::cout << "i:" << (i-capacity)/bs << "k" << std::endl;
+                        }
+                        else
+                        {
+                            bucket0_ptr->elements[c0++] = curr;
+                            // if (bucket0_ptr != reinterpret_cast<Bucket_t*>(table.get() + (Ext::loc(hash, t) & bitmask_large)*bs))
+                            //     std::cout << "g" << std::endl;
+                        }
+                        //wtf = true;
+                        break;
+                    }
+                }
+
+                // if (!wtf)
+                // {
+                //     std::cout <<   "i:" << (i - capacity)/bs
+                //               << " b0:" << bucket0_ptr
+                //               << " b1:" << bucket1_ptr
+                //               << " stuff:" << std::flush;
+                //     for (size_t z = 0; z < nh; ++z)
+                //     {
+                //         std::cout << " " << targets[z];
+                //     }
+                //     std::cout << std::endl;
+                //     counter++;
+                // }
+            }
+        }
+        // if (counter)
+        // { std::cout << counter << std::endl; }
     }
 };
 

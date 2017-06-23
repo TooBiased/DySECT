@@ -112,17 +112,16 @@ struct Test
             auto in_errors = 0ull;
             auto fin_errors = 0ull;
 
-
             auto t0 = std::chrono::high_resolution_clock::now();
             for (size_t i = 0; i < n0 && in_errors < 100; ++i)
             {
-                if (!table.insert(keys[i], i).second) return 111;//++in_errors;
+                if (!table.insert(keys[i], i).second) return ++in_errors;
             }
 
             auto t1 = std::chrono::high_resolution_clock::now();
             for (size_t i = n0; i < n && in_errors < 100; ++i)
             {
-                if (!table.insert(keys[i], i).second) return 112;//++in_errors;
+                if (!table.insert(keys[i], i).second) ++in_errors;
             }
             auto t2 = std::chrono::high_resolution_clock::now();
             //const Table& ctable = table;

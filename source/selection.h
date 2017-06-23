@@ -9,6 +9,7 @@
      !COVERIP         && \
      !CEG2L           && \
      !CEIPG2L         && \
+     !CDEAM           && \
      !CHOMOGENEOUS2L  && \
      !CINDEPENDENT2L  && \
      !LINPROB         && \
@@ -95,6 +96,12 @@
 #include "include/cuckoo_simple.h"
 #define HASHTYPE CuckooSimple
 #endif // CSIMPLE
+
+#ifdef CDEAM
+#define MULTI
+#include "include/cuckoo_deamortized.h"
+#define HASHTYPE CuckooDeAmortized
+#endif // CDEAM
 
 #ifdef CINPLACE
 #define MULTI
