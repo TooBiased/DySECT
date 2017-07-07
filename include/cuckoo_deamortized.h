@@ -63,18 +63,11 @@ public:
         doub /= grow_step;
         doub *= grow_step;
 
-        //bucket_cutoff = tcap & (~(grow_step-1));
-        //capacity      = bucket_cutoff*bs;
         capacity      = (doub+bitmask_small+1)*bs;
         bucket_cutoff = doub+bitmask_small+1;
         grow_thresh   = size_type(double(capacity+grow_step*bs)/alpha);
 
         std::fill(table.get(), table.get()+capacity, value_intern());
-
-        // std::cout << "cap:" << capacity
-        //           << "  bits:"<< bitmask_small
-        //           << "  bitl:"<< bitmask_large
-        //           << "  cut:" << bucket_cutoff << std::endl;
     }
 
     CuckooDeAmortized(const CuckooDeAmortized&) = delete;

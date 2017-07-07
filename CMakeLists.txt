@@ -15,7 +15,7 @@ set_property(CACHE GROWS_HASHFCT PROPERTY STRINGS XXHASH MURMUR2 MURMUR3 CRC)
 
 include_directories(.)
 
-set (CMAKE_CXX_FLAGS "-std=c++14 -msse4.2 -Wall -Wextra -O0 -g")
+set (CMAKE_CXX_FLAGS "-std=c++14 -msse4.2 -Wall -Wextra -O3 -g")
 
 #### HASH FUNCTIONS ############################################################
 
