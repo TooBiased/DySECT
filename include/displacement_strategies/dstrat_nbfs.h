@@ -101,7 +101,7 @@ private:
         int           prev2;
         Bucket_t*     b2;
 
-        value_intern* k0;
+        value_intern* k0 = nullptr;
         while (prev1 >= 0)
         {
             std::tie(k2,prev2,b2) = bq[prev1];
