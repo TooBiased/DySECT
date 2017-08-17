@@ -19,13 +19,18 @@ set (CMAKE_CXX_FLAGS "-std=c++14 -msse4.2 -Wall -Wextra -O3 -g")
 
 #### HASH FUNCTIONS ############################################################
 
-if (GROWS_HASHFCT STREQUAL XXHASH)
-  find_package(XXHash)
-  if (XXHASH_FOUND)
-    include_directories(${XXHASH_INCLUDE_DIRS})
+if (GROWT_HASHFCT STREQUAL XXHASH)
+  message(STATUS "Looking for xxhash")
+  find_path(XXHASH_DIR xxHash/xxhash.h
+    PATHS ${CMAKE_CURRENT_SOURCE_DIR}/modules) #ENV ${CMAKE_CURRENT_SOURCE_DIR}/submodules) #ENV PATH ENV JUNCTION_ROOT)
+  if (XXHASH_DIR)
+    #add_subdirectory(${XXHASH_DIR}/xxHash xxHash)
+    include_directories(${XXHASH_DIR}/xxHash)
+    message(STATUS "Looking for xxhash -- found")
   else()
+    message(STATUS "Looking for xxhash -- not found")
     message("Cannot find xxHash. Use MURMUR2 instead.")
-    set(GROWS_HASHFCT MURMUR2)
+    set(GROWT_HASHFCT MURMUR2)
   endif()
 endif()
 
