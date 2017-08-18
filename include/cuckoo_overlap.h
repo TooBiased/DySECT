@@ -1,5 +1,22 @@
 #pragma once
 
+/*******************************************************************************
+ * include/cuckoo_overlap.h
+ *
+ * cuckoo_overlap is an experimental variant of cuckoo hashing, where
+ * two different buckets can overlap by some cells. In theory, this
+ * achieves higher load factors.  In practice it seems to be slow
+ * (ATTENTION NOT OPTIMIZED) additionally it might be
+ * counterproductive for DySECT since we want to encourage exchange
+ * between different tables.
+ *
+ * Part of Project DySECT - https://github.com/TooBiased/DySECT.git
+ *
+ * Copyright (C) 2017 Tobias Maier <t.maier@kit.edu>
+ *
+ * All rights reserved. Published under the BSD-2 license in the LICENSE file.
+ ******************************************************************************/
+
 #include "cuckoo_base.h"
 #include "cobucket.h"
 

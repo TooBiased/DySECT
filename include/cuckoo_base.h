@@ -1,5 +1,21 @@
 #pragma once
 
+/*******************************************************************************
+ * include/cuckoo_base.h
+ *
+ * CuckooMultiBase implements the basics of d-ary bucket cuckoo
+ * hashing.  Implemented functions include insert, find, erase ... .
+ * Inheriting classes only have to implement the get bucket functions
+ * (and Specialize CuckooTraits, iterator_incrr).  CRTP is used to
+ * eliminate vtable lookups.
+ *
+ * Part of Project DySECT - https://github.com/TooBiased/DySECT.git
+ *
+ * Copyright (C) 2017 Tobias Maier <t.maier@kit.edu>
+ *
+ * All rights reserved. Published under the BSD-2 license in the LICENSE file.
+ ******************************************************************************/
+
 #include <functional>
 #include <memory>
 #include <vector>

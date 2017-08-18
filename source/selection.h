@@ -19,9 +19,6 @@
      !RIPPROB         && \
      !HOPPROB         && \
      !HIPPROB         && \
-     !HOPSCOTCH       && \
-     !SPACEHOPSCOTCH  && \
-     !STD_UNORDERED   && \
      !STRCTPROB       && \
      !STRCTCUCKOO     && \
      !STRCTROBIN)
@@ -78,19 +75,6 @@
 #define  HASHTYPE HopsProbInPlace
 #endif // TESTTAB
 
-#ifdef HOPSCOTCH
-#define TRIV_CONFIG //NONCUCKOO
-#include "include/hopscotch.h"
-#define  HASHTYPE Hopscotch
-#endif // HOPSCOTCH
-
-#ifdef SPACEHOPSCOTCH
-#define SPECIAL_HOPSCOTCH
-#define HOPSCOTCH_CONFIG
-#include "include/hopscotch.h"
-#define  HASHTYPE SpaceHopscotch
-#endif // SPACEHOPSCOTCH
-
 #ifdef CSIMPLE
 #define MULTI
 #include "include/cuckoo_simple.h"
@@ -146,12 +130,6 @@
 #include "include/cuckoo_independent2l.h"
 #define HASHTYPE CuckooIndependent2L
 #endif // CINDEPENDENT2L
-
-#ifdef STD_UNORDERED
-#define TRIV_CONFIG
-#include "include/std_unordered.h"
-#define HASHTYPE STDProb
-#endif // STD_UNORDERED
 
 #ifdef STRCTPROB
 #define TRIV_CONFIG

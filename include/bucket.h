@@ -1,5 +1,19 @@
 #pragma once
 
+/*******************************************************************************
+ * include/bucket.h
+ *
+ * bucket implementation for variants of bucket cuckoo hashing.
+ * This implementation ensures that all contained elements are stored in the
+ * beginning of the bucket. This allows some performance tricks.
+ *
+ * Part of Project DySECT - https://github.com/TooBiased/DySECT.git
+ *
+ * Copyright (C) 2017 Tobias Maier <t.maier@kit.edu>
+ *
+ * All rights reserved. Published under the BSD-2 license in the LICENSE file.
+ ******************************************************************************/
+
 #include <tuple>
 
 

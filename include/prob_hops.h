@@ -1,5 +1,20 @@
 #pragma once
 
+/*******************************************************************************
+ * include/prob_hops.h
+ *
+ * hops_prob and hops_prob_inplace implement the hopscotch hashing
+ * scheme.  The inplace variant uses memory overcommiting to resize
+ * the table without full table reallocations, that would temporarily
+ * violate the memory constraint.
+ *
+ * Part of Project DySECT - https://github.com/TooBiased/DySECT.git
+ *
+ * Copyright (C) 2017 Tobias Maier <t.maier@kit.edu>
+ *
+ * All rights reserved. Published under the BSD-2 license in the LICENSE file.
+ ******************************************************************************/
+
 #include "prob_base.h"
 
 template <class AugmentData>

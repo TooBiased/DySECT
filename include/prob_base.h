@@ -1,5 +1,18 @@
 #pragma once
 
+/*******************************************************************************
+ * include/prob_base.h
+ *
+ * prob_base is similar to cuckoo_base, in that it encapsules
+ * everything, that all probing based hash tables have in common.
+ *
+ * Part of Project DySECT - https://github.com/TooBiased/DySECT.git
+ *
+ * Copyright (C) 2017 Tobias Maier <t.maier@kit.edu>
+ *
+ * All rights reserved. Published under the BSD-2 license in the LICENSE file.
+ ******************************************************************************/
+
 #include <functional>
 #include <memory>
 #include <vector>

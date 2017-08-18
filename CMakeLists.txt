@@ -50,12 +50,6 @@ set(DYSECT_LIST "ceg2l;ceipg2l")
 set(HASH_TABLES_LIST "ceg2l;csimple;cover;coverip;chomogeneous2l;cindependent2l;cinplace;ceipg2l;cdeam;strctcuckoo")
 set(NON_CUCKOO_LIST  "linprob;spaceprob;robinprob;ripprob;hopprob;hipprob;std_unordered;inplaceprob;testtab;strctprob;strctrobin")
 
-find_package(tslHopscotch)
-if (TSLHOPSCOTCH_FOUND)
-  include_directories(${TSLHOPSCOTCH_INCLUDE_DIRS})
-  set(NON_CUCKOO_LIST "${NON_CUCKOO_LIST};hopscotch;spacehopscotch")
-endif()
-
 #### THE ONE STEP GROW EXECUTABLE ##############################################
 include_directories("/home/maier/RANDOM/malloc_count/")
 

@@ -1,6 +1,19 @@
 #pragma once
 
-
+/*******************************************************************************
+ * include/hasher.h
+ *
+ * the hasher class is used, to evaluate all hash functions for any
+ * given key. From the result it can extract the correct amount of
+ * hashed values and split them into appropriate sub parts (subtable
+ * number + in-table offset).
+ *
+ * Part of Project DySECT - https://github.com/TooBiased/DySECT.git
+ *
+ * Copyright (C) 2017 Tobias Maier <t.maier@kit.edu>
+ *
+ * All rights reserved. Published under the BSD-2 license in the LICENSE file.
+ ******************************************************************************/
 
 static constexpr size_t ct_log(size_t k)
 { return (k-1) ? 1+ct_log(k>>1) : 0; }

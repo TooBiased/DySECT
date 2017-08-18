@@ -1,5 +1,20 @@
 #pragma once
 
+/*******************************************************************************
+ * include/config.h
+ *
+ * collection of configuration types that are mostly used to reduce
+ * the number of necessary template parameters, used by our hash
+ * tables.  This reduces the exposure of implementation details to the
+ * user.
+ *
+ * Part of Project DySECT - https://github.com/TooBiased/DySECT.git
+ *
+ * Copyright (C) 2017 Tobias Maier <t.maier@kit.edu>
+ *
+ * All rights reserved. Published under the BSD-2 license in the LICENSE file.
+ ******************************************************************************/
+
 #include <memory>
 #include <iostream>
 #include <tuple>

@@ -1,12 +1,34 @@
 #pragma once
 
+/*******************************************************************************
+ * include/cuckoo_eg2l.h
+ *
+ * Described in: https://arxiv.org/abs/1705.00997
+ * Requirement:  OverAllocation (only for ceipg2l)
+ *
+ * Here we implement the main DySECT variants. Growability is
+ * optained, by splitting the table into myltiple subtables thus
+ * making it feasible to double the size of one subtable without
+ * breaking a size constraint. Load imbalances between subtables are
+ * efficiently reliefed by inter table exchanges.
+ *
+ * Two variants are implemented, eg2l is a variant that stores
+ * independent pointers for each subtable migrations move elements to
+ * a new table.  eipg2l grows each subtable in place, all subtables
+ * are part of one large (overallocated chunk of memory).
+ *
+ * Part of Project DySECT - https://github.com/TooBiased/DySECT.git
+ *
+ * Copyright (C) 2017 Tobias Maier <t.maier@kit.edu>
+ *
+ * All rights reserved. Published under the BSD-2 license in the LICENSE file.
+ ******************************************************************************/
+
 #include <cmath>
 #include "cuckoo_base.h"
 
 template<class T>
 class CuckooTraits;
-
-
 
 template<class K, class D, class HF = std::hash<K>,
          class Conf = Config<> >
@@ -66,7 +88,7 @@ public:
     CuckooEG2L& operator=(const CuckooEG2L&) = delete;
 
     CuckooEG2L(CuckooEG2L&& rhs)
-        : Base_t(std::move(rhs)),
+         : Base_t(std::move(rhs)),
           n_large(rhs.n_large),
           bits_small(rhs.bits_small),
           bits_large(rhs.bits_large),

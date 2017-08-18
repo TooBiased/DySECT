@@ -1,5 +1,20 @@
 #pragma once
 
+/*******************************************************************************
+ * include/iterator_base.h
+ *
+ * iterator_base is a basic iterator implementation, that is
+ * independent from the used table. Appart from the increment
+ * operator, which uses a table specific increment function.
+ *
+ * Part of Project DySECT - https://github.com/TooBiased/DySECT.git
+ *
+ * Copyright (C) 2017 Tobias Maier <t.maier@kit.edu>
+ *
+ * All rights reserved. Published under the BSD-2 license in the LICENSE file.
+ ******************************************************************************/
+
+
 // template <class Table, class Ptr>
 // class iterator_incr
 // {

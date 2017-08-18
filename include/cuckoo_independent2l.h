@@ -1,5 +1,21 @@
 #pragma once
 
+/*******************************************************************************
+ * include/cuckoo_independent2l.h
+ *
+ * independent2l is a variant of cuckoo hashing, where the base table
+ * is split similar to DySECT, but all buckets connected to one
+ * element are placed in the same subtable, therefore, no balancing
+ * happens between subtables.  The tables have to grow in small steps
+ * (no doubling) in order to hold the given size constraints.
+ *
+ * Part of Project DySECT - https://github.com/TooBiased/DySECT.git
+ *
+ * Copyright (C) 2017 Tobias Maier <t.maier@kit.edu>
+ *
+ * All rights reserved. Published under the BSD-2 license in the LICENSE file.
+ ******************************************************************************/
+
 #include <cmath>
 #include "cuckoo_base.h"
 

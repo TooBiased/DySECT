@@ -1,8 +1,21 @@
 #pragma once
 
+/*******************************************************************************
+ * include/co_bucket.h
+ *
+ * co_bucket is the bucket implementation for variants that use overlapping
+ * buckets. Contrary to bucket, co_bucket does not ensure that all contained
+ * elements are stored in the beginning of the bucket. Therefore, some
+ * improvements are not possible.
+ *
+ * Part of Project DySECT - https://github.com/TooBiased/DySECT.git
+ *
+ * Copyright (C) 2017 Tobias Maier <t.maier@kit.edu>
+ *
+ * All rights reserved. Published under the BSD-2 license in the LICENSE file.
+ ******************************************************************************/
+
 #include <tuple>
-
-
 
 template<class K, class D, size_t BS = 4>
 class co_bucket

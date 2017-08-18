@@ -1,15 +1,31 @@
 #pragma once
 
+/*******************************************************************************
+ * include/cuckoo_deamortized.h
+ *
+ * Requirement: <OverAllocation>
+ *
+ * cuckoo_deamortized is a dynamically growing cuckoo table variation
+ * that uses only one table. The idea is to grow the table in place
+ * but do it in small steps. Therefore, grown parts of the table
+ * coexist with ungrown ones.
+ *
+ * 0          x                 2^k     cap = 2^k+x
+ * +----------+------------------+----------+ - - - - - - - - - -
+ * | grown    | ungrown          | new part |  overallocated ...
+ * +----------+------------------+----------+ - - - - - - - - - -
+ *
+ * Part of Project DySECT - https://github.com/TooBiased/DySECT.git
+ *
+ * Copyright (C) 2017 Tobias Maier <t.maier@kit.edu>
+ *
+ * All rights reserved. Published under the BSD-2 license in the LICENSE file.
+ ******************************************************************************/
+
 #include "cuckoo_base.h"
 
 template<class K0, class D0, class HF0, class Conf0>
 class CuckooIndependentBase;
-
-
-
-// *****************************************************************************
-// IN PLACE GROWING ************************************************************
-// *****************************************************************************
 
 template<class K, class D, class HF = std::hash<K>,
          class Conf = Config<> >

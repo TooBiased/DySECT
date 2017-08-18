@@ -1,5 +1,21 @@
 #pragma once
 
+/*******************************************************************************
+ * include/cuckoo_simple.h
+ *
+ * Requirements: OverAllocation (only for cuckoo_inplace)
+ *
+ * cuckoo_simple and cuckoo_inplace are implementations of the common
+ * d-ary bucket cuckoo hashing scheme. cuckoo_inplace uses
+ * overallocation, to grow inplace without full table reallocation.
+ *
+ * Part of Project DySECT - https://github.com/TooBiased/DySECT.git
+ *
+ * Copyright (C) 2017 Tobias Maier <t.maier@kit.edu>
+ *
+ * All rights reserved. Published under the BSD-2 license in the LICENSE file.
+ ******************************************************************************/
+
 #include "cuckoo_base.h"
 
 template<class K0, class D0, class HF0, class Conf0>
