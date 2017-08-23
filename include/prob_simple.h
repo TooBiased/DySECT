@@ -1,196 +1,214 @@
-
 #pragma once
+
+/*******************************************************************************
+ * include/prob_simple.h
+ *
+ * fast_lin_prob implements a fast linear probing hash table, that
+ * uses bitmasks for table offsets.  This variant does not respect the
+ * size constraint in the same way other tables do.
+ *
+ * lin_prob and lin_prob_in_place implement linear probing adhering to
+ * the size constraint.  The inplace variant uses memory overcommiting
+ * to resize the table without full table reallocations, that would
+ * temporarily violate the memory constraint.
+ *
+ * Part of Project DySECT - https://github.com/TooBiased/DySECT.git
+ *
+ * Copyright (C) 2017 Tobias Maier <t.maier@kit.edu>
+ *
+ * All rights reserved. Published under the BSD-2 license in the LICENSE file.
+ ******************************************************************************/
 
 #include "prob_base.h"
 
-/* Fast LinProb using powers of 2 and bitmasking ******************************/
-template <class K, class D, class HF = std::hash<K>,
-          class Conf = Config<> >
-class FastLinProb : public ProbTraits<FastLinProb<K,D,HF,Conf> >::Base_t
+namespace dysect
 {
-private:
-    using This_t = FastLinProb<K,D,HF,Conf>;
-    using Base_t = typename ProbTraits<This_t>::Base_t;
-
-    friend Base_t;
-
-public:
-    using size_type   = typename Base_t::size_type;
-    using key_type    = typename ProbTraits<This_t>::key_type;
-    using mapped_type = typename ProbTraits<This_t>::mapped_type;
 
 
-    FastLinProb(size_type cap = 0, double = 1., size_type = 0)
-        : Base_t(next_power_of_two(cap) << 1, 1.)
+/* Fast linear probing table using powers of 2 and bitmasking *****************/
+    template <class K, class D, class HF = std::hash<K>,
+              class Conf = triv_config<> >
+    class prob_linear_doubling : public ProbTraits<prob_linear_doubling<K,D,HF,Conf> >::base_type
     {
-        thresh  = capacity * .6;
-        bitmask = capacity - 1;
-    }
-    FastLinProb(const FastLinProb&) = delete;
-    FastLinProb& operator=(const FastLinProb&) = delete;
-    FastLinProb(FastLinProb&& rhs)  = default;
-    FastLinProb& operator=(FastLinProb&& ) = default;
+    private:
+        using this_type = prob_linear_doubling<K,D,HF,Conf>;
+        using base_type = typename ProbTraits<this_type>::base_type;
 
-private:
-    using Base_t::capacity;
-    using Base_t::thresh;
-    using Base_t::table;
+        friend base_type;
 
-    size_type bitmask;
+    public:
+        using size_type   = typename base_type::size_type;
+        using key_type    = typename ProbTraits<this_type>::key_type;
+        using mapped_type = typename ProbTraits<this_type>::mapped_type;
 
-    // Access Functions ********************************************************
-    inline size_type index(size_type i) const { return i & bitmask; }
-    inline size_type mod(size_type i)   const { return i & bitmask; }
 
-    // Helper Function *********************************************************
-    static size_type next_power_of_two(size_type i)
-    {
-        size_type t = 2048;
-        while (t < i) t <<= 1;
-        return t;
-    }
-
-    // Growing *****************************************************************
-    explicit FastLinProb(size_type cap, size_type lthresh, This_t* )
-        : Base_t(cap, 1.), bitmask(cap-1)
-    {
-        thresh = lthresh;
-    }
-
-    inline void grow()
-    {
-        auto nsize  = capacity << 1;
-        auto ntable = This_t(nsize, nsize*0.6, this);
-
-        for (size_type i = 0; i <= bitmask; ++i)
-        {
-            auto temp = table[i];
-            if (temp.first)
+        prob_linear_doubling(size_type cap = 0, double = 1., size_type = 0)
+            : base_type(next_power_of_two(cap) << 1, 1.)
             {
-                ntable.insert(temp);
+                thresh  = capacity * .6;
+                bitmask = capacity - 1;
             }
+        prob_linear_doubling(const prob_linear_doubling&) = delete;
+        prob_linear_doubling& operator=(const prob_linear_doubling&) = delete;
+        prob_linear_doubling(prob_linear_doubling&& rhs)  = default;
+        prob_linear_doubling& operator=(prob_linear_doubling&& ) = default;
+
+    private:
+        using base_type::capacity;
+        using base_type::thresh;
+        using base_type::table;
+
+        size_type bitmask;
+
+        // Access Functions ********************************************************
+        inline size_type index(size_type i) const { return i & bitmask; }
+        inline size_type mod(size_type i)   const { return i & bitmask; }
+
+        // Helper Function *********************************************************
+        static size_type next_power_of_two(size_type i)
+        {
+            size_type t = 2048;
+            while (t < i) t <<= 1;
+            return t;
         }
 
-        (*this) = std::move(ntable);
-    }
-};
+        // Growing *****************************************************************
+        explicit prob_linear_doubling(size_type cap, size_type lthresh, this_type* )
+            : base_type(cap, 1.), bitmask(cap-1)
+        {
+            thresh = lthresh;
+        }
+
+        inline void grow()
+        {
+            auto nsize  = capacity << 1;
+            auto ntable = this_type(nsize, nsize*0.6, this);
+
+            for (size_type i = 0; i <= bitmask; ++i)
+            {
+                auto temp = table[i];
+                if (temp.first)
+                {
+                    ntable.insert(temp);
+                }
+            }
+
+            (*this) = std::move(ntable);
+        }
+    };
 
 
 
 
-template<class K, class D, class HF, class Conf>
-class ProbTraits<FastLinProb<K,D,HF,Conf> >
-{
-public:
-    using Specialized_t = FastLinProb<K,D,HF,Conf>;
-    using Base_t        = ProbBase<Specialized_t>;
-    using HashFct_t     = HF;
-    using Config_t      = Conf;
+    template<class K, class D, class HF, class Conf>
+    class ProbTraits<prob_linear_doubling<K,D,HF,Conf> >
+    {
+    public:
+        using specialized_type   = prob_linear_doubling<K,D,HF,Conf>;
+        using base_type          = ProbBase<specialized_type>;
+        using hash_function_type = HF;
+        using config_type        = Conf;
 
-    using key_type      = K;
-    using mapped_type   = D;
-};
+        using key_type      = K;
+        using mapped_type   = D;
+    };
 
 
 
-template<class K0, class D0, class HF0, class Conf0>
-class LinProbIndependentBase;
+
 
 /* Using Classic Linear Probing to Fill a Table Densely ***********************/
-template <class K, class D, class HF = std::hash<K>,
-          class Conf = Config<> >
-class SpaceLinProb : public ProbTraits<SpaceLinProb<K,D,HF,Conf> >::Base_t
-{
-private:
-    using This_t = SpaceLinProb<K,D,HF,Conf>;
-    using Base_t = typename ProbTraits<This_t>::Base_t;
-
-    friend Base_t;
-
-    using weird = LinProbIndependentBase<K,D,HF,Conf>;
-    friend weird;
-public:
-    using size_type   = typename Base_t::size_type;
-    using key_type    = typename ProbTraits<This_t>::key_type;
-    using mapped_type = typename ProbTraits<This_t>::mapped_type;
-
-    SpaceLinProb(size_type cap = 0, double size_constraint = 1.1, size_type /*steps*/=0)
-        : Base_t(std::max<size_type>(cap, 500), size_constraint)
+    template <class K, class D, class HF = std::hash<K>,
+              class Conf = triv_config<> >
+    class prob_linear : public ProbTraits<prob_linear<K,D,HF,Conf> >::base_type
     {
-        factor = double(capacity-300)/double(1ull << 32);
-    }
-    SpaceLinProb(const SpaceLinProb&) = delete;
-    SpaceLinProb& operator=(const SpaceLinProb&) = delete;
-    SpaceLinProb(SpaceLinProb&& rhs)  = default;
-    SpaceLinProb& operator=(SpaceLinProb&& ) = default;
+    private:
+        using this_type = prob_linear<K,D,HF,Conf>;
+        using base_type = typename ProbTraits<this_type>::base_type;
 
-private:
-    using Base_t::alpha;
-    using Base_t::n;
-    using Base_t::capacity;
-    using Base_t::table;
-    using Base_t::h;
+        friend base_type;
+    public:
+        using size_type   = typename base_type::size_type;
+        using key_type    = typename ProbTraits<this_type>::key_type;
+        using mapped_type = typename ProbTraits<this_type>::mapped_type;
 
-    double factor;
-
-    static constexpr size_type bitmask = (1ull<<32)-1;
-
-
-    // Access Functions ********************************************************
-    inline size_type index(size_type i) const { return (bitmask & i)*factor; }
-    inline size_type mod(size_type i)   const { return i; }
-
-    // Growing *****************************************************************
-    inline void grow()
-    {
-        auto ntable = This_t(n, alpha);
-
-        for (size_type i = 0; i < capacity; ++i)
+        prob_linear(size_type cap = 0, double size_constraint = 1.1, size_type /*steps*/=0)
+            : base_type(std::max<size_type>(cap, 500), size_constraint)
         {
-            auto temp = table[i];
-            if (temp.first)
+            factor = double(capacity-300)/double(1ull << 32);
+        }
+        prob_linear(const prob_linear&) = delete;
+        prob_linear& operator=(const prob_linear&) = delete;
+        prob_linear(prob_linear&& rhs)  = default;
+        prob_linear& operator=(prob_linear&& ) = default;
+
+    private:
+        using base_type::alpha;
+        using base_type::n;
+        using base_type::capacity;
+        using base_type::table;
+        using base_type::h;
+
+        double factor;
+
+        static constexpr size_type bitmask = (1ull<<32)-1;
+
+
+        // Access Functions ********************************************************
+        inline size_type index(size_type i) const { return (bitmask & i)*factor; }
+        inline size_type mod(size_type i)   const { return i; }
+
+        // Growing *****************************************************************
+        inline void grow()
+        {
+            auto ntable = this_type(n, alpha);
+
+            for (size_type i = 0; i < capacity; ++i)
             {
-                ntable.insert(temp);
+                auto temp = table[i];
+                if (temp.first)
+                {
+                    ntable.insert(temp);
+                }
             }
+
+            (*this) = std::move(ntable);
         }
 
-        (*this) = std::move(ntable);
-    }
+        // Specialized Deletion stuff **********************************************
 
-    // Specialized Deletion stuff **********************************************
-
-    inline void propagate_remove(const size_type hole)
-    {
-        size_type thole = hole;
-        for (size_type i = hole+1; ; ++i)
+        inline void propagate_remove(const size_type hole)
         {
-            auto temp = table[i];
-
-            if ( temp.first == 0 ) break;
-            auto tind = h(temp.first);
-            if (tind <= thole)
+            size_type thole = hole;
+            for (size_type i = hole+1; ; ++i)
             {
-                table[thole] = temp;
-                thole = i;
+                auto temp = table[i];
+
+                if ( temp.first == 0 ) break;
+                auto tind = h(temp.first);
+                if (tind <= thole)
+                {
+                    table[thole] = temp;
+                    thole = i;
+                }
             }
+            table[thole] = std::make_pair(0,0);
         }
-        table[thole] = std::make_pair(0,0);
-    }
-};
+    };
 
 
-template<class K, class D, class HF, class Conf>
-class ProbTraits<SpaceLinProb<K,D,HF,Conf> >
-{
-public:
-    using Specialized_t = SpaceLinProb<K,D,HF,Conf>;
-    using Base_t        = ProbBase<Specialized_t>;
-    using HashFct_t     = HF;
-    using Config_t      = Conf;
+    template<class K, class D, class HF, class Conf>
+    class ProbTraits<prob_linear<K,D,HF,Conf> >
+    {
+    public:
+        using specialized_type   = prob_linear<K,D,HF,Conf>;
+        using base_type          = ProbBase<specialized_type>;
+        using hash_function_type = HF;
+        using config_type        = Conf;
 
-    using key_type      = K;
-    using mapped_type   = D;
-};
+        using key_type      = K;
+        using mapped_type   = D;
+    };
 
 
 
@@ -205,100 +223,111 @@ public:
 // Same as Above, but Growing Using in Place Migration *************************
 // *****************************************************************************
 
-template <class K, class D, class HF = std::hash<K>,
-          class Conf = Config<> >
-class SpaceLinProbInPlace : public ProbTraits<SpaceLinProbInPlace<K,D,HF,Conf> >::Base_t
-{
-private:
-    using This_t = SpaceLinProbInPlace<K,D,HF,Conf>;
-    using Base_t = typename ProbTraits<This_t>::Base_t;
-
-    friend Base_t;
-
-public:
-    using size_type   = typename Base_t::size_type;
-    using key_type    = typename ProbTraits<This_t>::key_type;
-    using mapped_type = typename ProbTraits<This_t>::mapped_type;
-private:
-    using value_intern = std::pair<key_type, mapped_type>;
-
-    static constexpr size_type max_size = 16ull << 30;
-
-public:
-    SpaceLinProbInPlace(size_type cap = 0, double size_constraint = 1.1, size_type /*steps*/=0)
-        : Base_t(0, size_constraint), bla(0)
+    template <class K, class D, class HF = std::hash<K>,
+              class Conf = triv_config<> >
+    class prob_linear_inplace : public ProbTraits<prob_linear_inplace<K,D,HF,Conf> >::base_type
     {
-        // factor = double(capacity-300)/double(1ull << 32);
+    private:
+        using this_type = prob_linear_inplace<K,D,HF,Conf>;
+        using base_type = typename ProbTraits<this_type>::base_type;
 
-        value_intern* temp = reinterpret_cast<value_intern*>(operator new (max_size));
-        if (temp) table = std::unique_ptr<value_intern[]>(temp);
+        friend base_type;
 
-        capacity = (cap) ? cap*alpha : 2048*alpha;
-        thresh   = (cap) ? cap*beta  : 2048*beta;
-        factor = double(capacity-300)/double(1ull << 32);
+    public:
+        using size_type   = typename base_type::size_type;
+        using key_type    = typename ProbTraits<this_type>::key_type;
+        using mapped_type = typename ProbTraits<this_type>::mapped_type;
+    private:
+        using value_intern = std::pair<key_type, mapped_type>;
 
-        std::fill(table.get(), table.get()+capacity, value_intern());
-    }
-    SpaceLinProbInPlace(const SpaceLinProbInPlace&) = delete;
-    SpaceLinProbInPlace& operator=(const SpaceLinProbInPlace&) = delete;
-    SpaceLinProbInPlace(SpaceLinProbInPlace&& rhs)  = default;
-    SpaceLinProbInPlace& operator=(SpaceLinProbInPlace&& ) = default;
+        static constexpr size_type max_size = 16ull << 30;
 
-private:
-    using Base_t::alpha;
-    using Base_t::beta;
-    using Base_t::n;
-    using Base_t::capacity;
-    using Base_t::thresh;
-    using Base_t::table;
-
-    double    factor;
-    size_type bla;
-
-    static constexpr size_type bitmask = (1ull<<32)-1;
-
-    using Base_t::h;
-
-    // Access Functions ********************************************************
-    inline size_type index(size_type i) const { return (bitmask & i)*factor; }
-    inline size_type mod(size_type i)   const { return i; }
-
-public:
-    using Base_t::insert;
-
-private:
-    // Growing *****************************************************************
-    inline void grow()
-    {
-        // auto ntable = This_t(n, alpha);
-
-        size_type ncap    = n*alpha;
-        size_type nthresh = n*beta;
-        double    nfactor = double(ncap-300)/double(1ull << 32);
-
-        std::fill(table.get()+capacity, table.get()+ncap, value_intern());
-
-        capacity = ncap;
-        thresh   = nthresh;
-        factor   = nfactor;
-        n = 0;
-
-        std::vector<value_intern> buffer;
-
-        for (int i = capacity - 1; i >= 0; --i)
+    public:
+        prob_linear_inplace(size_type cap = 0, double size_constraint = 1.1, size_type /*steps*/=0)
+            : base_type(0, size_constraint), bla(0)
         {
-            auto temp = table[i];
+            // factor = double(capacity-300)/double(1ull << 32);
 
-            if (temp.first)
+            value_intern* temp = reinterpret_cast<value_intern*>(operator new (max_size));
+            if (temp) table = std::unique_ptr<value_intern[]>(temp);
+
+            capacity = (cap) ? cap*alpha : 2048*alpha;
+            thresh   = (cap) ? cap*beta  : 2048*beta;
+            factor = double(capacity-300)/double(1ull << 32);
+
+            std::fill(table.get(), table.get()+capacity, value_intern());
+        }
+        prob_linear_inplace(const prob_linear_inplace&) = delete;
+        prob_linear_inplace& operator=(const prob_linear_inplace&) = delete;
+        prob_linear_inplace(prob_linear_inplace&& rhs)  = default;
+        prob_linear_inplace& operator=(prob_linear_inplace&& ) = default;
+
+    private:
+        using base_type::alpha;
+        using base_type::beta;
+        using base_type::n;
+        using base_type::capacity;
+        using base_type::thresh;
+        using base_type::table;
+
+        double    factor;
+        size_type bla;
+
+        static constexpr size_type bitmask = (1ull<<32)-1;
+
+        using base_type::h;
+
+        // Access Functions ********************************************************
+        inline size_type index(size_type i) const { return (bitmask & i)*factor; }
+        inline size_type mod(size_type i)   const { return i; }
+
+    public:
+        using base_type::insert;
+
+    private:
+        // Growing *****************************************************************
+        inline void grow()
+        {
+            // auto ntable = this_type(n, alpha);
+
+            size_type ncap    = n*alpha;
+            size_type nthresh = n*beta;
+            double    nfactor = double(ncap-300)/double(1ull << 32);
+
+            std::fill(table.get()+capacity, table.get()+ncap, value_intern());
+
+            capacity = ncap;
+            thresh   = nthresh;
+            factor   = nfactor;
+            n = 0;
+
+            std::vector<value_intern> buffer;
+
+            for (int i = capacity - 1; i >= 0; --i)
             {
-                table[i] = value_intern();
-                auto ind = h(temp.first);
-                if (ind >= size_t(i))
-                    insert(temp);
-                else
-                    buffer.push_back(temp);
+                auto temp = table[i];
+
+                if (temp.first)
+                {
+                    table[i] = value_intern();
+                    auto ind = h(temp.first);
+                    if (ind >= size_t(i))
+                        insert(temp);
+                    else
+                        buffer.push_back(temp);
+                }
+                else if (! buffer.empty())
+                {
+                    bla = std::max(bla, buffer.size());
+                    for (auto it = buffer.begin(); it != buffer.end(); it++)
+                    {
+                        insert(*it);
+                    }
+                    buffer.clear();
+                }
             }
-            else if (! buffer.empty())
+
+            if (! buffer.empty())
             {
                 bla = std::max(bla, buffer.size());
                 for (auto it = buffer.begin(); it != buffer.end(); it++)
@@ -309,61 +338,53 @@ private:
             }
         }
 
-        if (! buffer.empty())
+        // Specialized Deletion stuff **********************************************
+
+        inline void propagate_remove(const size_type hole)
         {
-            bla = std::max(bla, buffer.size());
-            for (auto it = buffer.begin(); it != buffer.end(); it++)
+            size_type thole = hole;
+            for (size_type i = hole+1; ; ++i)
             {
-                insert(*it);
+                auto temp = table[i];
+
+                if ( temp.first == 0 ) break;
+                auto tind = h(temp.first);
+                if (tind <= thole)
+                {
+                    table[thole] = temp;
+                    thole = i;
+                }
             }
-            buffer.clear();
+            table[thole] = std::make_pair(0,0);
         }
-    }
 
-    // Specialized Deletion stuff **********************************************
-
-    inline void propagate_remove(const size_type hole)
-    {
-        size_type thole = hole;
-        for (size_type i = hole+1; ; ++i)
+    public:
+        inline static void print_init_header(std::ostream& out)
         {
-            auto temp = table[i];
-
-            if ( temp.first == 0 ) break;
-            auto tind = h(temp.first);
-            if (tind <= thole)
-            {
-                table[thole] = temp;
-                thole = i;
-            }
+            out.width(6); out  << "busize" << " ";
+            base_type::print_init_header(out);
         }
-        table[thole] = std::make_pair(0,0);
-    }
 
-public:
-    inline static void print_init_header(std::ostream& out)
+        inline        void print_init_data  (std::ostream& out)
+        {
+            out.width(6);  out << bla << " ";
+            base_type::print_init_data(out);
+        }
+    };
+
+
+    template<class K, class D, class HF, class Conf>
+    class ProbTraits<prob_linear_inplace<K,D,HF,Conf> >
     {
-        out.width(6); out  << "busize" << " ";
-        Base_t::print_init_header(out);
-    }
+    public:
+        using specialized_type   = prob_linear_inplace<K,D,HF,Conf>;
+        using base_type          = ProbBase<specialized_type>;
+        using hash_function_type = HF;
+        using config_type        = Conf;
 
-    inline        void print_init_data  (std::ostream& out)
-    {
-        out.width(6);  out << bla << " ";
-        Base_t::print_init_data(out);
-    }
-};
+        using key_type      = K;
+        using mapped_type   = D;
+    };
 
 
-template<class K, class D, class HF, class Conf>
-class ProbTraits<SpaceLinProbInPlace<K,D,HF,Conf> >
-{
-public:
-    using Specialized_t = SpaceLinProbInPlace<K,D,HF,Conf>;
-    using Base_t        = ProbBase<Specialized_t>;
-    using HashFct_t     = HF;
-    using Config_t      = Conf;
-
-    using key_type      = K;
-    using mapped_type   = D;
-};
+} // namespace dysect

@@ -16,204 +16,213 @@
 
 #include <tuple>
 
-
-
-template<class K, class D, size_t BS = 4>
-class Bucket
+namespace dysect
 {
-public:
-    using Key = K;
-    using Data = D;
-    using Pair_t = std::pair<Key,Data>;
-    using FRet = std::pair<bool, Data>;
 
-    Bucket() { for (size_t i = 0; i < BS; ++i) elements[i] = std::make_pair(Key(), Data());}
-    Bucket(const Bucket& rhs) = default;
-    Bucket& operator=(const Bucket& rhs) = default;
-
-    bool   insert(const Key& k, const Data& d);
-    bool   insert(const Pair_t& t);
-    FRet   find  (const Key& k);
-    bool   remove(const Key& k);
-    FRet   pop   (const Key& k);
-
-    int    probe (const Key& k);
-
-    bool   space ();
-    Pair_t get(const size_t i);
-    Pair_t replace(const size_t i, const Pair_t& t);
-
-
-    Pair_t* insertPtr(const Pair_t& t);
-    const Pair_t* findPtr(const Key& k) const;
-    Pair_t* findPtr(const Key& k);
-    std::pair<int, Pair_t*> probePtr(const Key& k);
-
-    Pair_t elements[BS];
-};
-
-
-template<class K, class D, size_t BS>
-inline bool Bucket<K,D,BS>::insert(const Key& k, const Data& d)
-{
-    for (size_t i = 0; i < BS; ++i)
+    template<class K, class D, size_t BS = 4>
+    class bucket
     {
-        if (elements[i].first) continue;
-        elements[i].first  = k;
-        elements[i].second = d;
+    public:
+        using key_type    = K;
+        using mapped_type = D;
+    private:
+        using value_intern     = std::pair<key_type,mapped_type>;
+    public:
+        using find_return_type = std::pair<bool, mapped_type>;
 
-        return true;
-    }
-
-    return false;
-}
-
-template<class K, class D, size_t BS>
-inline bool Bucket<K,D,BS>::insert(const Pair_t& t)
-{
-    for (size_t i = 0; i < BS; ++i)
-    {
-        if (elements[i].first) continue;
-
-        elements[i]  = t;
-        return true;
-    }
-
-    return false;
-}
-
-template<class K, class D, size_t BS>
-inline typename Bucket<K,D,BS>::FRet Bucket<K,D,BS>::find(const Key& k)
-{
-    for (size_t i = 0; i < BS; ++i)
-    {
-        if (!elements[i].first )      return std::make_pair(false, Data());
-        if ( elements[i].first == k ) return std::make_pair(true, elements[i].second);
-    }
-    return std::make_pair(false, Data());
-}
-
-template<class K, class D, size_t BS>
-inline bool Bucket<K,D,BS>::remove(const Key& k)
-{
-    for (size_t i = 0; i < BS; ++i)
-    {
-        if (elements[i].first == k)
+        Bucket()
         {
-            size_t j = BS-1;
-            for ( ; !elements[j].first; --j ) { }
-            elements[i] = elements[j];
-            elements[j] = std::make_pair(Key(), Data());
+            for (size_t i = 0; i < BS; ++i)
+                elements[i] = value_intern();
+        }
+        Bucket(const Bucket& rhs) = default;
+        Bucket& operator=(const Bucket& rhs) = default;
+
+        bool   insert(const key_type& k, const mapped_type& d);
+        bool   insert(const value_intern& t);
+        find_return_type   find  (const key_type& k);
+        bool   remove(const key_type& k);
+        find_return_type   pop   (const key_type& k);
+
+        int    probe (const key_type& k);
+
+        bool   space ();
+        value_intern get(const size_t i);
+        value_intern replace(const size_t i, const value_intern& t);
+
+
+        value_intern* insert_ptr(const value_intern& t);
+        const value_intern* find_ptr(const key_type& k) const;
+        value_intern* find_ptr(const key_type& k);
+        std::pair<int, value_intern*> probe_ptr(const key_type& k);
+
+        value_intern elements[BS];
+    };
+
+
+    template<class K, class D, size_t BS>
+    inline bool Bucket<K,D,BS>::insert(const key_type& k, const mapped_type& d)
+    {
+        for (size_t i = 0; i < BS; ++i)
+        {
+            if (elements[i].first) continue;
+            elements[i].first  = k;
+            elements[i].second = d;
+
             return true;
         }
-        else if (! elements[i].first)
-        {
-            break;
-        }
-    }
-    return false;
-}
 
-template<class K, class D, size_t BS>
-inline typename Bucket<K,D,BS>::FRet Bucket<K,D,BS>::pop(const Key& k)
-{
-    for (size_t i = 0; i < BS; ++i)
+        return false;
+    }
+
+    template<class K, class D, size_t BS>
+    inline bool Bucket<K,D,BS>::insert(const value_intern& t)
     {
-        if (elements[i].first == k)
+        for (size_t i = 0; i < BS; ++i)
         {
-            Data d = elements[i].second;
-            for (size_t j = i+1; j < BS; ++j)
+            if (elements[i].first) continue;
+
+            elements[i]  = t;
+            return true;
+        }
+
+        return false;
+    }
+
+    template<class K, class D, size_t BS>
+    inline typename Bucket<K,D,BS>::find_return_type Bucket<K,D,BS>::find(const key_type& k)
+    {
+        for (size_t i = 0; i < BS; ++i)
+        {
+            if (!elements[i].first )      return std::make_pair(false, mapped_type());
+            if ( elements[i].first == k ) return std::make_pair(true, elements[i].second);
+        }
+        return std::make_pair(false, mapped_type());
+    }
+
+    template<class K, class D, size_t BS>
+    inline bool Bucket<K,D,BS>::remove(const key_type& k)
+    {
+        for (size_t i = 0; i < BS; ++i)
+        {
+            if (elements[i].first == k)
             {
-                if (elements[j].first) { elements[i] = elements[j]; i = j; }
-                else break;
+                size_t j = BS-1;
+                for ( ; !elements[j].first; --j ) { }
+                elements[i] = elements[j];
+                elements[j] = std::make_pair(key_type(), mapped_type());
+                return true;
             }
-            elements[i] = std::make_pair(Key(), Data());
-            return std::make_pair(true, d);
+            else if (! elements[i].first)
+            {
+                break;
+            }
         }
-        else if (! elements[i].first)
+        return false;
+    }
+
+    template<class K, class D, size_t BS>
+    inline typename Bucket<K,D,BS>::find_return_type Bucket<K,D,BS>::pop(const key_type& k)
+    {
+        for (size_t i = 0; i < BS; ++i)
         {
-            break;
+            if (elements[i].first == k)
+            {
+                mapped_type d = elements[i].second;
+                for (size_t j = i+1; j < BS; ++j)
+                {
+                    if (elements[j].first) { elements[i] = elements[j]; i = j; }
+                    else break;
+                }
+                elements[i] = std::make_pair(key_type(), mapped_type());
+                return std::make_pair(true, d);
+            }
+            else if (! elements[i].first)
+            {
+                break;
+            }
         }
+        return std::make_pair(false, mapped_type());
     }
-    return std::make_pair(false, Data());
-}
 
-template<class K, class D, size_t BS>
-inline int Bucket<K,D,BS>::probe(const Key& k)
-{
-    for (size_t i = 0; i < BS; ++i)
+    template<class K, class D, size_t BS>
+    inline int Bucket<K,D,BS>::probe(const key_type& k)
     {
-        if (!elements[i].first)      return BS - i;
-        if ( elements[i].first == k) return -1;
+        for (size_t i = 0; i < BS; ++i)
+        {
+            if (!elements[i].first)      return BS - i;
+            if ( elements[i].first == k) return -1;
 
+        }
+        return 0;
     }
-    return 0;
-}
 
-template<class K, class D, size_t BS>
-inline bool Bucket<K,D,BS>::space()
-{
-    return !elements[BS-1].first;
-}
-
-template<class K, class D, size_t BS>
-inline std::pair<K, D> Bucket<K,D,BS>::get(size_t i)
-{
-    return elements[i];
-}
-
-template<class K, class D, size_t BS>
-inline std::pair<K, D> Bucket<K,D,BS>::replace(size_t i, const Pair_t& newE)
-{
-    auto temp = elements[i];
-    elements[i] = newE;
-    return temp;
-}
-
-
-template<class K, class D, size_t BS>
-inline std::pair<K,D>* Bucket<K,D,BS>::insertPtr(const Pair_t& t)
-{
-    for (size_t i = 0; i < BS; ++i)
+    template<class K, class D, size_t BS>
+    inline bool Bucket<K,D,BS>::space()
     {
-        if (elements[i].first) continue;
-
-        elements[i]  = t;
-        return &elements[i];
+        return !elements[BS-1].first;
     }
 
-    return nullptr;
-}
-
-template<class K, class D, size_t BS>
-inline std::pair<K,D>* Bucket<K,D,BS>::findPtr(const Key& k)
-{
-    for (size_t i = 0; i < BS; ++i)
+    template<class K, class D, size_t BS>
+    inline std::pair<K, D> Bucket<K,D,BS>::get(size_t i)
     {
-        //if (!elements[i].first )      return nullptr;
-        if ( elements[i].first == k ) return &elements[i];
+        return elements[i];
     }
-    return nullptr;
-}
 
-template<class K, class D, size_t BS>
-inline const std::pair<K,D>* Bucket<K,D,BS>::findPtr(const Key& k) const
-{
-    for (size_t i = 0; i < BS; ++i)
+    template<class K, class D, size_t BS>
+    inline std::pair<K, D> Bucket<K,D,BS>::replace(size_t i, const value_intern& newE)
     {
-        //if (!elements[i].first )      return nullptr;
-        if ( elements[i].first == k ) return &elements[i];
+        auto temp = elements[i];
+        elements[i] = newE;
+        return temp;
     }
-    return nullptr;
-}
 
-template<class K, class D, size_t BS>
-inline std::pair<int, std::pair<K,D>*> Bucket<K,D,BS>::probePtr(const Key& k)
-{
-    for (size_t i = 0; i < BS; ++i)
+
+    template<class K, class D, size_t BS>
+    inline std::pair<K,D>* Bucket<K,D,BS>::insert_ptr(const Pair_t& t)
     {
-        if (!elements[i].first)      return std::make_pair(BS - i, &elements[i]);
-        if ( elements[i].first == k) return std::make_pair(-1    , &elements[i]);
+        for (size_t i = 0; i < BS; ++i)
+        {
+            if (elements[i].first) continue;
+
+            elements[i]  = t;
+            return &elements[i];
+        }
+
+        return nullptr;
     }
-    return std::make_pair(0, nullptr);
-}
+
+    template<class K, class D, size_t BS>
+    inline std::pair<K,D>* Bucket<K,D,BS>::find_ptr(const key_type& k)
+    {
+        for (size_t i = 0; i < BS; ++i)
+        {
+            //if (!elements[i].first )      return nullptr;
+            if ( elements[i].first == k ) return &elements[i];
+        }
+        return nullptr;
+    }
+
+    template<class K, class D, size_t BS>
+    inline const std::pair<K,D>* Bucket<K,D,BS>::find_ptr(const key_type& k) const
+    {
+        for (size_t i = 0; i < BS; ++i)
+        {
+            //if (!elements[i].first )      return nullptr;
+            if ( elements[i].first == k ) return &elements[i];
+        }
+        return nullptr;
+    }
+
+    template<class K, class D, size_t BS>
+    inline std::pair<int, std::pair<K,D>*> Bucket<K,D,BS>::probe_ptr(const key_type& k)
+    {
+        for (size_t i = 0; i < BS; ++i)
+        {
+            if (!elements[i].first)      return std::make_pair(BS - i, &elements[i]);
+            if ( elements[i].first == k) return std::make_pair(-1    , &elements[i]);
+        }
+        return std::make_pair(0, nullptr);
+    }
+
+} // namespace dysect

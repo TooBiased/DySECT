@@ -2,152 +2,138 @@
 
 #include "include/config.h"
 
-#if (!TESTTAB         && \
-     !CSIMPLE         && \
-     !CINPLACE        && \
-     !COVER           && \
-     !COVERIP         && \
-     !CEG2L           && \
-     !CEIPG2L         && \
-     !CDEAM           && \
-     !CHOMOGENEOUS2L  && \
-     !CINDEPENDENT2L  && \
-     !LINPROB         && \
-     !SPACEPROB       && \
-     !INPLACEPROB     && \
-     !ROBINPROB       && \
-     !RIPPROB         && \
-     !HOPPROB         && \
-     !HIPPROB         && \
-     !STRCTPROB       && \
-     !STRCTCUCKOO     && \
-     !STRCTROBIN)
-#warning WARNING: No table chosen using! CEG2L
-#define CEG2L
-#endif // NO HASHTYPE DEFINED => GROWS
+// cuckoo_simple tables
 
-
-#ifdef TESTTAB
-#define HOPSCOTCH_CONFIG
-#include "include/prob_hops.h"
-#define  HASHTYPE HopsProbInPlace
-#endif // TESTTAB
-
-#ifdef LINPROB
-#define TRIV_CONFIG
-#include "include/prob_simple.h"
-#define  HASHTYPE FastLinProb
-#endif // LINPROB
-
-#ifdef SPACEPROB
-#define TRIV_CONFIG
-#include "include/prob_simple.h"
-#define  HASHTYPE SpaceLinProb
-#endif // SPACEPROB
-
-#ifdef INPLACEPROB
-#define TRIV_CONFIG
-#include "include/prob_simple.h"
-#define  HASHTYPE SpaceLinProbInPlace
-#endif // INPLACEPROB
-
-#ifdef ROBINPROB
-#define TRIV_CONFIG
-#include "include/prob_robin.h"
-#define  HASHTYPE RobinProb
-#endif // ROBINPROB
-
-#ifdef RIPPROB
-#define TRIV_CONFIG
-#include "include/prob_robin.h"
-#define  HASHTYPE RobInPlaceProb
-#endif // ROBINPROB
-
-#ifdef HOPPROB
-#define HOPSCOTCH_CONFIG
-#include "include/prob_hops.h"
-#define  HASHTYPE HopsProb
-#endif // HOPPROB
-
-#ifdef HIPPROB
-#define HOPSCOTCH_CONFIG
-#include "include/prob_hops.h"
-#define  HASHTYPE HopsProbInPlace
-#endif // TESTTAB
-
-#ifdef CSIMPLE
+#ifdef CUCKOO_STANDARD
 #define MULTI
 #include "include/cuckoo_simple.h"
-#define HASHTYPE CuckooSimple
-#endif // CSIMPLE
+#define HASHTYPE cuckoo_standard
+#endif // CUCKOO_STANDARD
 
-#ifdef CDEAM
+#ifdef CUCKOO_STANDARD_INPLACE
+#define MULTI
+#include "include/cuckoo_simple.h"
+#define HASHTYPE cuckoo_standard_inplace
+#endif // CUCKOO_STANDARD_INPLACE
+
+
+
+// cuckoo_deamortized table
+
+#ifdef CUCKOO_DEAMORTIZED
 #define MULTI
 #include "include/cuckoo_deamortized.h"
-#define HASHTYPE CuckooDeAmortized
-#endif // CDEAM
+#define HASHTYPE cuckoo_deamortized
+#endif // CUCKOO_DEAMORTIZED
 
-#ifdef CINPLACE
-#define MULTI
-#include "include/cuckoo_simple.h"
-#define HASHTYPE CuckooSimple
-#endif // CSIMPLE
 
-#ifdef COVER
+
+// cuckoo_dysect tables
+
+#ifdef DYSECT
 #define MULTI
-#include "include/cuckoo_continous.h"
+#include "include/cuckoo_dysect.h"
+#define HASHTYPE cuckoo_dysect
+#endif // DYSECT
+
+#ifdef DYSECT_INPLACE
+#define MULTI
+#include "include/cuckoo_dysect.h"
+#define HASHTYPE cuckoo_dysect_inplace
+#endif // DYSECT_INPLACE
+
+
+
+// cuckoo_independent_2lvl table
+
+#ifdef INDEPENDENT_2LVL
+#define MULTI
+#include "include/cuckoo_independent_2lvl.h"
+#define HASHTYPE cuckoo_independent_2lvl
+#endif // INDEPENDENT_2LVL
+
+
+
+// cuckoo_overlap tables
+
+#ifdef OVERLAP
+#define MULTI
+#include "include/cuckoo_overlap.h"
 #define HASHTYPE cuckoo_overlap
-#endif // CSIMPLE
+#endif // OVERLAP
 
-#ifdef COVERIP
+#ifdef OVERLAP_INPLACE
 #define MULTI
-#include "include/cuckoo_continous.h"
-#define HASHTYPE cuckoo_inplace_overlap
-#endif // CSIMPLE
+#include "include/cuckoo_overlap.h"
+#define HASHTYPE cuckoo_overlap_inplace
+#endif // OVERLAP_INPLACE
 
-#ifdef CEG2L
-#define MULTI
-//#define QUICK_MULTI
-#include "include/cuckoo_eg2l.h"
-#define HASHTYPE CuckooEG2L
-#endif // CEG2L
 
-#ifdef CEIPG2L
-#define MULTI
-//#define QUICK_MULTI
-#include "include/cuckoo_eg2l.h"
-#define HASHTYPE CuckooEIPG2L
-#endif // CEG2L
 
-#ifdef CHOMOGENEOUS2L
-#define MULTI
-#include "include/cuckoo_homogeneous2l.h"
-#define HASHTYPE CuckooHomogeneous2L
-#endif // CHOMOGENEOUS2L
+// prob_hops tables
 
-#ifdef CINDEPENDENT2L
-#define MULTI
-#include "include/cuckoo_independent2l.h"
-#define HASHTYPE CuckooIndependent2L
-#endif // CINDEPENDENT2L
+#ifdef HOPSCOTCH
+#define HOPSCOTCH_CONFIG
+#include "include/prob_hops.h"
+#define  HASHTYPE prob_hopscotch
+#endif // HOPSCOTCH
 
-#ifdef STRCTPROB
+#ifdef HOPSCOTCH_INPLACE
+#define HOPSCOTCH_CONFIG
+#include "include/prob_hops.h"
+#define  HASHTYPE prob_hopscotch_inplace
+#endif // HOPSCOTCH_INPLACE
+
+
+
+// prob_robin tables
+
+#ifdef ROBIN
 #define TRIV_CONFIG
-#include "include/prob_independent_base.h"
-#define HASHTYPE LinProbIndependentBase
-#endif
+#include "include/prob_robin.h"
+#define  HASHTYPE prob_robin
+#endif // ROBIN
 
-#ifdef STRCTCUCKOO
-#define MULTI
-#include "include/cuckoo_simple.h"
-#define HASHTYPE CuckooIndependentBase
-#endif
-
-#ifdef STRCTROBIN
+#ifdef ROBIN_INPLACE
 #define TRIV_CONFIG
-#include "include/prob_independent_base.h"
-#define HASHTYPE RobProbIndependentBase
-#endif
+#include "include/prob_robin.h"
+#define  HASHTYPE prob_robin_inplace
+#endif // ROBIN_INPLACE
+
+
+
+// prob_simple tables
+
+#ifdef LINEAR_DOUBLING
+#define TRIV_CONFIG
+#include "include/prob_simple.h"
+#define  HASHTYPE prob_linear_doubling
+#endif // LINEAR_DOUBLING
+
+#ifdef LINEAR
+#define TRIV_CONFIG
+#include "include/prob_simple.h"
+#define  HASHTYPE prob_linear
+#endif // LINEAR
+
+#ifdef LINEAR_INPLACE
+#define TRIV_CONFIG
+#include "include/prob_simple.h"
+#define  HASHTYPE prob_linear_inplace
+#endif // LINEAR_INPLACE
+
+
+
+// NO TABLE CHOSEN!!! THEREFORE PRINT WARNING AND USE TEST TABLE!!!
+
+#if (!MULTI       && \
+     !TRIV_CONFIG && \
+     !HOPSCOTCH_CONFIG)
+#warning WARNING: No table chosen! Use
+#define MULTI
+#include "include/cuckoo_dysect.h"
+#define  HASHTYPE cuckoo_dysect_inplace
+#endif // NO TABLE IS DEFINED
 
 #ifdef MULTI
 #include "include/displacement_strategies/summary.h"
@@ -158,6 +144,7 @@
 #ifdef NONCUCKOO
 #define QUICK_MULTI
 #endif  // NONCUCKOO
+
 
 struct Chooser
 {
