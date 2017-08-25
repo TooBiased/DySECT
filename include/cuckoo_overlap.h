@@ -24,14 +24,14 @@ namespace dysect
 {
 
     template<class K, class D, class HF = std::hash<K>,
-             class Conf = Config<> >
-    class cuckoo_overlap : public CuckooTraits<cuckoo_overlap<K,D,HF,Conf> >::base_type
+             class Conf = cuckoo_config<> >
+    class cuckoo_overlap : public cuckoo_traits<cuckoo_overlap<K,D,HF,Conf> >::base_type
     {
     private:
         using this_type      = cuckoo_overlap<K,D,HF,Conf>;
-        using base_type      = typename CuckooTraits<this_type>::base_type;
-        using bucket_type    = typename CuckooTraits<this_type>::bucket_type;
-        using hasher_type    = typename CuckooTraits<this_type>::hasher_type;
+        using base_type      = typename cuckoo_traits<this_type>::base_type;
+        using bucket_type    = typename cuckoo_traits<this_type>::bucket_type;
+        using hasher_type    = typename cuckoo_traits<this_type>::hasher_type;
         using hashed_type    = typename hasher_type::hashed_type;
         using ext            = typename hasher_type::extractor_type;
 
@@ -39,9 +39,9 @@ namespace dysect
         friend iterator_incr<this_type>;
 
     public:
-        using size_type      = typename CuckooTraits<this_type>::size_type;
-        using key_type       = typename CuckooTraits<this_type>::key_type;
-        using mapped_type    = typename CuckooTraits<this_type>::mapped_type;
+        using size_type      = typename cuckoo_traits<this_type>::size_type;
+        using key_type       = typename cuckoo_traits<this_type>::key_type;
+        using mapped_type    = typename cuckoo_traits<this_type>::mapped_type;
         using iterator       = typename base_type::iterator;
         using const_iterator = typename base_type::const_iterator;
 
@@ -78,9 +78,9 @@ namespace dysect
         using base_type::alpha;
         using base_type::hasher;
 
-        static constexpr size_type sbs = CuckooTraits<this_type>::sbs;
-        static constexpr size_type bs  = CuckooTraits<this_type>::bs;
-        static constexpr size_type nh  = CuckooTraits<this_type>::nh;
+        static constexpr size_type sbs = cuckoo_traits<this_type>::sbs;
+        static constexpr size_type bs  = cuckoo_traits<this_type>::bs;
+        static constexpr size_type nh  = cuckoo_traits<this_type>::nh;
         static constexpr size_type tl  = 1;
 
         size_type n_subbuckets;
@@ -216,7 +216,7 @@ namespace dysect
 
     template<class K, class D, class HF,
              class Conf>
-    class CuckooTraits<cuckoo_overlap<K,D,HF,Conf> >
+    class cuckoo_traits<cuckoo_overlap<K,D,HF,Conf> >
     {
     public:
         using specialized_type = cuckoo_overlap<K,D,HF,Conf>;
@@ -288,14 +288,14 @@ namespace dysect
 // *****************************************************************************
 
     template<class K, class D, class HF = std::hash<K>,
-             class Conf = Config<> >
-    class cuckoo_inplace_overlap : public CuckooTraits<cuckoo_inplace_overlap<K,D,HF,Conf> >::base_type
+             class Conf = cuckoo_config<> >
+    class cuckoo_overlap_inplace : public cuckoo_traits<cuckoo_overlap_inplace<K,D,HF,Conf> >::base_type
     {
     private:
-        using this_type         = cuckoo_inplace_overlap<K,D,HF,Conf>;
-        using base_type         = typename CuckooTraits<this_type>::base_type;
-        using bucket_type       = typename CuckooTraits<this_type>::bucket_type;
-        using hasher_type       = typename CuckooTraits<this_type>::hasher_type;
+        using this_type         = cuckoo_overlap_inplace<K,D,HF,Conf>;
+        using base_type         = typename cuckoo_traits<this_type>::base_type;
+        using bucket_type       = typename cuckoo_traits<this_type>::bucket_type;
+        using hasher_type       = typename cuckoo_traits<this_type>::hasher_type;
         using hashed_type       = typename hasher_type::hashed_type;
         using ext            = typename hasher_type::extractor_type;
 
@@ -303,24 +303,24 @@ namespace dysect
         friend iterator_incr<this_type>;
 
     public:
-        using size_type      = typename CuckooTraits<this_type>::size_type;
-        using key_type       = typename CuckooTraits<this_type>::key_type;
-        using mapped_type    = typename CuckooTraits<this_type>::mapped_type;
+        using size_type      = typename cuckoo_traits<this_type>::size_type;
+        using key_type       = typename cuckoo_traits<this_type>::key_type;
+        using mapped_type    = typename cuckoo_traits<this_type>::mapped_type;
         using iterator       = typename base_type::iterator;
         using const_iterator = typename base_type::const_iterator;
 
     private:
         using value_intern = std::pair<key_type, mapped_type>;
 
-        static constexpr size_type bs  = CuckooTraits<this_type>::bs;
-        static constexpr size_type sbs = CuckooTraits<this_type>::sbs;
-        static constexpr size_type nh  = CuckooTraits<this_type>::nh;
+        static constexpr size_type bs  = cuckoo_traits<this_type>::bs;
+        static constexpr size_type sbs = cuckoo_traits<this_type>::sbs;
+        static constexpr size_type nh  = cuckoo_traits<this_type>::nh;
         static constexpr size_type tl  = 1;
 
         static constexpr size_type max_size     = 10ull << 30;
 
     public:
-        cuckoo_inplace_overlap(size_type cap = 0      , double size_constraint = 1.1,
+        cuckoo_overlap_inplace(size_type cap = 0      , double size_constraint = 1.1,
                                size_type dis_steps = 0, size_type seed = 0)
             : base_type(size_constraint, dis_steps, seed),
               beta((size_constraint + 1.)/2.)
@@ -339,11 +339,11 @@ namespace dysect
             std::fill(table.get(), table.get()+capacity, value_intern());
         }
 
-        cuckoo_inplace_overlap(const cuckoo_inplace_overlap&) = delete;
-        cuckoo_inplace_overlap& operator=(const cuckoo_inplace_overlap&) = delete;
+        cuckoo_overlap_inplace(const cuckoo_overlap_inplace&) = delete;
+        cuckoo_overlap_inplace& operator=(const cuckoo_overlap_inplace&) = delete;
 
-        cuckoo_inplace_overlap(cuckoo_inplace_overlap&&) = default;
-        cuckoo_inplace_overlap& operator=(cuckoo_inplace_overlap&&) = default;
+        cuckoo_overlap_inplace(cuckoo_overlap_inplace&&) = default;
+        cuckoo_overlap_inplace& operator=(cuckoo_overlap_inplace&&) = default;
 
     private:
         using base_type::n;
@@ -489,10 +489,10 @@ namespace dysect
 
     template<class K, class D, class HF,
              class Conf>
-    class CuckooTraits<cuckoo_inplace_overlap<K,D,HF,Conf> >
+    class cuckoo_traits<cuckoo_overlap_inplace<K,D,HF,Conf> >
     {
     public:
-        using specialized_type = cuckoo_inplace_overlap<K,D,HF,Conf>;
+        using specialized_type = cuckoo_overlap_inplace<K,D,HF,Conf>;
         using base_type        = cuckoo_base<specialized_type>;
         using config_type      = Conf;
 
@@ -515,10 +515,10 @@ namespace dysect
 // Iterator increment **********************************************************
 
     template<class K, class D, class HF, class Conf>
-    class iterator_incr<cuckoo_inplace_overlap<K,D,HF,Conf> >
+    class iterator_incr<cuckoo_overlap_inplace<K,D,HF,Conf> >
     {
     public:
-        using table_type   = cuckoo_inplace_overlap<K,D,HF,Conf>;
+        using table_type   = cuckoo_overlap_inplace<K,D,HF,Conf>;
     private:
         using size_type = typename table_type::size_type;
         using pointer   = std::pair<const K,D>*;

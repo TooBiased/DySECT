@@ -24,9 +24,6 @@
 
 #include "cuckoo_base.h"
 
-//template<class K0, class D0, class HF0, class Conf0>
-//class cuckoo_independent_base;
-
 namespace dysect
 {
 
@@ -40,7 +37,7 @@ namespace dysect
         using bucket_type = typename cuckoo_traits<this_type>::bucket_type;
         using hasher_type = typename cuckoo_traits<this_type>::hasher_type;
         using hashed_type = typename hasher_type::hashed_type;
-        using ext         = typename hasher_type::extractor_t;
+        using ext         = typename hasher_type::extractor_type;
 
         friend base_type;
         friend iterator_incr<this_type>;
@@ -158,8 +155,6 @@ namespace dysect
 
         inline void grow()
             {
-                // std::cout << "cap:" << capacity
-                //           << " cut:" << bucket_cutoff << std::endl;
                 size_type ncap    = capacity + grow_step*bs;
                 size_type ncutoff = bucket_cutoff + grow_step;
                 grow_thresh       = size_type(double(ncap+grow_step*bs)/alpha);
@@ -168,33 +163,13 @@ namespace dysect
 
                 migrate(capacity, ncap);
 
-                //auto ocap = capacity;
-                //auto ocut = bucket_cutoff;
                 capacity      = ncap;
                 bucket_cutoff = ncutoff;
-
-                //for (size_t i = gable.get)
-
-                // size_type bla = 0;
-                // size_type blu = 0;
-                // for (size_type i = 0; i < capacity; ++i)
-                // {
-                //     auto curr = table[i];
-                //     if (!curr.first) continue;
-                //     ++bla;
-                //     if (base_type::find(curr.first) == base_type::end())
-                //     {
-                //         //std::cout << i << std::endl;
-                //         ++blu;
-                //     }
-                // }
-                // std::cout << "n " << n << "  moved " << bla << "  lost " << blu << std::endl;
 
                 if (ncutoff >= bitmask_large)
                 {
                     bitmask_small = bitmask_large;
                     bitmask_large = (bitmask_large<<1) + 1;
-                    // std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
                 }
 
             }
@@ -204,33 +179,13 @@ namespace dysect
                 size_type flag  = bitmask_large  & (~bitmask_small);
                 size_type ptr0  = (bucket_cutoff & bitmask_small) * bs;
 
-                //static size_type counter = 0;
-
-                //for (size_type i = 0; i < grow_step*bs; i+=bs)
                 for (size_type i = 0; i < grow_step; ++i)
                 {
-                    // bucket_type* bucket0_ptr =
-                    //     reinterpret_cast<bucket_type*>(table.get() + ((cap/bs) & bitmask_small) + i);
-                    // bucket_type* bucket1_ptr =
-                    //     reinterpret_cast<bucket_type*>(table.get() + capacity +i);
-                    //if (((i/bs)&bitmask_small)%bs) std::cout << "9222222222222222222222222222222222222222222222222222" << std::endl;
                     bucket_type* bucket0_ptr =
                         reinterpret_cast<bucket_type*>(table.get()+ptr0+i*bs);
                     bucket_type* bucket1_ptr =
                         reinterpret_cast<bucket_type*>(table.get()+capacity+i*bs);
 
-                    //static size_type fuck = 0;
-                    // if (fuck < 10)
-                    // {
-                    //     std::cout << capacity << " "
-                    //               << off0s+i << " "< bitmask_small << " "
-                    //               << bitmask_large << std::endl;
-                    //     fuck++;
-                    // }
-                    // for (size_type k = 0; k < bs; ++k)
-                    // {
-                    //     if (bucket1_ptr->elements[k].first) std::cout << "fuck " << std::flush;
-                    // }
                     size_type c0 = 0;
                     size_type c1 = 0;
                     for (size_type j = 0; j < bs; ++j)
@@ -243,7 +198,6 @@ namespace dysect
                         hashed_type  hash = hasher(curr.first);
                         getBuckets(hash, targets);
 
-                        // bool wtf = false;
                         for (size_type t = 0; t < nh; ++t)
                         {
                             if (targets[t] == bucket0_ptr)
@@ -251,37 +205,16 @@ namespace dysect
                                 if (ext::loc(hash, t) & flag)
                                 {
                                     bucket1_ptr->elements[c1++] = curr;
-                                    // if (bucket1_ptr != reinterpret_cast<bucket_type*>(table.get() + (ext::loc(hash, t) & bitmask_large)*bs))
-                                    //     std::cout << "i:" << (i-capacity)/bs << "k" << std::endl;
                                 }
                                 else
                                 {
                                     bucket0_ptr->elements[c0++] = curr;
-                                    // if (bucket0_ptr != reinterpret_cast<bucket_type*>(table.get() + (ext::loc(hash, t) & bitmask_large)*bs))
-                                    //     std::cout << "g" << std::endl;
                                 }
-                                //wtf = true;
                                 break;
                             }
                         }
-
-                        // if (!wtf)
-                        // {
-                        //     std::cout <<   "i:" << (i - capacity)/bs
-                        //               << " b0:" << bucket0_ptr
-                        //               << " b1:" << bucket1_ptr
-                        //               << " stuff:" << std::flush;
-                        //     for (size_t z = 0; z < nh; ++z)
-                        //     {
-                        //         std::cout << " " << targets[z];
-                        //     }
-                        //     std::cout << std::endl;
-                        //     counter++;
-                        // }
                     }
                 }
-                // if (counter)
-                // { std::cout << counter << std::endl; }
             }
     };
 
@@ -295,8 +228,8 @@ namespace dysect
     {
     public:
         using specialized_type = cuckoo_deamortized<K,D,HF,Conf>;
-        using base_type        = cuckoo_base<Specialized_t>;
-        using cuckoo_type      = Conf;
+        using base_type        = cuckoo_base<specialized_type>;
+        using config_type      = Conf;
 
         using size_type        = size_t;
         using key_type         = K;
@@ -321,12 +254,12 @@ namespace dysect
     public:
         using table_type = cuckoo_deamortized<K,D,HF,Conf>;
     private:
-        using size_type  = typename Table_t::size_type;
+        using size_type  = typename table_type::size_type;
         using pointer    = std::pair<const K,D>*;
         static constexpr size_type bs = Conf::bs;
 
     public:
-        iterator_incr(const Table_t& table_)
+        iterator_incr(const table_type& table_)
             : end_ptr(reinterpret_cast<pointer>(&table_.table[table_.capacity -1]))
             { }
         iterator_incr(const iterator_incr&) = default;

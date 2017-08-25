@@ -274,15 +274,15 @@ namespace dysect
     {
     public:
         using specialized_type  = cuckoo_independent_2lvl<K,D,HF,Conf>;
-        using base_type         = CuckooMultiBase<specialized_type>;
+        using base_type         = cuckoo_base<specialized_type>;
         using config_type       = Conf;
 
         using key_type       = K;
         using mapped_type    = D;
 
-        static constexpr size_type bs = Conf::bs;
-        static constexpr size_type tl = Conf::tl;
-        static constexpr size_type nh = Conf::nh;
+        static constexpr size_t bs = Conf::bs;
+        static constexpr size_t tl = Conf::tl;
+        static constexpr size_t nh = Conf::nh;
 
         using hasher_type       = hasher<K, HF, ct_log(tl), nh, true, true>;
         using bucket_type       = bucket<K,D,bs>;

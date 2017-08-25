@@ -21,18 +21,18 @@ namespace dysect
 {
 
     template <class K, class D, class HF = std::hash<K>,
-              class Conf = triv_config<> >
-    class prob_robin : public ProbTraits<prob_robin<K,D,HF,Conf> >::base_type
+              class Conf = triv_config>
+    class prob_robin : public prob_traits<prob_robin<K,D,HF,Conf> >::base_type
     {
     private:
         using  this_type = prob_robin<K,D,HF,Conf>;
-        using  base_type = typename ProbTraits<this_type>::base_type;
+        using  base_type = typename prob_traits<this_type>::base_type;
 
         friend base_type;
     public:
         using size_type      = typename base_type::size_type;
-        using key_type       = typename ProbTraits<this_type>::key_type;
-        using mapped_type    = typename ProbTraits<this_type>::mapped_type;
+        using key_type       = typename prob_traits<this_type>::key_type;
+        using mapped_type    = typename prob_traits<this_type>::mapped_type;
         using iterator       = typename base_type::iterator;
         using const_iterator = typename base_type::const_iterator;
 
@@ -243,7 +243,7 @@ namespace dysect
 
 
     template<class K, class D, class HF, class Conf>
-    class ProbTraits<prob_robin<K,D,HF,Conf> >
+    class prob_traits<prob_robin<K,D,HF,Conf> >
     {
     public:
         using specialized_type   = prob_robin<K,D,HF,Conf>;
@@ -267,19 +267,19 @@ namespace dysect
 // *****************************************************************************
 
     template <class K, class D, class HF = std::hash<K>,
-              class Conf = triv_config<> >
-    class prob_robin_inplace : public ProbTraits<prob_robin_inplace<K,D,HF,Conf> >::base_type
+              class Conf = triv_config>
+    class prob_robin_inplace : public prob_traits<prob_robin_inplace<K,D,HF,Conf> >::base_type
     {
     private:
         using this_type = prob_robin_inplace<K,D,HF,Conf>;
-        using base_type = typename ProbTraits<this_type>::base_type;
+        using base_type = typename prob_traits<this_type>::base_type;
 
         friend base_type;
 
     public:
         using size_type      = typename base_type::size_type;
-        using key_type       = typename ProbTraits<this_type>::key_type;
-        using mapped_type    = typename ProbTraits<this_type>::mapped_type;
+        using key_type       = typename prob_traits<this_type>::key_type;
+        using mapped_type    = typename prob_traits<this_type>::mapped_type;
         using iterator       = typename base_type::iterator;
         using const_iterator = typename base_type::const_iterator;
     private:
@@ -526,7 +526,7 @@ namespace dysect
 
 
     template<class K, class D, class HF, class Conf>
-    class ProbTraits<prob_robin_inplace<K,D,HF,Conf> >
+    class prob_traits<prob_robin_inplace<K,D,HF,Conf> >
     {
     public:
         using specialized_type   = prob_robin_inplace<K,D,HF,Conf>;

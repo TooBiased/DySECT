@@ -23,9 +23,10 @@
 #include <limits>
 
 #include "bucket.h"
-#include "config.h"
 #include "hasher.h"
 #include "iterator_base.h"
+#include "displacement_strategies/main_strategies.h"
+
 // CRTP base class for all cuckoo tables, this encapsulates
 // main cuckoo table functionality (insert, find, and remove)
 
@@ -35,35 +36,65 @@ namespace dysect
     template<class T>
     class cuckoo_traits;
 /* EXAMPLE IMPLEMENTATION
-   {
-   public:
-   using Specialized_t  = T;
-   using Base_t         = cuckoo_base<T>;
-   using Config_t       = cuckoo_config<...>;
+    {
+    public:
+        using Specialized_t  = T;
+        using Base_t         = cuckoo_base<T>;
+        using Config_t       = cuckoo_config<...>;
 
-   using key_type       = ... ;
-   using mapped_type    = ... ;
+        using key_type       = ... ;
+        using mapped_type    = ... ;
 
-   static constexpr size_t tl = ... ;
-   static constexpr size_t bs = ... ;
-   static constexpr size_t nh = ... ;
+        static constexpr size_t tl = ... ;
+        static constexpr size_t bs = ... ;
+        static constexpr size_t nh = ... ;
 
-   union hasher_type    = hasher<key_type, HashFct, ...>;
-   using bucket_type    = bucket<key_type, mapped_type, bs>;
-   };*/
+        union hasher_type    = hasher<key_type, HashFct, ...>;
+        using bucket_type    = bucket<key_type, mapped_type, bs>;
+    };*/
 
-    template<class T, bool c = false>
+    template<class T>
     class iterator_incr;
-/*
-  {
-  using Table_t = Specialized_t;
-  iterator_incr(const Table_t&) { ... }
-  iterator_incr(const iterator_incr&) = default;
-  iterator_incr& operator=(const iterator_incr&) = default;
 
-  pointer next(pointer) { ... }
-  };
-*/
+    class hist_count
+    {
+    public:
+        hist_count(size_t s) : steps(s), hist(new size_t[s])
+        { for (size_t i = 0; i < s; ++i) { hist[i] = 0; } }
+
+        void add(size_t i) { auto ind = (i<steps) ? i:steps-1; ++hist[ind];}
+
+        const size_t steps;
+        std::unique_ptr<size_t[]> hist;
+    };
+
+    class no_hist_count
+    {
+    public:
+        no_hist_count(size_t = 0) { }
+        void add(size_t) { }
+        static constexpr size_t  steps = 0;
+        static constexpr size_t* hist  = nullptr;
+    };
+
+    template<size_t BS = 8, size_t NH = 3, size_t TL = 256,
+             template <class> class DisStrat = cuckoo_displacement::trivial,
+             class HistCount = no_hist_count>
+    struct cuckoo_config
+    {
+        static constexpr size_t bs = BS;
+        static constexpr size_t tl = TL;
+        static constexpr size_t nh = NH;
+        static constexpr size_t sbs = 4;
+
+        template <class T>
+        using dis_strat_type  = DisStrat<T>;
+
+        using hist_count_type = HistCount;
+    };
+
+
+
 
 
     template<class SCuckoo>
@@ -72,8 +103,8 @@ namespace dysect
     private:
         using  this_type        = cuckoo_base<SCuckoo>;
         using  specialized_type = typename cuckoo_traits<SCuckoo>::specialized_type;
-        using  dis_strat_type   = typename cuckoo_traits<SCuckoo>::config_init::template dis_strat_type<this_type>;
-        using  hist_count_type  = typename cuckoo_traits<SCuckoo>::config_init::hist_count_type;
+        using  dis_strat_type   = typename cuckoo_traits<SCuckoo>::config_type::template dis_strat_type<this_type>;
+        using  hist_count_type  = typename cuckoo_traits<SCuckoo>::config_type::hist_count_type;
         using  bucket_type      = typename cuckoo_traits<SCuckoo>::bucket_type;
         using  hasher_type      = typename cuckoo_traits<SCuckoo>::hasher_type;
         using  hashed_type      = typename hasher_type::hashed_type;
@@ -85,8 +116,8 @@ namespace dysect
         using key_type        = typename cuckoo_traits<SCuckoo>::key_type;
         using mapped_type     = typename cuckoo_traits<SCuckoo>::mapped_type;
         using value_type      = std::pair<const key_type, mapped_type>;
-        using iterator        = IteratorBase<iterator_incr<specialized_type> >;
-        using const_iterator  = IteratorBase<iterator_incr<specialized_type>, true>;
+        using iterator        = iterator_base<iterator_incr<specialized_type> >;
+        using const_iterator  = iterator_base<iterator_incr<specialized_type>, true>;
         using size_type       = size_t;
         using difference_type = std::ptrdiff_t;
         // using hasher          = Hash;
@@ -182,18 +213,18 @@ namespace dysect
         void                  clearHist();
         void                  print_init_data(std::ostream& out);
         static void           print_init_header(std::ostream& out)
-            {
+        {
                 out.width(6); out << "bsize";
                 out.width(6); out << "ntabl";
                 out.width(6); out << "nhash";
                 out.width(9); out << "f_cap";
                 out << std::flush;
-            }
+        }
 
         void explicit_grow()
-            {
+        {
                 static_cast<specialized_type*>(this)->grow();
-            }
+        }
     };
 
 
@@ -228,7 +259,7 @@ namespace dysect
         for (size_type i = 0; i < nh; ++i)
         {
             bucket_type* tb = get_bucket(hash, i);
-            value_intern*   tp = tb->findPtr(k);
+            value_intern*   tp = tb->find_ptr(k);
             if (tp) return make_iterator(tp);
         }
         return end();
@@ -243,7 +274,7 @@ namespace dysect
         for (size_type i = 0; i < nh; ++i)
         {
             bucket_type* tb = get_bucket(hash, i);
-            value_intern*   tp = tb->findPtr(k);
+            value_intern*   tp = tb->find_ptr(k);
             if (tp) return make_citerator(tp);
         }
         return end();
@@ -266,7 +297,7 @@ namespace dysect
         std::pair<int,value_intern*> max = std::make_pair(0, nullptr);
         for (size_type i = 0; i < nh; ++i)
         {
-            auto temp = get_bucket(hash, i)->probePtr(t.first);
+            auto temp = get_bucket(hash, i)->probe_ptr(t.first);
 
             if (temp.first < 0)
                 return std::make_pair(make_iterator(temp.second), false);

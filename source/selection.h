@@ -1,19 +1,20 @@
 #pragma once
 
-#include "include/config.h"
+
+#include "utils/commandline.h"
 
 // cuckoo_simple tables
 
 #ifdef CUCKOO_STANDARD
 #define MULTI
 #include "include/cuckoo_simple.h"
-#define HASHTYPE cuckoo_standard
+#define HASHTYPE dysect::cuckoo_standard
 #endif // CUCKOO_STANDARD
 
 #ifdef CUCKOO_STANDARD_INPLACE
 #define MULTI
 #include "include/cuckoo_simple.h"
-#define HASHTYPE cuckoo_standard_inplace
+#define HASHTYPE dysect::cuckoo_standard_inplace
 #endif // CUCKOO_STANDARD_INPLACE
 
 
@@ -23,7 +24,7 @@
 #ifdef CUCKOO_DEAMORTIZED
 #define MULTI
 #include "include/cuckoo_deamortized.h"
-#define HASHTYPE cuckoo_deamortized
+#define HASHTYPE dysect::cuckoo_deamortized
 #endif // CUCKOO_DEAMORTIZED
 
 
@@ -33,13 +34,13 @@
 #ifdef DYSECT
 #define MULTI
 #include "include/cuckoo_dysect.h"
-#define HASHTYPE cuckoo_dysect
+#define HASHTYPE dysect::cuckoo_dysect
 #endif // DYSECT
 
 #ifdef DYSECT_INPLACE
 #define MULTI
 #include "include/cuckoo_dysect.h"
-#define HASHTYPE cuckoo_dysect_inplace
+#define HASHTYPE dysect::cuckoo_dysect_inplace
 #endif // DYSECT_INPLACE
 
 
@@ -49,7 +50,7 @@
 #ifdef INDEPENDENT_2LVL
 #define MULTI
 #include "include/cuckoo_independent_2lvl.h"
-#define HASHTYPE cuckoo_independent_2lvl
+#define HASHTYPE dysect::cuckoo_independent_2lvl
 #endif // INDEPENDENT_2LVL
 
 
@@ -59,13 +60,13 @@
 #ifdef OVERLAP
 #define MULTI
 #include "include/cuckoo_overlap.h"
-#define HASHTYPE cuckoo_overlap
+#define HASHTYPE dysect::cuckoo_overlap
 #endif // OVERLAP
 
 #ifdef OVERLAP_INPLACE
 #define MULTI
 #include "include/cuckoo_overlap.h"
-#define HASHTYPE cuckoo_overlap_inplace
+#define HASHTYPE dysect::cuckoo_overlap_inplace
 #endif // OVERLAP_INPLACE
 
 
@@ -75,13 +76,13 @@
 #ifdef HOPSCOTCH
 #define HOPSCOTCH_CONFIG
 #include "include/prob_hops.h"
-#define  HASHTYPE prob_hopscotch
+#define  HASHTYPE dysect::prob_hopscotch
 #endif // HOPSCOTCH
 
 #ifdef HOPSCOTCH_INPLACE
 #define HOPSCOTCH_CONFIG
 #include "include/prob_hops.h"
-#define  HASHTYPE prob_hopscotch_inplace
+#define  HASHTYPE dysect::prob_hopscotch_inplace
 #endif // HOPSCOTCH_INPLACE
 
 
@@ -91,13 +92,13 @@
 #ifdef ROBIN
 #define TRIV_CONFIG
 #include "include/prob_robin.h"
-#define  HASHTYPE prob_robin
+#define  HASHTYPE dysect::prob_robin
 #endif // ROBIN
 
 #ifdef ROBIN_INPLACE
 #define TRIV_CONFIG
 #include "include/prob_robin.h"
-#define  HASHTYPE prob_robin_inplace
+#define  HASHTYPE dysect::prob_robin_inplace
 #endif // ROBIN_INPLACE
 
 
@@ -107,173 +108,183 @@
 #ifdef LINEAR_DOUBLING
 #define TRIV_CONFIG
 #include "include/prob_simple.h"
-#define  HASHTYPE prob_linear_doubling
+#define  HASHTYPE dysect::prob_linear_doubling
 #endif // LINEAR_DOUBLING
 
 #ifdef LINEAR
 #define TRIV_CONFIG
 #include "include/prob_simple.h"
-#define  HASHTYPE prob_linear
+#define  HASHTYPE dysect::prob_linear
 #endif // LINEAR
 
 #ifdef LINEAR_INPLACE
 #define TRIV_CONFIG
 #include "include/prob_simple.h"
-#define  HASHTYPE prob_linear_inplace
+#define  HASHTYPE dysect::prob_linear_inplace
 #endif // LINEAR_INPLACE
 
 
 
 // NO TABLE CHOSEN!!! THEREFORE PRINT WARNING AND USE TEST TABLE!!!
 
-#if (!MULTI       && \
-     !TRIV_CONFIG && \
+/*
+#if (!MULTI            &&                     \
+     !TRIV_CONFIG      && \
      !HOPSCOTCH_CONFIG)
+
 #warning WARNING: No table chosen! Use
 #define MULTI
 #include "include/cuckoo_dysect.h"
-#define  HASHTYPE cuckoo_dysect_inplace
+#define  HASHTYPE dysect::cuckoo_dysect_inplace
 #endif // NO TABLE IS DEFINED
+*/
 
-#ifdef MULTI
-#include "include/displacement_strategies/summary.h"
-#endif // MULTI
 
-#include "utils/commandline.h"
-
-#ifdef NONCUCKOO
-#define QUICK_MULTI
-#endif  // NONCUCKOO
-
+// #define QUICK_MULTI
 
 struct Chooser
 {
 #if defined QUICK_MULTI
-    template<template<class> class Functor, class Hist,
+    template<template<class> class Functor, bool HistCount,
              class ... Types>
-    inline static typename std::result_of<Functor<Config<> >(Types&& ...)>::type
+    inline static typename std::result_of<Functor<dysect::cuckoo_config<> >(Types&& ...)>::type
     execute(CommandLine&, Types&& ... param)
     {
-        Functor<Config<8,3,256,DisBFS> > f;
+        Functor<dysect::cuckoo_config<8,3,256,DisBFS> > f;
         return f(std::forward<Types>(param)...);
     }
 #elif defined MULTI
-    template<template<class> class Functor, class Hist,
+    template<template<class> class Functor, bool HistCount,
              class ... Types>
-    inline static typename std::result_of<Functor<Config<> >(Types&& ...)>::type
+    inline static typename std::result_of<Functor<dysect::cuckoo_config<> >(Types&& ...)>::type
     execute(CommandLine& c, Types&& ... param)
     {
-        //return executeD<Functor, Hist, DisRWalk>     ( c, std::forward<Types>(param)...);
+        //return executeD<Functor, HistCount, DisRWalk>     ( c, std::forward<Types>(param)...);
         ///*
         if      (c.boolArg("-bfs"))
-            return executeD<Functor, Hist, DisBFS>     ( c, std::forward<Types>(param)...);
+            return executeD<Functor, HistCount, dysect::cuckoo_displacement::bfs>
+                ( c, std::forward<Types>(param)...);
         else if (c.boolArg("-rwalk"))
-            return executeD<Functor, Hist, DisRWalkOpt>   ( c, std::forward<Types>(param)...);
-        else if (c.boolArg("-rwalkcyc"))
-            return executeD<Functor, Hist, DisCycRWalk>( c, std::forward<Types>(param)...);
+            return executeD<Functor, HistCount, dysect::cuckoo_displacement::random_walk>
+                ( c, std::forward<Types>(param)...);
 
         std::cout << "ERROR: choose displacement Strategy (use triv)" << std::endl;
-        return executeD<Functor, Hist, DisBFS>(c, std::forward<Types>(param)...);
+        return executeD<Functor, HistCount, dysect::cuckoo_displacement::trivial>
+            (c, std::forward<Types>(param)...);
         //*/
     }
 
-    template<template<class> class Functor, class Hist, template<class> class Displacer, class ... Types>
-    inline static typename std::result_of<Functor<Config<> >(Types&& ...)>::type
+    template<template<class> class Functor, bool HistCount,
+             template<class> class Displacer,
+             class ... Types>
+    inline static typename std::result_of<Functor<dysect::cuckoo_config<> >(Types&& ...)>::type
     executeD(CommandLine& c, Types&& ... param)
     {
-        auto tl = c.intArg("-tl", Config<>::tl);
+        auto tl = c.intArg("-tl", dysect::cuckoo_config<>::tl);
         switch (tl)
         {
         // case 64:
-        //     return executeDT<Functor, Hist, Displacer,   64> (c, std::forward<Types>(param)...);
+        //     return executeDT<Functor, HistCount, Displacer,   64> (c, std::forward<Types>(param)...);
         // case 128:
-        //     return executeDT<Functor, Hist, Displacer,  128> (c, std::forward<Types>(param)...);
+        //     return executeDT<Functor, HistCount, Displacer,  128> (c, std::forward<Types>(param)...);
         case 256:
-            return executeDT<Functor, Hist, Displacer,  256> (c, std::forward<Types>(param)...);
+            return executeDT<Functor, HistCount, Displacer,  256> (c, std::forward<Types>(param)...);
         // case 512:
-        //     return executeDT<Functor, Hist, Displacer,  512> (c, std::forward<Types>(param)...);
+        //     return executeDT<Functor, HistCount, Displacer,  512> (c, std::forward<Types>(param)...);
         case 1024:
-            return executeDT<Functor, Hist, Displacer, 1024> (c, std::forward<Types>(param)...);
+            return executeDT<Functor, HistCount, Displacer, 1024> (c, std::forward<Types>(param)...);
         // case 2048:
-        //     return executeDT<Functor, Hist, Displacer, 2048> (c, std::forward<Types>(param)...);
+        //     return executeDT<Functor, HistCount, Displacer, 2048> (c, std::forward<Types>(param)...);
         case 4096:
-            return executeDT<Functor, Hist, Displacer, 4096> (c, std::forward<Types>(param)...);
+            return executeDT<Functor, HistCount, Displacer, 4096> (c, std::forward<Types>(param)...);
         default:
-            constexpr auto ttl = Config<>::tl;
+            constexpr auto ttl = dysect::cuckoo_config<>::tl;
             std::cout << "ERROR: unknown TL value (use "
                       << ttl << ")" << std::endl;
-            return executeDT<Functor, Hist, Displacer, ttl>  (c, std::forward<Types>(param)...);
+            return executeDT<Functor, HistCount, Displacer, ttl>  (c, std::forward<Types>(param)...);
         }
     }
 
-    template<template<class> class Functor, class Hist, template<class> class Displacer, size_t TL, class ... Types>
-    inline static typename std::result_of<Functor<Config<> >(Types&& ...)>::type
+    template<template<class> class Functor, bool HistCount,
+             template<class> class Displacer, size_t TL,
+             class ... Types>
+    inline static typename std::result_of<Functor<dysect::cuckoo_config<> >(Types&& ...)>::type
     executeDT(CommandLine& c, Types&& ... param)
     {
-        auto bs = c.intArg("-bs", Config<>::bs);
+        auto bs = c.intArg("-bs", dysect::cuckoo_config<>::bs);
         switch (bs)
         {
         case 4:
-            return executeDTB<Functor, Hist, Displacer, TL,  4> (c, std::forward<Types>(param)...);
+            return executeDTB<Functor, HistCount, Displacer, TL,  4> (c, std::forward<Types>(param)...);
         // case 6:
-        //     return executeDTB<Functor, Hist, Displacer, TL,  6> (c, std::forward<Types>(param)...);
+        //     return executeDTB<Functor, HistCount, Displacer, TL,  6> (c, std::forward<Types>(param)...);
         case 8:
-            return executeDTB<Functor, Hist, Displacer, TL,  8> (c, std::forward<Types>(param)...);
+            return executeDTB<Functor, HistCount, Displacer, TL,  8> (c, std::forward<Types>(param)...);
         // case 12:
-        //     return executeDTB<Functor, Hist, Displacer, TL, 12> (c, std::forward<Types>(param)...);
+        //     return executeDTB<Functor, HistCount, Displacer, TL, 12> (c, std::forward<Types>(param)...);
         // case 16:
-        //     return executeDTB<Functor, Hist, Displacer, TL, 16> (c, std::forward<Types>(param)...);
+        //     return executeDTB<Functor, HistCount, Displacer, TL, 16> (c, std::forward<Types>(param)...);
         default:
-            constexpr auto tbs = Config<>::bs;
+            constexpr auto tbs = dysect::cuckoo_config<>::bs;
             std::cout << "ERROR: unknown BS value (use "
                       << tbs << ")" << std::endl;
-            return executeDTB<Functor, Hist, Displacer, TL, tbs> (c, std::forward<Types>(param)...);
+            return executeDTB<Functor, HistCount, Displacer, TL, tbs> (c, std::forward<Types>(param)...);
         }
     }
 
-    template<template<class> class Functor, class Hist,
+    template<template<class> class Functor, bool HistCount,
              template<class> class Displacer, size_t TL, size_t BS,
              class ... Types>
-    inline static typename std::result_of<Functor<Config<> >(Types&& ...)>::type
+    inline static typename std::result_of<Functor<dysect::cuckoo_config<> >(Types&& ...)>::type
     executeDTB(CommandLine& c, Types&& ... param)
     {
-        auto nh = c.intArg("-nh", Config<>::nh);
+        auto nh = c.intArg("-nh", dysect::cuckoo_config<>::nh);
         switch (nh)
         {
         case 2:
-            return executeDTBN<Functor, Hist, Displacer, TL, BS, 2>
+            return executeDTBN<Functor, HistCount, Displacer, TL, BS, 2>
                 (c, std::forward<Types>(param)...);
         case 3:
-            return executeDTBN<Functor, Hist, Displacer, TL, BS, 3>
+            return executeDTBN<Functor, HistCount, Displacer, TL, BS, 3>
                 (c, std::forward<Types>(param)...);
         // case 4:
-        //     return executeDTBN<Functor, Hist, Displacer, TL, BS, 4>
+        //     return executeDTBN<Functor, HistCount, Displacer, TL, BS, 4>
         //         (c, std::forward<Types>(param)...);
         default:
-            constexpr auto tnh = Config<>::nh;
+            constexpr auto tnh = dysect::cuckoo_config<>::nh;
             std::cout << "ERROR: unknown nh value (use "
                       << tnh << ")" << std::endl;
-            return executeDTBN<Functor, Hist, Displacer, TL, BS, tnh>
+            return executeDTBN<Functor, HistCount, Displacer, TL, BS, tnh>
                 (c, std::forward<Types>(param)...);
         }
     }
 
-    template<template<class> class Functor, class Hist,
+    template<template<class> class Functor, bool HistCount,
              template<class> class Displacer, size_t TL, size_t BS, size_t NH,
              class ... Types>
-    inline static typename std::result_of<Functor<Config<> >(Types&& ...)>::type
+    inline static typename std::result_of<Functor<dysect::cuckoo_config<> >(Types&& ...)>::type
     executeDTBN(CommandLine&, Types&& ... param)
     {
-        Functor<Config<BS,NH,TL,Displacer,Hist> > f;
-        return f(std::forward<Types>(param)...);
+        if (HistCount)
+        {
+            Functor<dysect::cuckoo_config<BS,NH,TL,Displacer,
+                                          dysect::hist_count> > f;
+            return f(std::forward<Types>(param)...);
+        }
+        else
+        {
+            Functor<dysect::cuckoo_config<BS,NH,TL,Displacer,
+                                          dysect::no_hist_count> > f;
+            return f(std::forward<Types>(param)...);
+        }
     }
 
 #elif defined HOPSCOTCH_CONFIG
-    template<template<class> class Functor, class Hist, class ... Types>
-    inline static typename std::result_of<Functor<HopscotchConfig<> >(Types&& ...)>::type
+    template<template<class> class Functor, bool, class ... Types>
+    inline static typename std::result_of<Functor<dysect::hopscotch_config<> >(Types&& ...)>::type
     execute(CommandLine& c, Types&& ... param)
     {
-        auto ns = c.intArg("-ns", HopscotchConfig<>::NeighborSize);
+        auto ns = c.intArg("-ns", dysect::hopscotch_config<>::neighborhood_size);
         switch (ns)
         {
         case 64:
@@ -291,7 +302,7 @@ struct Chooser
         // case 62:
         //     return executeN<Functor,62>(c, std::forward<Types>(param)...);
         default:
-            constexpr auto tns = HopscotchConfig<>::NeighborSize;
+            constexpr auto tns = dysect::hopscotch_config<>::neighborhood_size;
             std::cout << "ERROR: unknown ns value (use "
                       << tns << ")" << std::endl;
             return executeN<Functor,tns>(c, std::forward<Types>(param)...);
@@ -299,62 +310,25 @@ struct Chooser
     }
 
     template<template<class> class Functor, size_t NS, class ... Types>
-    inline static typename std::result_of<Functor<HopscotchConfig<> >(Types&& ...)>::type
-    executeN(CommandLine&
-    #ifdef SPECIAL_HOPSCOTCH
-             c
-    #endif
-             , Types&& ... param)
+    inline static typename std::result_of<Functor<dysect::hopscotch_config<> >(Types&& ...)>::type
+    executeN(CommandLine&, Types&& ... param)
     {
-        #ifdef SPECIAL_HOPSCOTCH
-        double ratio = c.doubleArg("-rat", HopscotchConfig<>::GrowRatio_d);
-        if (ratio < 1.101)
-        {
-            return executeNR<Functor, NS, std::ratio<11,10> >
-                (std::forward<Types>(param)...);
-        }
-        else if (ratio < 1.1501)
-        {
-            return executeNR<Functor, NS, std::ratio<23,20> >
-                (std::forward<Types>(param)...);
-        }
-        else if (ratio < 1.201)
-        {
-            return executeNR<Functor, NS, std::ratio<12,10> >
-                (std::forward<Types>(param)...);
-        }
-
-        std::cout << "ERROR: unknown grow ratio (alpha) use "
-                  << HopscotchConfig<>::GrowRatio_d << std::endl;
-        return executeNR<Functor, NS, typename HopscotchConfig<>::GrowRatio>
-            (std::forward<Types>(param)...);
-        #else
-        return executeNR<Functor, NS, std::ratio<1,2> >
-            (std::forward<Types>(param)...);
-        #endif
-    }
-
-    template<template<class> class Functor, size_t NS, class GRat, class ... Types>
-    inline static typename std::result_of<Functor<HopscotchConfig<> >(Types&& ...)>::type
-    executeNR(Types&& ... param)
-    {
-        Functor<HopscotchConfig<NS,GRat> > f;
+        Functor<dysect::hopscotch_config<NS> > f;
         return f(std::forward<Types>(param)...);
     }
 
 #elif defined TRIV_CONFIG
-    template<template<class> class Functor, class Hist,
-             class ... Types>
-    inline static typename std::result_of<Functor<Config<> >(Types&& ...)>::type
+    template<template<class> class Functor, bool, class ... Types>
+    inline static typename std::result_of<Functor<dysect::triv_config>(Types&& ...)>::type
     execute(CommandLine&, Types&& ... param)
     {
-        Functor<TrivConfig<Hist> > f;
+        Functor<dysect::triv_config> f;
         return f(std::forward<Types>(param)...);
     }
 
 #else
 
-    template<template<class> class Functor, class Hist, class ... Types>
+    template<template<class> class Functor, bool, class ... Types>
     inline static void execute(CommandLine&, Types&& ...)
     {
         std::cout << "some precompiler shit is broken" << std::endl;

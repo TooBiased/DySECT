@@ -19,13 +19,13 @@ set (CMAKE_CXX_FLAGS "-std=c++14 -msse4.2 -Wall -Wextra -O3 -g")
 
 #### HASH FUNCTIONS ############################################################
 
-if (GROWT_HASHFCT STREQUAL XXHASH)
+if (GROWS_HASHFCT STREQUAL XXHASH)
   message(STATUS "Looking for xxhash")
-  find_path(XXHASH_DIR xxHash/xxhash.h
-    PATHS ${CMAKE_CURRENT_SOURCE_DIR}/modules) #ENV ${CMAKE_CURRENT_SOURCE_DIR}/submodules) #ENV PATH ENV JUNCTION_ROOT)
+  find_path(XXHASH_DIR xxhash/xxhash.h
+    PATHS ${CMAKE_CURRENT_SOURCE_DIR}/module) #ENV ${CMAKE_CURRENT_SOURCE_DIR}/submodules) #ENV PATH ENV JUNCTION_ROOT)
   if (XXHASH_DIR)
     #add_subdirectory(${XXHASH_DIR}/xxHash xxHash)
-    include_directories(${XXHASH_DIR}/xxHash)
+    include_directories(${XXHASH_DIR}/xxhash)
     message(STATUS "Looking for xxhash -- found")
   else()
     message(STATUS "Looking for xxhash -- not found")
@@ -46,9 +46,9 @@ endif()
 
 #### HASH TABLES ###############################################################
 
-set(DYSECT_LIST "ceg2l;ceipg2l")
-set(HASH_TABLES_LIST "ceg2l;csimple;cover;coverip;chomogeneous2l;cindependent2l;cinplace;ceipg2l;cdeam;strctcuckoo")
-set(NON_CUCKOO_LIST  "linprob;spaceprob;robinprob;ripprob;hopprob;hipprob;std_unordered;inplaceprob;testtab;strctprob;strctrobin")
+set(DYSECT_LIST "dysect;dysect_inplace")
+set(HASH_TABLES_LIST "cuckoo_standard;cuckoo_standard_inplace;cuckoo_deamortized;dysect;dysect_inplace;independent_2lvl;overlap;overlap_inplace;hopscotch;hopscotch_inplace;robin;robin_inplace;linear_doubling;linear;linear_inplace")
+#set(NON_CUCKOO_LIST  "linprob;spaceprob;robinprob;ripprob;hopprob;hipprob;std_unordered;inplaceprob;testtab;strctprob;strctrobin")
 
 #### THE ONE STEP GROW EXECUTABLE ##############################################
 include_directories("/home/maier/RANDOM/malloc_count/")
@@ -66,17 +66,6 @@ include_directories("/home/maier/RANDOM/malloc_count/")
 foreach(t time del mix reg eps crawl mixd)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${t})
   foreach(h ${HASH_TABLES_LIST})  #grows cuckoo hom2lvl triv_grow linprob)
-    string(TOUPPER ${h} h_uc)
-    add_executable(${t}_${h} source/${t}_test.cpp /home/maier/RANDOM/malloc_count/malloc_count.c)
-    #add_dependencies(${t}_${h} mallocc)
-    target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${GROWS_HASHFCT} -D MALLOC_COUNT)
-    target_link_libraries(${t}_${h} dl)
-  endforeach()
-endforeach()
-
-foreach(t time del mix reg eps crawl mixd)
-  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${t})
-  foreach(h ${NON_CUCKOO_LIST})
     string(TOUPPER ${h} h_uc)
     add_executable(${t}_${h} source/${t}_test.cpp /home/maier/RANDOM/malloc_count/malloc_count.c)
     target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${GROWS_HASHFCT} -D MALLOC_COUNT)

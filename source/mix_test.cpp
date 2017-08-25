@@ -1,9 +1,9 @@
-//#include "include/spacegrow.h"
-#include "selection.h"
+#include <random>
+#include <iostream>
+#include <fstream>
+#include <chrono>
 
-// #include "include/strategies/dstrat_bfs.h"
-// #include "include/strategies/dstrat_rwalk.h"
-// #include "include/strategies/dstrat_rwalk_cyclic.h"
+#include "selection.h"
 
 #include "utils/hashfct.h"
 #include "utils/commandline.h"
@@ -11,11 +11,6 @@
 #ifdef MALLOC_COUNT
 #include "malloc_count.h"
 #endif
-
-#include <random>
-#include <iostream>
-#include <fstream>
-#include <chrono>
 
 template <class T>
 inline void print(std::ostream& out, const T& t, size_t w)
@@ -180,5 +175,5 @@ int main(int argn, char** argc)
     double      eps   = c.doubleArg("-eps"  , 1.0-load);
     if (eps > 0.) alpha = 1./(1.-eps);
 
-    return Chooser::execute<Test,no_hist_count> (c, it, n, n0, cap, pattern, steps, alpha, name);
+    return Chooser::execute<Test,false> (c, it, n, n0, cap, pattern, steps, alpha, name);
 }

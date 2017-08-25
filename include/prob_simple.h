@@ -27,19 +27,19 @@ namespace dysect
 
 /* Fast linear probing table using powers of 2 and bitmasking *****************/
     template <class K, class D, class HF = std::hash<K>,
-              class Conf = triv_config<> >
-    class prob_linear_doubling : public ProbTraits<prob_linear_doubling<K,D,HF,Conf> >::base_type
+              class Conf = triv_config>
+    class prob_linear_doubling : public prob_traits<prob_linear_doubling<K,D,HF,Conf> >::base_type
     {
     private:
         using this_type = prob_linear_doubling<K,D,HF,Conf>;
-        using base_type = typename ProbTraits<this_type>::base_type;
+        using base_type = typename prob_traits<this_type>::base_type;
 
         friend base_type;
 
     public:
         using size_type   = typename base_type::size_type;
-        using key_type    = typename ProbTraits<this_type>::key_type;
-        using mapped_type = typename ProbTraits<this_type>::mapped_type;
+        using key_type    = typename prob_traits<this_type>::key_type;
+        using mapped_type = typename prob_traits<this_type>::mapped_type;
 
 
         prob_linear_doubling(size_type cap = 0, double = 1., size_type = 0)
@@ -101,11 +101,11 @@ namespace dysect
 
 
     template<class K, class D, class HF, class Conf>
-    class ProbTraits<prob_linear_doubling<K,D,HF,Conf> >
+    class prob_traits<prob_linear_doubling<K,D,HF,Conf> >
     {
     public:
         using specialized_type   = prob_linear_doubling<K,D,HF,Conf>;
-        using base_type          = ProbBase<specialized_type>;
+        using base_type          = prob_base<specialized_type>;
         using hash_function_type = HF;
         using config_type        = Conf;
 
@@ -119,18 +119,18 @@ namespace dysect
 
 /* Using Classic Linear Probing to Fill a Table Densely ***********************/
     template <class K, class D, class HF = std::hash<K>,
-              class Conf = triv_config<> >
-    class prob_linear : public ProbTraits<prob_linear<K,D,HF,Conf> >::base_type
+              class Conf = triv_config>
+    class prob_linear : public prob_traits<prob_linear<K,D,HF,Conf> >::base_type
     {
     private:
         using this_type = prob_linear<K,D,HF,Conf>;
-        using base_type = typename ProbTraits<this_type>::base_type;
+        using base_type = typename prob_traits<this_type>::base_type;
 
         friend base_type;
     public:
         using size_type   = typename base_type::size_type;
-        using key_type    = typename ProbTraits<this_type>::key_type;
-        using mapped_type = typename ProbTraits<this_type>::mapped_type;
+        using key_type    = typename prob_traits<this_type>::key_type;
+        using mapped_type = typename prob_traits<this_type>::mapped_type;
 
         prob_linear(size_type cap = 0, double size_constraint = 1.1, size_type /*steps*/=0)
             : base_type(std::max<size_type>(cap, 500), size_constraint)
@@ -198,11 +198,11 @@ namespace dysect
 
 
     template<class K, class D, class HF, class Conf>
-    class ProbTraits<prob_linear<K,D,HF,Conf> >
+    class prob_traits<prob_linear<K,D,HF,Conf> >
     {
     public:
         using specialized_type   = prob_linear<K,D,HF,Conf>;
-        using base_type          = ProbBase<specialized_type>;
+        using base_type          = prob_base<specialized_type>;
         using hash_function_type = HF;
         using config_type        = Conf;
 
@@ -224,19 +224,19 @@ namespace dysect
 // *****************************************************************************
 
     template <class K, class D, class HF = std::hash<K>,
-              class Conf = triv_config<> >
-    class prob_linear_inplace : public ProbTraits<prob_linear_inplace<K,D,HF,Conf> >::base_type
+              class Conf = triv_config>
+    class prob_linear_inplace : public prob_traits<prob_linear_inplace<K,D,HF,Conf> >::base_type
     {
     private:
         using this_type = prob_linear_inplace<K,D,HF,Conf>;
-        using base_type = typename ProbTraits<this_type>::base_type;
+        using base_type = typename prob_traits<this_type>::base_type;
 
         friend base_type;
 
     public:
         using size_type   = typename base_type::size_type;
-        using key_type    = typename ProbTraits<this_type>::key_type;
-        using mapped_type = typename ProbTraits<this_type>::mapped_type;
+        using key_type    = typename prob_traits<this_type>::key_type;
+        using mapped_type = typename prob_traits<this_type>::mapped_type;
     private:
         using value_intern = std::pair<key_type, mapped_type>;
 
@@ -374,11 +374,11 @@ namespace dysect
 
 
     template<class K, class D, class HF, class Conf>
-    class ProbTraits<prob_linear_inplace<K,D,HF,Conf> >
+    class prob_traits<prob_linear_inplace<K,D,HF,Conf> >
     {
     public:
         using specialized_type   = prob_linear_inplace<K,D,HF,Conf>;
-        using base_type          = ProbBase<specialized_type>;
+        using base_type          = prob_base<specialized_type>;
         using hash_function_type = HF;
         using config_type        = Conf;
 

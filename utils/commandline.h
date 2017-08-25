@@ -5,7 +5,7 @@
 #include <vector>
 #include <tuple>
 #include <clocale>
-
+#include <iostream>
 
 /*
 template<class T>

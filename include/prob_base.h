@@ -18,17 +18,22 @@
 #include <vector>
 #include <tuple>
 
-#include "config.h"
 #include "bucket.h"
 #include "iterator_base.h"
 
 namespace dysect
 {
+    struct triv_config
+    { };
 
     template <class T>
     class prob_traits;
     template <class T>
     class iterator_incr;
+
+
+
+
 
     template<class SpProb>
     class prob_base
@@ -313,15 +318,15 @@ namespace dysect
     class iterator_incr<prob_base<Specialized> >
     {
     public:
-        using Table_t    = prob_base<Specialized>;
+        using table_type  = prob_base<Specialized>;
 
     private:
-        using key_type    = typename Table_t::key_type;
-        using mapped_type = typename Table_t::mapped_type;
+        using key_type    = typename table_type::key_type;
+        using mapped_type = typename table_type::mapped_type;
         using ipointer    = std::pair<const key_type, mapped_type>*;
 
     public:
-        iterator_incr(const Table_t& table_)
+        iterator_incr(const table_type& table_)
             : end_ptr(reinterpret_cast<ipointer>
                       (&table_.table[table_.capacity - 1]))
         { }

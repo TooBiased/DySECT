@@ -333,7 +333,7 @@ namespace dysect
     {
     public:
         using specialized_type = cuckoo_dysect<K,D,HF,Conf>;
-        using base_type        = cuckoo_base<Specialized_t>;
+        using base_type        = cuckoo_base<specialized_type>;
         using config_type      = Conf;
 
         using key_type         = K;
@@ -359,14 +359,14 @@ namespace dysect
     public:
         using table_type = cuckoo_dysect<K,D,HF,Conf>;
     private:
-        using size_type  = typename Table_t::size_type;
+        using size_type  = typename table_type::size_type;
         using ipointer   = std::pair<const K,D>*;
         static constexpr size_type tl = Conf::tl;
         static constexpr size_type bs = Conf::bs;
 
     public:
 
-        iterator_incr(const Table_t& table_)
+        iterator_incr(const table_type& table_)
             : table(table_), end_tab(nullptr), tab(tl + 1)
         { }
         iterator_incr(const iterator_incr&) = default;
@@ -388,7 +388,7 @@ namespace dysect
         }
 
     private:
-        const Table_t& table;
+        const table_type& table;
         ipointer       end_tab;
         size_type      tab;
 
@@ -452,7 +452,7 @@ namespace dysect
         using bucket_type    = typename cuckoo_traits<this_type>::bucket_type;
         using hasher_type    = typename cuckoo_traits<this_type>::hasher_type;
         using hashed_type    = typename hasher_type::hashed_type;
-        using ext            = typename hasher_type::extractor_t;
+        using ext            = typename hasher_type::extractor_type;
 
         friend base_type;
         friend iterator_incr<this_type>;
@@ -765,13 +765,13 @@ namespace dysect
     public:
         using table_type = cuckoo_dysect_inplace<K,D,HF,Conf>;
     private:
-        using size_type  = typename Table_t::size_type;
+        using size_type  = typename table_type::size_type;
         using ipointer   = std::pair<const K,D>*;
         static constexpr size_type tl = Conf::tl;
         static constexpr size_type bs = Conf::bs;
 
     public:
-        iterator_incr(const Table_t& table_)
+        iterator_incr(const table_type& table_)
             : table(table_), end_tab(nullptr), tab(tl + 1)
         { }
         iterator_incr(const iterator_incr&) = default;

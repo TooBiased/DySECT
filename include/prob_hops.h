@@ -20,6 +20,12 @@
 namespace dysect
 {
 
+    template<size_t NS = 64>
+    struct hopscotch_config
+    {
+        static constexpr size_t neighborhood_size = NS;
+    };
+
     template <class AugmentData>
     class augment_data_accessor
     {
@@ -103,6 +109,14 @@ namespace dysect
     };
 
 
+
+
+
+
+// *****************************************************************************
+// MAIN CLASS ******************************************************************
+// *****************************************************************************
+
     template <class K, class D, class HF = std::hash<K>,
               class Conf = hopscotch_config<> >
     class prob_hopscotch : public prob_traits<prob_hopscotch<K,D,HF,Conf> >::base_type
@@ -111,8 +125,8 @@ namespace dysect
         using this_type = prob_hopscotch<K,D,HF,Conf>;
         using base_type = typename prob_traits<this_type>::base_type;
 
-        static constexpr size_t nh_size = (Conf::NeighborSize <= 64) ?
-            Conf::NeighborSize : 64;
+        static constexpr size_t nh_size = (Conf::neighborhood_size <= 64) ?
+            Conf::neighborhood_size : 64;
         using AugData_t = augment_data<nh_size>;
 
         friend base_type;
@@ -344,7 +358,7 @@ namespace dysect
         using this_type = prob_hopscotch_inplace<K,D,HF,Conf>;
         using base_type = typename prob_traits<this_type>::base_type;
 
-        static constexpr size_t nh_size = Conf::NeighborSize;
+        static constexpr size_t nh_size = Conf::neighborhood_size;
         static constexpr size_t bitset_size = (nh_size < 64) ? nh_size : 64;
         static constexpr size_t bucket_size = (nh_size < 64) ? 1 : nh_size/64;
         using AugData_t = augment_data<bitset_size>;
@@ -529,7 +543,6 @@ namespace dysect
 
         inline void grow()
         {
-            //auto ntable = this_type(n, alpha);
             size_t osize = capacity;
 
             capacity = n*alpha;
@@ -562,8 +575,6 @@ namespace dysect
             {
                 insert(*it);
             }
-
-            //(*this) = std::move(ntable);
         }
 
         inline std::pair<bool, size_t> move_gap(const size_t pos, const size_t goal)
@@ -593,7 +604,6 @@ namespace dysect
                     aug.set  ((pos-ind)/bucket_size);
 
                     table[pos] = current;
-                    //table[i]   = std::make_pair(0,0);
                     if (i < goal) return std::make_pair(true, i);
                     else return move_gap(i, goal);
                 }
