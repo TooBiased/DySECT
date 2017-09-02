@@ -194,6 +194,6 @@ int main(int argn, char** argc)
 
     if (eps < 0.) { std::cout << "please input eps" << std::endl; return 8;}
 
-    return Chooser::execute<Test,no_hist_count>
+    return Chooser::execute<Test,false>
         (c, it, n, steps, eps, epstp, win, name);
 }

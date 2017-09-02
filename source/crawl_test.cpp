@@ -157,5 +157,5 @@ int main(int argn, char** argc)
     const std::string inf   = c.strArg("-in"   , "/home/maier/WorkEnv/tobias.org");
     const std::string outf  = c.strArg("-out"  , "");
 
-    return Chooser::execute<Test, hist_count>(c, it, cap, alpha, steps, inf, outf);
+    return Chooser::execute<Test, false>(c, it, cap, alpha, steps, inf, outf);
 }

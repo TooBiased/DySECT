@@ -1,10 +1,6 @@
 //#include "include/spacegrow.h"
 #include "selection.h"
 
-// #include "include/strategies/dstrat_bfs.h"
-// #include "include/strategies/dstrat_rwalk.h"
-// #include "include/strategies/dstrat_rwalk_cyclic.h"
-
 #include "utils/hashfct.h"
 #include "utils/commandline.h"
 
@@ -114,5 +110,5 @@ int main(int argn, char** argc)
 
     const std::string name  = c.strArg("-out"  , "");
 
-    return Chooser::execute<Test,no_hist_count> (c, it, n, cap, steps, name);
+    return Chooser::execute<Test,true> (c, it, n, cap, steps, name);
 }

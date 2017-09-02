@@ -7,9 +7,12 @@ project (space-grow-table)
 
 #### USER DEFINED ##############################################################
 
-set(GROWS_HASHFCT XXHASH CACHE STRING
+set(DYSECT_HASHFCT XXHASH CACHE STRING
   "Changes the used hash function if XXHASH is not available, MURMUR2 is used as backoff!")
-set_property(CACHE GROWS_HASHFCT PROPERTY STRINGS XXHASH MURMUR2 MURMUR3 CRC)
+set_property(CACHE DYSECT_HASHFCT PROPERTY STRINGS XXHASH MURMUR2 MURMUR3 CRC)
+
+set(DYSECT_MALLOC_COUNT OFF CACHE BOOL
+  "Display the amount of allocated memory! Needs the malloc_count submodule.")
 
 #### BASIC SETTINGS ############################################################
 
@@ -19,12 +22,11 @@ set (CMAKE_CXX_FLAGS "-std=c++14 -msse4.2 -Wall -Wextra -O3 -g")
 
 #### HASH FUNCTIONS ############################################################
 
-if (GROWS_HASHFCT STREQUAL XXHASH)
+if (DYSECT_HASHFCT STREQUAL XXHASH)
   message(STATUS "Looking for xxhash")
   find_path(XXHASH_DIR xxhash/xxhash.h
-    PATHS ${CMAKE_CURRENT_SOURCE_DIR}/module) #ENV ${CMAKE_CURRENT_SOURCE_DIR}/submodules) #ENV PATH ENV JUNCTION_ROOT)
+    PATHS ${CMAKE_CURRENT_SOURCE_DIR}/module)
   if (XXHASH_DIR)
-    #add_subdirectory(${XXHASH_DIR}/xxHash xxHash)
     include_directories(${XXHASH_DIR}/xxhash)
     message(STATUS "Looking for xxhash -- found")
   else()
@@ -34,63 +36,80 @@ if (GROWS_HASHFCT STREQUAL XXHASH)
   endif()
 endif()
 
-if (GROWS_HASHFCT STREQUAL MURMUR3)
+if (DYSECT_HASHFCT STREQUAL MURMUR3)
   find_package(smhasher)
   if (SMHASHER_FOUND)
     include_directories(${SMHASHER_INCLUDE_DIRS})
   else()
     message("Cannot find SMHasher which implements MURMUR3. Use MURMUR2 instead.")
-    set(GROWS_HASHFCT MURMUR2)
+    set(DYSECT_HASHFCT MURMUR2)
   endif()
 endif()
 
 #### HASH TABLES ###############################################################
 
-set(DYSECT_LIST "dysect;dysect_inplace")
-set(HASH_TABLES_LIST "cuckoo_standard;cuckoo_standard_inplace;cuckoo_deamortized;dysect;dysect_inplace;independent_2lvl;overlap;overlap_inplace;hopscotch;hopscotch_inplace;robin;robin_inplace;linear_doubling;linear;linear_inplace")
-#set(NON_CUCKOO_LIST  "linprob;spaceprob;robinprob;ripprob;hopprob;hipprob;std_unordered;inplaceprob;testtab;strctprob;strctrobin")
+set(HASH_TABLES_LIST "cuckoo_standard;cuckoo_standard_inplace;cuckoo_deamortized;dysect;dysect_inplace;cuckoo_independent_2lvl;cuckoo_overlap;cuckoo_overlap_inplace;hopscotch;hopscotch_inplace;robin;robin_inplace;linear_doubling;linear;linear_inplace")
 
 #### THE ONE STEP GROW EXECUTABLE ##############################################
-include_directories("/home/maier/RANDOM/malloc_count/")
 
-#Currently not up to date due to multichange + ... time
-
-#add_executable(step_all source/step_test.cpp)
-#target_compile_definitions(step_all PRIVATE -D GROWS -D ${GROWS_HASHFCT})
-
-
+if (DYSECT_MALLOC_COUNT)
+  message(STATUS "Looking for malloc_count")
+  find_path(MALLOC_COUNT_DIR malloc_count/malloc_count.c
+    PATHS ${CMAKE_CURRENT_SOURCE_DIR}/module)
+  if (MALLOC_COUNT_DIR)
+    include_directories(${MALLOC_COUNT_DIR}/malloc_count/)
+    message(STATUS "Looking for malloc_count -- found")
+  else()
+    message(STATUS "Looking for malloc_count -- not found")
+    message("Cannot find malloc_count. Turned it off instead.")
+    set(DYSECT_MALLOC_COUNT FALSE)
+  endif()
+endif()
 
 #### CONSTRUCT EXECUTABLE ######################################################
 #add_library(mallocc /home/maier/RANDOM/malloc_count/malloc_count.c)
 
-foreach(t time del mix reg eps crawl mixd)
+foreach(t time del eps mix crawl mixd)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${t})
-  foreach(h ${HASH_TABLES_LIST})  #grows cuckoo hom2lvl triv_grow linprob)
+  foreach(h ${HASH_TABLES_LIST})
     string(TOUPPER ${h} h_uc)
-    add_executable(${t}_${h} source/${t}_test.cpp /home/maier/RANDOM/malloc_count/malloc_count.c)
-    target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${GROWS_HASHFCT} -D MALLOC_COUNT)
+    if (DYSECT_MALLOC_COUNT)
+      add_executable(${t}_${h} source/${t}_test.cpp ${MALLOC_COUNT_DIR}/malloc_count/malloc_count.c)
+      target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${DYSECT_HASHFCT} -D MALLOC_COUNT)
+    else()
+      add_executable(${t}_${h} source/${t}_test.cpp)
+      target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${DYSECT_HASHFCT})
+    endif()
     target_link_libraries(${t}_${h} dl)
   endforeach()
 endforeach()
 
 foreach(t sing)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${t})
-  foreach(h ${DYSECT_LIST})
+  foreach(h dysect dysect_inplace)
     string(TOUPPER ${h} h_uc)
-    add_executable(${t}_${h} source/${t}_test.cpp /home/maier/RANDOM/malloc_count/malloc_count.c)
-    #add_dependencies(${t}_${h} mallocc)
-    target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${GROWS_HASHFCT} -D MALLOC_COUNT)
+    if (DYSECT_MALLOC_COUNT)
+      add_executable(${t}_${h} source/${t}_test.cpp ${MALLOC_COUNT_DIR}/malloc_count/malloc_count.c)
+      target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${DYSECT_HASHFCT} -D MALLOC_COUNT)
+    else()
+      add_executable(${t}_${h} source/${t}_test.cpp)
+      target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${DYSECT_HASHFCT})
+    endif()
     target_link_libraries(${t}_${h} dl)
   endforeach()
 endforeach()
 
 foreach(t mxls)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${t})
-  foreach(h csimple cinplace)
+  foreach(h cuckoo_standard cuckoo_standard_inplace)
     string(TOUPPER ${h} h_uc)
-    add_executable(${t}_${h} source/${t}_test.cpp /home/maier/RANDOM/malloc_count/malloc_count.c)
-    #add_dependencies(${t}_${h} mallocc)
-    target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${GROWS_HASHFCT} -D MALLOC_COUNT)
+    if (DYSECT_MALLOC_COUNT)
+      add_executable(${t}_${h} source/${t}_test.cpp ${MALLOC_COUNT_DIR}/malloc_count/malloc_count.c)
+      target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${DYSECT_HASHFCT} -D MALLOC_COUNT)
+    else()
+      add_executable(${t}_${h} source/${t}_test.cpp)
+      target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${DYSECT_HASHFCT})
+    endif()
     target_link_libraries(${t}_${h} dl)
   endforeach()
 endforeach()

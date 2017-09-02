@@ -47,7 +47,7 @@
 
 // cuckoo_independent_2lvl table
 
-#ifdef INDEPENDENT_2LVL
+#ifdef CUCKOO_INDEPENDENT_2LVL
 #define MULTI
 #include "include/cuckoo_independent_2lvl.h"
 #define HASHTYPE dysect::cuckoo_independent_2lvl
@@ -57,13 +57,13 @@
 
 // cuckoo_overlap tables
 
-#ifdef OVERLAP
+#ifdef CUCKOO_OVERLAP
 #define MULTI
 #include "include/cuckoo_overlap.h"
 #define HASHTYPE dysect::cuckoo_overlap
 #endif // OVERLAP
 
-#ifdef OVERLAP_INPLACE
+#ifdef CUCKOO_OVERLAP_INPLACE
 #define MULTI
 #include "include/cuckoo_overlap.h"
 #define HASHTYPE dysect::cuckoo_overlap_inplace

@@ -186,5 +186,5 @@ int main(int argn, char** argc)
     double      eps   = c.doubleArg("-eps"  , 1.0-load);
     if (eps > 0.) alpha = 1./(1.-eps);
 
-    return Chooser::execute<Test,no_hist_count> (c, it, n, n0, cap, pattern, steps, alpha, name);
+    return Chooser::execute<Test,false> (c, it, n, n0, cap, pattern, steps, alpha, name);
 }
