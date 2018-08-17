@@ -85,6 +85,10 @@ namespace dysect
             capacity    = (n_large+tl) * size_small * bs;
             bits_small  =  size_small - 1;
             bits_large  = (size_small << 1) - 1;
+
+            if (n_large == tl)
+            { n_large = 0; bits_small = bits_large; bits_large = (bits_large<<1) +1; }
+
             grow_thresh = std::ceil((capacity + (bits_large+1)*bs)/alpha);
             shrnk_thresh= 0; // ensures no shrinking until grown at least once
         }
@@ -511,6 +515,10 @@ namespace dysect
             capacity    = (n_large+tl) * size_small * bs;
             bits_small  =  size_small - 1;
             bits_large  = (size_small << 1) - 1;
+
+            if (n_large == tl)
+            { n_large = 0; bits_small = bits_large; bits_large = (bits_large<<1) +1; }
+
             grow_thresh = std::ceil((capacity + (bits_large+1)*bs)/alpha);
             shrnk_thresh= 0; // ensures no shrinking until grown at least once
         }

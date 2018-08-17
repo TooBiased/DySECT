@@ -59,7 +59,7 @@ struct Test
                              double tfin,
                              size_t in_err,
                              size_t fi_err,
-                             size_t n,
+                             [[maybe_unused]] size_t n,
                              Table& table)
     {
         print(out, i     , 4);

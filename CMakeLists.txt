@@ -18,7 +18,7 @@ set(DYSECT_MALLOC_COUNT OFF CACHE BOOL
 
 include_directories(.)
 
-set (CMAKE_CXX_FLAGS "-std=c++14 -msse4.2 -Wall -Wextra -O3 -g")
+set (CMAKE_CXX_FLAGS "-std=c++17 -msse4.2 -Wall -Wextra -O3 -g")
 
 #### HASH FUNCTIONS ############################################################
 
@@ -48,7 +48,7 @@ endif()
 
 #### HASH TABLES ###############################################################
 
-set(HASH_TABLES_LIST "cuckoo_standard;cuckoo_standard_inplace;cuckoo_deamortized;dysect;dysect_inplace;cuckoo_independent_2lvl;cuckoo_overlap;cuckoo_overlap_inplace;hopscotch;hopscotch_inplace;robin;robin_inplace;linear_doubling;linear;linear_inplace")
+set(HASH_TABLES_LIST "dysect;dysect_inplace;cuckoo_standard;cuckoo_standard_inplace;cuckoo_deamortized;cuckoo_independent_2lvl;cuckoo_overlap;cuckoo_overlap_inplace;hopscotch;hopscotch_inplace;robin;robin_inplace;linear_doubling;linear;linear_inplace")
 
 #### THE ONE STEP GROW EXECUTABLE ##############################################
 

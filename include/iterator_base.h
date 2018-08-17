@@ -14,6 +14,8 @@
  * All rights reserved. Published under the BSD-2 license in the LICENSE file.
  ******************************************************************************/
 
+#include <tuple>
+
 namespace dysect
 {
 
@@ -59,7 +61,7 @@ namespace dysect
 
         // Basic Iterator Functionality
 
-        iterator_base& operator++(int = 0) { ptr = incr.next(ptr); return *this; }
+        iterator_base& operator++(int) { ptr = incr.next(ptr); return *this; }
         reference operator* () const { return *ptr; }
         pointer   operator->() const { return  ptr; }
 

@@ -143,17 +143,6 @@ struct Test
 
             print_timing(*file, i, alpha, cap, n0, n, d_in0, d_in1, d_fn0, d_fn1,
                          in_errors, fin_errors, table);
-
-            // Iterator Test
-            // size_t temp0 = 0;
-            // size_t temp1 = 0;
-            // for (auto it = table.begin(); it != table.end(); it++)
-            // {
-            //     if (it->second < 100000)
-            //         ++temp1;
-            //     ++temp0;
-            // }
-            // std::cout << temp1 << "/" << temp0 << std::endl;
         }
 
         delete[] keys;

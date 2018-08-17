@@ -85,7 +85,7 @@ namespace dysect
         static constexpr size_t bs = BS;
         static constexpr size_t tl = TL;
         static constexpr size_t nh = NH;
-        static constexpr size_t sbs = 4;
+        static constexpr size_t sbs = 2;
 
         template <class T>
         using dis_strat_type  = DisStrat<T>;
@@ -195,18 +195,18 @@ namespace dysect
     private:
     // Easy iterators **********************************************************
         inline iterator       make_iterator (      value_intern* pos) const
-            { return iterator      (pos, *static_cast<const specialized_type*>(this)); }
+        { return iterator      (pos, *static_cast<const specialized_type*>(this)); }
 
         inline const_iterator make_citerator(const value_intern* pos) const
-            { return const_iterator(pos, *static_cast<const specialized_type*>(this)); }
+        { return const_iterator(pos, *static_cast<const specialized_type*>(this)); }
 
     // implementation specific functions (static polymorph) ********************
         inline void           inc_n() { ++n; }
         inline void           dec_n() { --n; }
         inline void           get_buckets(hashed_type h, bucket_type** mem) const
-            { return static_cast<const specialized_type*>(this)->get_buckets(h, mem); }
+        { return static_cast<const specialized_type*>(this)->get_buckets(h, mem); }
         inline bucket_type*   get_bucket (hashed_type h, size_type i) const
-            { return static_cast<const specialized_type*>(this)->get_bucket(h, i); }
+        { return static_cast<const specialized_type*>(this)->get_bucket(h, i); }
 
     public:
     // auxiliary functions for testing *****************************************
@@ -214,11 +214,11 @@ namespace dysect
         void                  print_init_data(std::ostream& out);
         static void           print_init_header(std::ostream& out)
         {
-                out.width(6); out << "bsize";
-                out.width(6); out << "ntabl";
-                out.width(6); out << "nhash";
-                out.width(9); out << "f_cap";
-                out << std::flush;
+            out.width(6); out << "bsize";
+            out.width(6); out << "ntabl";
+            out.width(6); out << "nhash";
+            out.width(9); out << "f_cap";
+            out << std::flush;
         }
 
         void explicit_grow()
