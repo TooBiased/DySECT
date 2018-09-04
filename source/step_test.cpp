@@ -5,6 +5,7 @@
 
 #include "utils/hashfct.h"
 #include "utils/commandline.h"
+#include "utils/thread_basics.h"
 
 #include <random>
 #include <iostream>
@@ -221,6 +222,7 @@ struct Test
 
 int main(int argn, char** argc)
 {
+    pin_to_core(0);
     CommandLine c(argn, argc);
     size_t      n     = c.intArg("-n"    , 1000000);
     size_t      cap   = c.intArg("-cap"  , 10000);

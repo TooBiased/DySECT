@@ -20,6 +20,11 @@ include_directories(.)
 
 set (CMAKE_CXX_FLAGS "-std=c++17 -msse4.2 -Wall -Wextra -O3 -g")
 
+#### FIND PTHREAD (less variance after pin to core) ############################
+
+find_package(Threads REQUIRED)
+set(TEST_DEP_LIBRARIES ${CMAKE_THREAD_LIBS_INIT} ${TEST_DEP_LIBRARIES})
+
 #### HASH FUNCTIONS ############################################################
 
 if (DYSECT_HASHFCT STREQUAL XXHASH)
@@ -48,7 +53,7 @@ endif()
 
 #### HASH TABLES ###############################################################
 
-set(HASH_TABLES_LIST "dysect;dysect_inplace;cuckoo_standard;cuckoo_standard_inplace;cuckoo_deamortized;cuckoo_independent_2lvl;cuckoo_overlap;cuckoo_overlap_inplace;hopscotch;hopscotch_inplace;robin;robin_inplace;linear_doubling;linear;linear_inplace")
+set(HASH_TABLES_LIST "dysect;dysect_inplace;cuckoo_standard;cuckoo_standard_inplace;cuckoo_deamortized;cuckoo_independent_2lvl;cuckoo_overlap;cuckoo_overlap_inplace;hopscotch;hopscotch_inplace;robin;robin_inplace;linear_doubling;linear;linear_inplace;multitable_linear;multitable_robin")
 
 #### THE ONE STEP GROW EXECUTABLE ##############################################
 
@@ -80,7 +85,7 @@ foreach(t time del eps mix crawl mixd)
       add_executable(${t}_${h} source/${t}_test.cpp)
       target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${DYSECT_HASHFCT})
     endif()
-    target_link_libraries(${t}_${h} dl)
+    target_link_libraries(${t}_${h} ${TEST_DEP_LIBRARIES} dl)
   endforeach()
 endforeach()
 
@@ -95,7 +100,7 @@ foreach(t sing)
       add_executable(${t}_${h} source/${t}_test.cpp)
       target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${DYSECT_HASHFCT})
     endif()
-    target_link_libraries(${t}_${h} dl)
+    target_link_libraries(${t}_${h} ${TEST_DEP_LIBRARIES} dl)
   endforeach()
 endforeach()
 
@@ -110,6 +115,6 @@ foreach(t mxls)
       add_executable(${t}_${h} source/${t}_test.cpp)
       target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${DYSECT_HASHFCT})
     endif()
-    target_link_libraries(${t}_${h} dl)
+    target_link_libraries(${t}_${h} ${TEST_DEP_LIBRARIES} dl)
   endforeach()
 endforeach()

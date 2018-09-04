@@ -125,6 +125,30 @@
 
 
 
+
+
+#ifdef MULTITABLE_LINEAR
+#define TRIV_CONFIG
+#include "include/prob_multitable_base.h"
+#define HASHTYPE dysect::multitable_linear
+#endif
+
+#ifdef MULTITABLE_ROBIN
+#define TRIV_CONFIG
+#include "include/prob_multitable_base.h"
+#define HASHTYPE dysect::multitable_robin
+#endif
+
+// #ifdef MULTITABLE_CUCKOO
+// #define MULTI
+// #include "include/cuckoo_simple.h"
+// #define HASHTYPE CuckooIndependentBase
+// #endif
+
+
+
+
+
 // NO TABLE CHOSEN!!! THEREFORE PRINT WARNING AND USE TEST TABLE!!!
 
 /*

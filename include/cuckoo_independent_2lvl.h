@@ -184,17 +184,17 @@ namespace dysect
     private:
         // Functions for finding buckets *******************************************
 
-        inline void getBuckets(hashed_type h, bucket_type** mem) const
-            {
-                for (size_type i = 0; i < nh; ++i)
-                    mem[i] = getBucket(h, i);
-            }
+        inline void get_buckets(hashed_type h, bucket_type** mem) const
+        {
+            for (size_type i = 0; i < nh; ++i)
+                mem[i] = get_bucket(h, i);
+        }
 
-        inline bucket_type* getBucket (hashed_type h, size_type i) const
-            {
-                size_type tab = ext::tab(h,0);
-                return &(ll_tab[tab][ext::loc(h,i)*ll_factor[tab]]);
-            }
+        inline bucket_type* get_bucket (hashed_type h, size_type i) const
+        {
+            size_type tab = ext::tab(h,0);
+            return &(ll_tab[tab][ext::loc(h,i)*ll_factor[tab]]);
+        }
 
 
 

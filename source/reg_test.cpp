@@ -1,12 +1,9 @@
 //#include "include/spacegrow.h"
 #include "selection.h"
 
-// #include "include/strategies/dstrat_bfs.h"
-// #include "include/strategies/dstrat_rwalk.h"
-// #include "include/strategies/dstrat_rwalk_cyclic.h"
-
 #include "utils/hashfct.h"
 #include "utils/commandline.h"
+#include "utils/thread_basics.h"
 
 #ifdef MALLOC_COUNT
 #include "malloc_count.h"
@@ -124,6 +121,7 @@ struct Test
 
 int main(int argn, char** argc)
 {
+    pin_to_core(0);
     CommandLine c(argn, argc);
     size_t      it    = c.intArg("-it"   , 5);
     size_t      n     = c.intArg("-n"    , 2000000);

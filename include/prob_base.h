@@ -118,6 +118,8 @@ namespace dysect
         mapped_type&              operator[](const key_type& k);
         size_type                 count (const key_type& k) const;
 
+        size_type                 get_capacity() const { return capacity; }
+
     private:
         // Easy iterators **********************************************************
         inline iterator make_iterator(value_intern* pair) const

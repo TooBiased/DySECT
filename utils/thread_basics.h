@@ -3,8 +3,6 @@
 
 #include <pthread.h>
 
-#define MAX_THRDS 256
-
 void pin_to_core(size_t core)
 {
     cpu_set_t cpuset;
