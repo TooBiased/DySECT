@@ -15,12 +15,13 @@
  * All rights reserved. Published under the BSD-2 license in the LICENSE file.
  ******************************************************************************/
 
+#include "utils/default_hash.h"
 #include "prob_base.h"
 
 namespace dysect
 {
 
-    template <class K, class D, class HF = std::hash<K>,
+    template <class K, class D, class HF = hash::default_hash,
               class Conf = triv_config>
     class prob_robin : public prob_traits<prob_robin<K,D,HF,Conf> >::base_type
     {
@@ -266,7 +267,7 @@ namespace dysect
 // Same as Above, but Growing Using in Place Migration *************************
 // *****************************************************************************
 
-    template <class K, class D, class HF = std::hash<K>,
+    template <class K, class D, class HF = hash::default_hash,
               class Conf = triv_config>
     class prob_robin_inplace : public prob_traits<prob_robin_inplace<K,D,HF,Conf> >::base_type
     {

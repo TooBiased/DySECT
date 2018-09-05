@@ -55,7 +55,7 @@ endif()
 
 set(HASH_TABLES_LIST "dysect;dysect_inplace;cuckoo_standard;cuckoo_standard_inplace;cuckoo_deamortized;cuckoo_independent_2lvl;cuckoo_overlap;cuckoo_overlap_inplace;hopscotch;hopscotch_inplace;robin;robin_inplace;linear_doubling;linear;linear_inplace;multitable_linear;multitable_robin")
 
-#### THE ONE STEP GROW EXECUTABLE ##############################################
+#### LOOKS FOR THE MALLOC COUNTING LIB #########################################
 
 if (DYSECT_MALLOC_COUNT)
   message(STATUS "Looking for malloc_count")
@@ -70,6 +70,10 @@ if (DYSECT_MALLOC_COUNT)
     set(DYSECT_MALLOC_COUNT FALSE)
   endif()
 endif()
+
+#### BUILD THE EXAMPLE #########################################################
+add_executable(example example/example.cpp)
+
 
 #### CONSTRUCT EXECUTABLE ######################################################
 #add_library(mallocc /home/maier/RANDOM/malloc_count/malloc_count.c)

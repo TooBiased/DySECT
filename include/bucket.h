@@ -5,7 +5,7 @@
  *
  * bucket implementation for variants of bucket cuckoo hashing.
  * This implementation ensures that all contained elements are stored in the
- * beginning of the bucket. This allows some performance tricks.
+ * beginning of the bucket. This allows some performance optimizations.
  *
  * Part of Project DySECT - https://github.com/TooBiased/DySECT.git
  *

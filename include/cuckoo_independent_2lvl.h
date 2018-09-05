@@ -7,7 +7,8 @@
  * is split similar to DySECT, but all buckets connected to one
  * element are placed in the same subtable, therefore, no balancing
  * happens between subtables.  The tables have to grow in small steps
- * (no doubling) in order to hold the given size constraints.
+ * (no doubling) in order to hold the given size constraints. During the
+ * migration, the size constraint is violated.
  *
  * Part of Project DySECT - https://github.com/TooBiased/DySECT.git
  *
@@ -17,6 +18,7 @@
  ******************************************************************************/
 
 #include <cmath>
+#include "utils/default_hash.h"
 #include "cuckoo_base.h"
 
 namespace dysect
@@ -25,7 +27,7 @@ namespace dysect
     template<class T>
     class cuckoo_traits;
 
-    template<class K, class D, class HF = std::hash<K>,
+    template<class K, class D, class HF = hash::default_hash,
              class Conf = cuckoo_config<> >
     class cuckoo_independent_2lvl
         : public cuckoo_traits<cuckoo_independent_2lvl<K,D,HF,Conf> >::base_type

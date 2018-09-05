@@ -27,15 +27,15 @@
  ******************************************************************************/
 
 #include <cmath>
+#include "utils/default_hash.h"
 #include "cuckoo_base.h"
 
 namespace dysect
 {
-
     template<class T>
     class cuckoo_traits;
 
-    template<class K, class D, class HF = std::hash<K>,
+    template<class K, class D, class HF = hash::default_hash,
              class Conf = cuckoo_config<> >
     class cuckoo_dysect : public cuckoo_traits<cuckoo_dysect<K,D,HF,Conf> >::base_type
     {
@@ -354,7 +354,6 @@ namespace dysect
     };
 
 
-
 // Iterator increment **********************************************************
 
     template<class K, class D, class HF, class Conf>
@@ -446,7 +445,7 @@ namespace dysect
 // IN PLACE ********************************************************************
 // *****************************************************************************
 
-    template<class K, class D, class HF = std::hash<K>,
+    template<class K, class D, class HF = hash::default_hash,
              class Conf = cuckoo_config<> >
     class cuckoo_dysect_inplace : public cuckoo_traits<cuckoo_dysect_inplace<K,D,HF,Conf> >::base_type
     {

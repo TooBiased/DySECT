@@ -15,6 +15,7 @@
  * All rights reserved. Published under the BSD-2 license in the LICENSE file.
  ******************************************************************************/
 
+#include "utils/default_hash.h"
 #include "prob_base.h"
 
 namespace dysect
@@ -117,7 +118,7 @@ namespace dysect
 // MAIN CLASS ******************************************************************
 // *****************************************************************************
 
-    template <class K, class D, class HF = std::hash<K>,
+    template <class K, class D, class HF = hash::default_hash,
               class Conf = hopscotch_config<> >
     class prob_hopscotch : public prob_traits<prob_hopscotch<K,D,HF,Conf> >::base_type
     {
@@ -350,7 +351,7 @@ namespace dysect
 // Same as Above, but Growing Using in Place Migration *************************
 // *****************************************************************************
 
-    template <class K, class D, class HF = std::hash<K>,
+    template <class K, class D, class HF = hash::default_hash,
               class Conf = hopscotch_config<> >
     class prob_hopscotch_inplace : public prob_traits<prob_hopscotch_inplace<K,D,HF,Conf> >::base_type
     {

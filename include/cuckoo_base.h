@@ -78,7 +78,7 @@ namespace dysect
     };
 
     template<size_t BS = 8, size_t NH = 3, size_t TL = 256,
-             template <class> class DisStrat = cuckoo_displacement::trivial,
+             template <class> class DisStrat = cuckoo_displacement::bfs,
              class HistCount = no_hist_count>
     struct cuckoo_config
     {

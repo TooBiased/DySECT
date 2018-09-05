@@ -16,6 +16,7 @@
  * All rights reserved. Published under the BSD-2 license in the LICENSE file.
  ******************************************************************************/
 
+#include "utils/default_hash.h"
 #include "cuckoo_base.h"
 
 namespace dysect
@@ -24,7 +25,7 @@ namespace dysect
     template<class K0, class D0, class HF0, class Conf0>
     class cuckoo_adapter_2lvl;
 
-    template<class K, class D, class HF = std::hash<K>,
+    template<class K, class D, class HF = hash::default_hash,
              class Conf = cuckoo_config<> >
     class cuckoo_standard : public cuckoo_traits<cuckoo_standard<K,D,HF,Conf> >::base_type
     {
@@ -276,7 +277,7 @@ namespace dysect
 // IN PLACE GROWING ************************************************************
 // *****************************************************************************
 
-    template<class K, class D, class HF = std::hash<K>,
+    template<class K, class D, class HF = hash::default_hash,
              class Conf = cuckoo_config<> >
     class cuckoo_standard_inplace : public cuckoo_traits<cuckoo_standard_inplace<K,D,HF,Conf> >::base_type
     {

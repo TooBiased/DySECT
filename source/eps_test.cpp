@@ -5,7 +5,7 @@
 // #include "include/strategies/dstrat_rwalk.h"
 // #include "include/strategies/dstrat_rwalk_cyclic.h"
 
-#include "utils/hashfct.h"
+#include "utils/default_hash.h"
 #include "utils/commandline.h"
 #include "utils/thread_basics.h"
 
@@ -28,8 +28,8 @@ inline void print(std::ostream& out, const T& t, size_t w)
 template<class Config>
 struct Test
 {
-    //using Table = ProbIndependentBase<HASHTYPE<size_t, size_t, HASHFCT, Config> >;
-    using Table = HASHTYPE<size_t, size_t, HASHFCT, Config>;
+    //using Table = ProbIndependentBase<HASHTYPE<size_t, size_t, dysect::hash::default_hash, Config> >;
+    using Table = HASHTYPE<size_t, size_t, dysect::hash::default_hash, Config>;
 
     constexpr static size_t block_size = 100000;
 
@@ -181,7 +181,7 @@ struct Test
 
 int main(int argn, char** argc)
 {
-    pin_to_core(0);
+    //pin_to_core(0);
     CommandLine c(argn, argc);
     size_t      it    = c.intArg("-it"      , 5);
     size_t      n     = c.intArg("-n"       , 2000000);

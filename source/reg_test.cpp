@@ -1,7 +1,7 @@
 //#include "include/spacegrow.h"
 #include "selection.h"
 
-#include "utils/hashfct.h"
+#include "utils/default_hash.h"
 #include "utils/commandline.h"
 #include "utils/thread_basics.h"
 
@@ -24,8 +24,8 @@ inline void print(std::ostream& out, const T& t, size_t w)
 template<class Config>
 struct Test
 {
-    //using Table = ProbIndependentBase<HASHTYPE<size_t, size_t, HASHFCT, Config> >;
-    using Table = HASHTYPE<size_t, size_t, HASHFCT, Config>;
+    //using Table = ProbIndependentBase<HASHTYPE<size_t, size_t, dysect::hash::default_hash, Config> >;
+    using Table = HASHTYPE<size_t, size_t, dysect::hash::default_hash, Config>;
 
     constexpr static size_t block_size = 100000;
 

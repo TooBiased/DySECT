@@ -2,7 +2,6 @@
 #+AUTHOR: Tobias Maier
 #+EMAIL:  t.maier@kit.edu
 
-
 ** Plotting example
 #+begin_src R :results output graphics :file mygraph.png :bg "white"
 # Creating a Graph
@@ -24,7 +23,7 @@ title("Regression of MPG on Weight")
 #+END_SRC
 
 #+RESULTS:
-: /home/maier/PHD/SpaceEfficientHashing/Implementation/eval
+: /home/maier/PHD/SpaceEfficientHashing/DySECT/eval
 
 ** Define Filters
 #+BEGIN_SRC R :session
@@ -75,12 +74,16 @@ title("Regression of MPG on Weight")
 
   f_ierr    <- function (d)
   {
-      return (d[d$in_err<100, ])
+      return (d[d$in_err<1, ])
   }
 
   f_err     <- function (d)
   {
-      return (d[d$err<100, ])
+      return (d[d$err<1, ])
+  }
+  f_off     <- function (d)
+  {
+      return (d[1<0,])
   }
 #+END_SRC
 
@@ -88,43 +91,448 @@ title("Regression of MPG on Weight")
 
 ** Common Stuff
 #+BEGIN_SRC R :session
-folder="../130tests/13_04/"
-col_vec = list("black", "black",
-               "dodgerblue2", "dodgerblue2",
-               "red2", "red2",
-               "forestgreen", "forestgreen",
-               "darkorange", "darkorange",
-               "darkgreen")
-pch_vec = list(15,15,16,16,17,17, 4, 4, 9, 9,13)
-lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2)
 
-lnames=c("DySECT", "Cuckoo", "Lin Prob", "Hopscotch", "Robin Hood")
-lcol  =c("black", "dodgerblue2", "red2", "forestgreen", "darkorange")
-lpch  =c(15,16,17,4,9)
+folder="../tests/130/"
+
+# Hopscotch "forestgreen" pch=4
+col_vec = list("dodgerblue2", "dodgerblue2",
+               "red2", "red2",
+               "darkorange", "darkorange",
+               "black", "black")
+pch_vec = list(16,16,17,17, 9, 9,15,15)
+lty_vec = list( 2, 1, 2, 1, 2, 1, 2, 1)
+
+lnames=c("DySECT", "Cuckoo", "Lin Prob", "Robin Hood")
+lcol  =c("black", "dodgerblue2", "red2", "darkorange")
+lpch  =c(15,16,17,9)
 #+END_SRC
 
 #+RESULTS:
 | 15 |
 | 16 |
 | 17 |
-|  4 |
 |  9 |
 
 
 * INDIVIDUAL TESTS
+
+** EPS   TEST
+*** Reading Data
+#+begin_src R :session :results output
+  colc <- c('it', 'bs', 'tl', 'nh', 'f_cap', 'n_step', 'win', 'eps', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
+
+  ep_egrow_raw      <- read.table(paste(folder, "ceg2l.eps"         , sep="") , comment.char = "#", col.names = colc)
+  ep_ceipg_raw      <- read.table(paste(folder, "ceipg2l.eps"       , sep="") , comment.char = "#", col.names = colc)
+  ep_simpl_raw      <- read.table(paste(folder, "csimple.eps"       , sep="") , comment.char = "#", col.names = colc)
+  ep_cinpl_raw      <- read.table(paste(folder, "cinplace.eps"      , sep="") , comment.char = "#", col.names = colc)
+  ep_cindp_raw      <- read.table(paste(folder, "cindependent2l.eps", sep="") , comment.char = "#", col.names = colc)
+
+  colp <- c('it',                   'f_cap', 'n_step', 'win', 'eps', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
+  ep_sprob_raw      <- read.table(paste(folder, "spaceprob.eps",      sep="") , comment.char = "#", col.names = colp)
+  ep_strcp_raw      <- read.table(paste(folder, "strctprob.eps",      sep="") , comment.char = "#", col.names = colp)
+  ep_strcr_raw      <- read.table(paste(folder, "strctrobin.eps",     sep="") , comment.char = "#", col.names = colp)
+  ep_strcc_raw      <- read.table(paste(folder, "strctrobin.eps",     sep="") , comment.char = "#", col.names = colp)
+  #ep_strcc_raw      <- read.table(paste(folder, "strctcuckoo.eps",    sep="") , comment.char = "#", col.names = colp)
+  colp <- c('it', 'bufs',           'f_cap', 'n_step', 'win', 'eps', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
+  ep_pinpl_raw      <- read.table(paste(folder, "inplaceprob.eps",    sep="") , comment.char = "#", col.names = colp)
+
+  colh <- c('it', 'ns',             'f_cap', 'n_step', 'win', 'eps', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
+  ep_hprob_raw      <- read.table(paste(folder, "hopprob.eps",        sep="") , comment.char = "#", col.names = colh)
+  ep_hiprb_raw      <- read.table(paste(folder, "hipprob.eps",        sep="") , comment.char = "#", col.names = colh)
+
+  colp <- c('it', 'mdis',           'f_cap', 'n_step', 'win', 'eps', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
+  ep_rprob_raw      <- read.table(paste(folder, "robinprob.eps",      sep="") , comment.char = "#", col.names = colp)
+  ep_riprb_raw      <- read.table(paste(folder, "robinprob.eps",      sep="") , comment.char = "#", col.names = colp)
+
+  colh <- c('it', 'ns', 'rat',      'f_cap', 'n_step', 'win', 'eps', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
+  ep_shops_raw      <- read.table(paste(folder, "spacehopscotch.eps", sep="") , comment.char = "#", col.names = colh)
+
+
+  d <- ep_egrow_raw
+  ep_egrow = aggregate(d, by=list(d$bs, d$tl, d$nh, d$eps), FUN=mean)
+  d <- ep_ceipg_raw
+  ep_ceipg = aggregate(d, by=list(d$bs, d$tl, d$nh, d$eps), FUN=mean)
+  d <- ep_simpl_raw
+  ep_simpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$eps), FUN=mean)
+  d <- ep_cinpl_raw
+  ep_cinpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$eps), FUN=mean)
+
+  d <- ep_sprob_raw
+  ep_sprob = aggregate(d, by=list(d$eps), FUN=mean)
+  d <- ep_pinpl_raw
+  ep_pinpl = aggregate(d, by=list(d$eps), FUN=mean)
+  d <- ep_hprob_raw
+  ep_hprob = aggregate(d, by=list(d$ns, d$eps), FUN=mean)
+  d <- ep_hiprb_raw
+  ep_hiprb = aggregate(d, by=list(d$ns, d$eps), FUN=mean)
+  d <- ep_rprob_raw
+  ep_rprob = aggregate(d, by=list(d$eps), FUN=mean)
+  d <- ep_riprb_raw
+  ep_riprb = aggregate(d, by=list(d$eps), FUN=mean)
+  d <- ep_shops_raw
+  ep_shops = aggregate(d, by=list(d$ns, d$rat, d$eps), FUN=mean)
+
+  d <- ep_strcp_raw
+  ep_strcp = aggregate(d, by=list(d$eps), FUN=mean)
+  d <- ep_strcr_raw
+  ep_strcr = aggregate(d, by=list(d$eps), FUN=mean)
+#+end_src
+
+#+RESULTS:
+
+*** Plots
+#+BEGIN_SRC R :session :results output graphics
+  datalines = list(f_off(f_ctable(ep_simpl,  1,8,3)),
+                   f_ctable(ep_cinpl,  1,8,3),
+
+                   #ep_sprob,
+                   f_off(ep_strcp),
+                   ep_pinpl,
+
+                   #ep_rprob,
+                   f_off(ep_strcr),
+                   ep_riprb,
+                   #hhh(ep_shops, 62)
+
+                   f_ctable(ep_egrow,256,8,3),
+                   f_ctable(ep_ceipg,256,8,3)
+                   )
+  l=length(datalines)
+#+END_SRC
+
+#+RESULTS:
+
+**** Combined Plots
+#+BEGIN_SRC R :session :results output graphics :file plots/temp.pdf :bg "white"
+
+  #pdf("eps132_27_03_plot.pdf", width=10, height=7)
+
+  par(mfrow=c(3,1))  #two plots next to each other
+  header="Normalized Insertion Time"
+  y='tin'
+  x='eps'
+  xrange <- range(0.8,1)
+  yrange <- range(0,80) #grows_bfs$fti)
+  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab=expression(paste("load factor  ", 1-epsilon)))
+  title(ylab=expression(paste("time x ", epsilon, "   in ns")))
+
+  for (i in 1:l)
+  {
+    lines(datalines[[i]][,x], datepsines[[i]][,y]*(1.-datalines[[i]][,x]), col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+
+  header="Successful Find Operation"
+  y='tfi'
+  yrange <- range(0,200) #grows_bfs$fti)
+  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab=expression(paste("load factor  ", 1-epsilon)))
+  title(ylab="time   in ns")
+
+  for (i in 1:l)
+  {
+    lines(datalines[[i]][,x], datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+
+  header="Unsuccessful Find Operation"
+  y='tfu'
+  yrange <- range(0,400) #grows_bfs$fti)
+  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab=expression(paste("load factor  ", 1-epsilon)))
+  title(ylab="time   in ns")
+
+  for (i in 1:l)
+  {
+    lines(datalines[[i]][,x], datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+  #dev.off()
+#+END_SRC
+
+#+RESULTS:
+[[file:plots/temp.pdf]]
+
+**** Insert
+#+BEGIN_SRC R :session :results output
+#graphics :file plots/eps_insert.pdf :bg "white"
+
+  pdf("plots/eps_insert.pdf", width=10, height=5)
+
+  #header="Normalized Insertion Time"
+  y='tin'
+  x='eps'
+  xrange <- range(0.8,1)
+  yrange <- range(0,80) #grows_bfs$fti)
+  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
+  #title(main=header)
+  title(xlab=expression(paste("load factor  ", delta)), line=2.3)
+  title(ylab=expression(paste("time x ", (1-delta), "   [ns]")), line=2.3)
+
+  for (i in 1:l)
+  {
+    lines(datalines[[i]][,x], datalines[[i]][,y]*(1.-datalines[[i]][,x]), col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+  legend(.8, 75, lnames, lty=1, col=lcol, pch=lpch)
+
+  dev.off()
+#+END_SRC
+
+#+RESULTS:
+: null device
+:           1
+
+**** Find+
+#+BEGIN_SRC R :session :results output
+#graphics :file plots/eps_find_s.pdf :bg "white"
+
+  pdf("plots/eps_find_s.pdf", width=5, height=4)
+  x='eps'
+  xrange <- range(0.8,1)
+
+  #header="Successful Find Operation"
+  y='tfi'
+  yrange <- range(0,400) #grows_bfs$fti)
+  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
+  #title(main=header)
+  title(xlab=expression(paste("load factor   ", delta)), line=2.3)
+  title(ylab="time   [ns]", line=2.3)
+
+  for (i in 1:l)
+  {
+    lines(datalines[[i]][,x], datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]], cex=0.5)
+  }
+
+  legend(.8, 380, lnames, lty=1, col=lcol, pch=lpch)
+
+  dev.off()
+#+END_SRC
+
+#+RESULTS:
+: null device
+:           1
+
+**** Find-
+#+BEGIN_SRC R :session :results output
+#graphics :file plots/eps_find_u.pdf :bg "white"
+  pdf("plots/eps_find_u.pdf", width=5, height=4)
+
+  x='eps'
+  xrange <- range(0.8,1)
+
+  #header="Unsuccessful Find Operation"
+  y='tfu'
+  yrange <- range(0,400) #grows_bfs$fti)
+  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
+  #title(main=header)
+  title(xlab=expression(paste("load factor   ", delta)), line=2.3)
+  title(ylab="time   [ns]", line=2.3)
+
+  for (i in 1:l)
+  {
+    lines(datalines[[i]][,x], datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]], cex=0.5)
+  }
+
+  #legend(.8, 380, lnames, lty=1, col=lcol, pch=lpch)
+
+  dev.off()
+#+END_SRC
+
+#+RESULTS:
+: null device
+:           1
+
+*** Presentation Plots
+#+BEGIN_SRC R :session :results output graphics
+  datalines = list(f_off(f_ctable(ep_simpl,  1,8,3)),
+                   f_ctable(ep_cinpl,  1,8,3),
+
+                   #ep_sprob,
+                   f_off(ep_strcp),
+                   ep_pinpl,
+
+                   #ep_rprob,
+                   f_off(ep_strcr),
+                   ep_riprb,
+                   #hhh(ep_shops, 62)
+
+                   f_ctable(ep_egrow,256,8,3),
+                   f_ctable(ep_ceipg,256,8,3)
+                   )
+  l=length(datalines)
+#+END_SRC
+
+#+RESULTS:
+
+**** Combined Plots
+#+BEGIN_SRC R :session :results output graphics :file plots/temp.pdf :bg "white"
+
+  #pdf("eps132_27_03_plot.pdf", width=10, height=7)
+
+  par(mfrow=c(3,1))  #two plots next to each other
+  header="Normalized Insertion Time"
+  y='tin'
+  x='eps'
+  xrange <- range(0.8,1)
+  yrange <- range(0,80) #grows_bfs$fti)
+  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab=expression(paste("load factor  ", 1-epsilon)))
+  title(ylab=expression(paste("time x ", epsilon, "   in ns")))
+
+  for (i in 1:l)
+  {
+    lines(datalines[[i]][,x], datepsines[[i]][,y]*(1.-datalines[[i]][,x]), col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+
+  header="Successful Find Operation"
+  y='tfi'
+  yrange <- range(0,200) #grows_bfs$fti)
+  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab=expression(paste("load factor  ", 1-epsilon)))
+  title(ylab="time   in ns")
+
+  for (i in 1:l)
+  {
+    lines(datalines[[i]][,x], datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+
+  header="Unsuccessful Find Operation"
+  y='tfu'
+  yrange <- range(0,400) #grows_bfs$fti)
+  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
+  title(main=header)
+  title(xlab=expression(paste("load factor  ", 1-epsilon)))
+  title(ylab="time   in ns")
+
+  for (i in 1:l)
+  {
+    lines(datalines[[i]][,x], datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+  #dev.off()
+#+END_SRC
+
+#+RESULTS:
+[[file:plots/temp.pdf]]
+
+**** Insert
+#+BEGIN_SRC R :session :results output
+#graphics :file plots/eps_insert.pdf :bg "white"
+
+  pdf("pres_plots/eps_insert.pdf", width=6, height=4)
+
+  #header="Normalized Insertion Time"
+  y='tin'
+  x='eps'
+  xrange <- range(0.8,1)
+  yrange <- range(0,94) #grows_bfs$fti)
+  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
+  #title(main=header)
+  title(xlab=expression(paste("load factor  ", delta)), line=2.1)
+  title(ylab=expression(paste("time x ", (1-delta), "   [ns]")), line=2.1)
+
+  for (i in 1:l)
+  {
+    lines(datalines[[i]][,x], datalines[[i]][,y]*(1.-datalines[[i]][,x]),
+          col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]], cex=0.6)
+  }
+
+  legend(.8, 89, lnames, lty=1, col=lcol, pch=lpch)
+
+  dev.off()
+#+END_SRC
+
+#+RESULTS:
+: null device
+:           1
+
+**** Find+
+#+BEGIN_SRC R :session :results output
+#graphics :file plots/eps_find_s.pdf :bg "white"
+
+  pdf("pres_plots/eps_find_s.pdf", width=6, height=4)
+  x='eps'
+  xrange <- range(0.8,1)
+
+  #header="Successful Find Operation"
+  y='tfi'
+  yrange <- range(0,400) #grows_bfs$fti)
+  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
+  #title(main=header)
+  title(xlab=expression(paste("load factor   ", delta)), line=2.1)
+  title(ylab="time   [ns]", line=2.1)
+
+  for (i in 1:l)
+  {
+    lines(datalines[[i]][,x], datalines[[i]][,y],
+          col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]], cex=0.6)
+  }
+
+  legend(.8, 380, lnames, lty=1, col=lcol, pch=lpch)
+
+  dev.off()
+#+END_SRC
+
+#+RESULTS:
+: null device
+:           1
+
+**** Find-
+#+BEGIN_SRC R :session :results output
+#graphics :file plots/eps_find_u.pdf :bg "white"
+  pdf("pres_plots/eps_find_u.pdf", width=6, height=4)
+
+  x='eps'
+  xrange <- range(0.8,1)
+
+  #header="Unsuccessful Find Operation"
+  y='tfu'
+  yrange <- range(0,400) #grows_bfs$fti)
+  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
+  #title(main=header)
+  title(xlab=expression(paste("load factor   ", delta)), line=2.1)
+  title(ylab="time   [ns]", line=2.1)
+
+  for (i in 1:l)
+  {
+    lines(datalines[[i]][,x], datalines[[i]][,y],
+          col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]], cex=0.6)
+  }
+
+  legend(.8, 380, lnames, lty=1, col=lcol, pch=lpch)
+
+  dev.off()
+#+END_SRC
+
+#+RESULTS:
+: null device
+:           1
+
 ** TIME  TEST
 *** Reading Data
 #+begin_src R :session :results output
   colc <- c('it', 'al', 'bs', 'tl', 'nh', 'f_cap', 'cap', 'n_0', 'n_f' , 'tin0', 'tin1', 'tfi0', 'tfi1', 'in_err', 'fi_err', 'mem')
-  folder = "../130tests/13_04/"
 
   ti_egrow_raw      <- read.table(paste(folder, "ceg2l.time"         , sep="") , comment.char = "#", col.names = colc)
   ti_ceipg_raw      <- read.table(paste(folder, "ceipg2l.time"       , sep="") , comment.char = "#", col.names = colc)
   ti_simpl_raw      <- read.table(paste(folder, "csimple.time"       , sep="") , comment.char = "#", col.names = colc)
   ti_cinpl_raw      <- read.table(paste(folder, "cinplace.time"      , sep="") , comment.char = "#", col.names = colc)
+  ti_cindp_raw      <- read.table(paste(folder, "cindependent2l.time", sep="") , comment.char = "#", col.names = colc)
 
   colp <- c('it', 'al',                   'f_cap', 'cap', 'n_0', 'n_f', 'tin0', 'tin1', 'tfi0', 'tfi1', 'in_err', 'fi_err', 'mem')
   ti_sprob_raw      <- read.table(paste(folder, "spaceprob.time",      sep="") , comment.char = "#", col.names = colp)
+  ti_strcp_raw      <- read.table(paste(folder, "strctprob.time",      sep="") , comment.char = "#", col.names = colp)
+  ti_strcr_raw      <- read.table(paste(folder, "strctrobin.time",     sep="") , comment.char = "#", col.names = colp)
+  ti_strcc_raw      <- read.table(paste(folder, "strctcuckoo.time",    sep="") , comment.char = "#", col.names = colp)
   colp <- c('it', 'al', 'bufs',           'f_cap', 'cap', 'n_0', 'n_f', 'tin0', 'tin1', 'tfi0', 'tfi1', 'in_err', 'fi_err', 'mem')
   ti_pinpl_raw      <- read.table(paste(folder, "inplaceprob.time",      sep="") , comment.char = "#", col.names = colp)
 
@@ -152,6 +560,8 @@ lpch  =c(15,16,17,4,9)
   ti_simpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean)
   d <- ti_cinpl_raw
   ti_cinpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean)
+  d <- ti_cindp_raw
+  ti_cindp = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean)
 
   d <- ti_sprob_raw
   ti_sprob = aggregate(d, by=list(d$cap, d$al), FUN=mean)
@@ -167,6 +577,13 @@ lpch  =c(15,16,17,4,9)
   ti_riprb = aggregate(d, by=list(d$cap, d$al), FUN=mean)
   d <- ti_shops_raw
   ti_shops = aggregate(d, by=list(d$ns, d$rat, d$cap, d$al), FUN=mean)
+
+  d <- ti_strcp_raw
+  ti_strcp = aggregate(d, by=list(d$cap, d$al), FUN=mean)
+  d <- ti_strcr_raw
+  ti_strcr = aggregate(d, by=list(d$cap, d$al), FUN=mean)
+  d <- ti_strcc_raw
+  ti_strcc = aggregate(d, by=list(d$cap, d$al), FUN=mean)
 #+end_src
 
 #+RESULTS:
@@ -185,6 +602,11 @@ lpch  =c(15,16,17,4,9)
   ti_riprb$tinf = ti_riprb$tin0 + ti_riprb$tin1
   ti_shops$tinf = ti_shops$tin0 + ti_shops$tin1
 
+  ti_strcp$tinf = ti_strcp$tin0 + ti_strcp$tin1
+  ti_strcr$tinf = ti_strcr$tin0 + ti_strcr$tin1
+  ti_strcc$tinf = ti_strcc$tin0 + ti_strcc$tin1
+  ti_cindp$tinf = ti_cindp$tin0 + ti_cindp$tin1
+
   ti_egrow$sinf = ti_egrow$n_f / ti_egrow$tinf
   ti_ceipg$sinf = ti_ceipg$n_f / ti_ceipg$tinf
   ti_simpl$sinf = ti_simpl$n_f / ti_simpl$tinf
@@ -196,6 +618,11 @@ lpch  =c(15,16,17,4,9)
   ti_rprob$sinf = ti_rprob$n_f / ti_rprob$tinf
   ti_riprb$sinf = ti_riprb$n_f / ti_riprb$tinf
   ti_shops$sinf = ti_shops$n_f / ti_shops$tinf
+
+  ti_strcp$sinf = ti_strcp$n_f / ti_strcp$tinf
+  ti_strcr$sinf = ti_strcr$n_f / ti_strcr$tinf
+  ti_strcc$sinf = ti_strcc$n_f / ti_strcc$tinf
+  ti_cindp$sinf = ti_cindp$n_f / ti_cindp$tinf
 
   ti_egrow$sfi0 = ti_egrow$n_f / ti_egrow$tfi0
   ti_ceipg$sfi0 = ti_ceipg$n_f / ti_ceipg$tfi0
@@ -209,6 +636,11 @@ lpch  =c(15,16,17,4,9)
   ti_riprb$sfi0 = ti_riprb$n_f / ti_riprb$tfi0
   ti_shops$sfi0 = ti_shops$n_f / ti_shops$tfi0
 
+  ti_strcp$sfi0 = ti_strcp$n_f / ti_strcp$tfi0
+  ti_strcr$sfi0 = ti_strcr$n_f / ti_strcr$tfi0
+  ti_strcc$sfi0 = ti_strcc$n_f / ti_strcc$tfi0
+  ti_cindp$sfi0 = ti_cindp$n_f / ti_cindp$tfi0
+
   ti_egrow$sfi1 = ti_egrow$n_f / ti_egrow$tfi1
   ti_ceipg$sfi1 = ti_ceipg$n_f / ti_ceipg$tfi1
   ti_simpl$sfi1 = ti_simpl$n_f / ti_simpl$tfi1
@@ -220,6 +652,11 @@ lpch  =c(15,16,17,4,9)
   ti_rprob$sfi1 = ti_rprob$n_f / ti_rprob$tfi1
   ti_riprb$sfi1 = ti_riprb$n_f / ti_riprb$tfi1
   ti_shops$sfi1 = ti_shops$n_f / ti_shops$tfi1
+
+  ti_strcp$sfi1 = ti_strcp$n_f / ti_strcp$tfi1
+  ti_strcr$sfi1 = ti_strcr$n_f / ti_strcr$tfi1
+  ti_strcc$sfi1 = ti_strcc$n_f / ti_strcc$tfi1
+  ti_cindp$sfi1 = ti_cindp$n_f / ti_cindp$tfi1
 
   ti_egrow$sin0 = ti_egrow$n_0 / ti_egrow$tin0
   ti_ceipg$sin0 = ti_ceipg$n_0 / ti_ceipg$tin0
@@ -233,6 +670,11 @@ lpch  =c(15,16,17,4,9)
   ti_riprb$sin0 = ti_riprb$n_0 / ti_riprb$tin0
   ti_shops$sin0 = ti_shops$n_0 / ti_shops$tin0
 
+  ti_strcp$sin0 = ti_strcp$n_0 / ti_strcp$tin0
+  ti_strcr$sin0 = ti_strcr$n_0 / ti_strcr$tin0
+  ti_strcc$sin0 = ti_strcc$n_0 / ti_strcc$tin0
+  ti_cindp$sin0 = ti_cindp$n_0 / ti_cindp$tin0
+
   ti_egrow$sin1 = (ti_egrow$n_f - ti_egrow$n_0) / ti_egrow$tin1
   ti_ceipg$sin1 = (ti_ceipg$n_f - ti_ceipg$n_0) / ti_ceipg$tin1
   ti_simpl$sin1 = (ti_simpl$n_f - ti_simpl$n_0) / ti_simpl$tin1
@@ -244,30 +686,70 @@ lpch  =c(15,16,17,4,9)
   ti_rprob$sin1 = (ti_rprob$n_f - ti_rprob$n_0) / ti_rprob$tin1
   ti_riprb$sin1 = (ti_riprb$n_f - ti_riprb$n_0) / ti_riprb$tin1
   ti_shops$sin1 = (ti_shops$n_f - ti_shops$n_0) / ti_shops$tin1
+
+  ti_strcp$sin1 = (ti_strcp$n_f - ti_strcp$n_0) / ti_strcp$tin1
+  ti_strcr$sin1 = (ti_strcr$n_f - ti_strcr$n_0) / ti_strcr$tin1
+  ti_strcc$sin1 = (ti_strcc$n_f - ti_strcc$n_0) / ti_strcc$tin1
+  ti_cindp$sin1 = (ti_cindp$n_f - ti_cindp$n_0) / ti_cindp$tin1
 #+END_SRC
 
 #+RESULTS:
+
+*** Values from Experiment Section
+#+begin_src R :session :results output
+  extr <- function(d, al)
+  {
+    t <- d[(d$al == al) & (d$cap == 50000),]
+    return ( t[,'tinf']/t[,'n_f']*1000000 )
+  }
+  tal = 1./0.85
+  print("At 85% load")
+  print(tal)
+  c = extr(ti_ceipg, 1.17647)
+  p = extr(ti_pinpl, 1.17647)
+  print(c)
+  print(p)
+  print(1 - (c/p))
+  print("At 97.5% load")
+  c = extr(ti_ceipg, 1.02564)
+  p = extr(ti_pinpl, 1.02564)
+  p = extr(ti_cindp, 1.02564)
+  print(c)
+  print(p)
+  print(1 - (c/p))
+
+#+end_src
+
+#+RESULTS:
+: [1] "At 85% load"
+: [1] 1.176471
+: [1] 299.1987
+: [1] 479.2026
+: [1] 0.3756322
+: [1] "At 97.5% load"
+: [1] 1580.939
+: [1] 4215.958
+: [1] 0.6250107
 
 *** Plot
 #+BEGIN_SRC R :session :results output
   tcap=50000
 
   ti_datalines = list(
-                   f_ierr(f_cap(f_ctable(ti_egrow,256,8,3), tcap)),
-                   f_ierr(f_cap(f_ctable(ti_ceipg,256,8,3), tcap)),
-
-                   f_ierr(f_cap(f_ctable(ti_simpl,  1,8,3), tcap)),
+                   #f_ierr(f_cap(f_ctable(ti_simpl,  1,8,3), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_cindp,256,8,3), tcap)),
                    f_ierr(f_cap(f_ctable(ti_cinpl,  1,8,3), tcap)),
 
-                   f_ierr(f_cap(ti_sprob, tcap)),
+                   #f_ierr(f_cap(ti_sprob, tcap)),
+                   f_ierr(f_cap(ti_strcp, 200000)),
                    f_ierr(f_cap(ti_pinpl, tcap)),
 
-                   f_ierr(f_cap(f_htable(ti_hprob, 64), tcap)),
-                   f_ierr(f_cap(f_htable(ti_hiprb, 64), tcap)),
+                   #f_ierr(f_cap(ti_rprob, tcap)),
+                   f_ierr(f_cap(ti_strcr, 200000)),
+                   f_ierr(f_cap(ti_riprb, tcap)),
 
-                   f_ierr(f_cap(ti_rprob, tcap)),
-                   f_ierr(f_cap(ti_riprb, tcap))#,
-
+                   f_ierr(f_cap(f_ctable(ti_egrow,256,8,3), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_ceipg,256,8,3), tcap))
                    #f_cap(f_htable(ti_shops, 62), tcap)
                    )
 
@@ -407,8 +889,9 @@ lpch  =c(15,16,17,4,9)
          yaxs='i',
          col="black", type="n", main=header, ann=FALSE)
   title(main=header)
-  title(xlab=expression(paste("load factor  ", 1-epsilon)))
-  title(ylab="time per op   in ns")
+  title(xlab=expression(paste("enforced min load   ", delta[min])), line=2.3)
+  title(ylab="time per op    [ns]", line=2.3)
+
   for (i in 1:ti_l)
   {
     epsilon <- (ti_datalines[[i]][,'al']-1.)/ti_datalines[[i]][,'al']
@@ -442,8 +925,8 @@ lpch  =c(15,16,17,4,9)
          yaxs='i',
          col="black", type="n", main=header, ann=FALSE)
   title(main=header)
-  title(xlab=expression(paste("load factor  ", 1-epsilon)))
-  title(ylab="time per op   in ns")
+  title(xlab=expression(paste("enforced min load   ", delta[min])), line=2.3)
+  title(ylab="time per op    [ns]", line=2.3)
 
   for (i in 1:ti_l)
   {
@@ -464,30 +947,93 @@ lpch  =c(15,16,17,4,9)
 
 **** Insert Benchmark
 #+BEGIN_SRC R :session :results output
-#graphics :file plots/ti_insert.pdf :bg "white"
-  pdf(file="plots/ti_insert.pdf", width=10, height=4)
+  #graphics :file plots/ti_insert.pdf :bg "white"
+    pdf(file="plots/ti_insert.pdf", width=7, height=4)
+
+    x='al'
+    xrange <- range(.85,1)
+
+    #header = "Insert Microbenchmark"
+    y='tinf'
+    yrange <- range(0, 300)
+    plot  (xrange, yrange,
+           yaxs='i',
+           col="black", type="n", main=header, ann=FALSE)
+    #title(main=header)
+    title(xlab=expression(paste("enforced min load   ", delta[min])), line=2.3)
+    title(ylab=expression(paste("time x ", (1-delta[min]), "   [ns]")), line=2.3)
+
+    for (i in 1:ti_l)
+    {
+      epsilon <- (ti_datalines[[i]][,'al']-1.)/ti_datalines[[i]][,'al']
+      yline   <- ti_datalines[[i]][,y]/ti_datalines[[i]][,'n_f']*1000000*epsilon
+      lines(1-epsilon, yline , col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+    }
+
+    legend(.85, 290, lnames, lty=1, col=lcol, pch=lpch)
+
+    dev.off()
+
+#+END_SRC
+
+#+RESULTS:
+: null device
+:           1
+
+*** Presentation Plot
+#+BEGIN_SRC R :session :results output
+  tcap=50000
+
+  ti_datalines = list(
+                   #f_ierr(f_cap(f_ctable(ti_simpl,  1,8,3), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_cindp,256,8,3), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_cinpl,  1,8,3), tcap)),
+
+                   #f_ierr(f_cap(ti_sprob, tcap)),
+                   f_ierr(f_cap(ti_strcp, 200000)),
+                   f_ierr(f_cap(ti_pinpl, tcap)),
+
+                   #f_ierr(f_cap(ti_rprob, tcap)),
+                   f_ierr(f_cap(ti_strcr, 200000)),
+                   f_ierr(f_cap(ti_riprb, tcap)),
+
+                   f_ierr(f_cap(f_ctable(ti_egrow,256,8,3), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_ceipg,256,8,3), tcap))
+                   #f_cap(f_htable(ti_shops, 62), tcap)
+                   )
+
+  ti_l = length(ti_datalines)
+#+END_SRC
+
+#+RESULTS:
+
+**** Find+ Benchmark
+#+BEGIN_SRC R :session :results output
+#graphics :file plots/ti_find_s.pdf :bg "white"
+  pdf(file="pres_plots/ti_find_s.pdf", width=6, height=4)
 
   x='al'
   xrange <- range(.85,1)
 
-  header = "Insert Microbenchmark"
-  y='tinf'
-  yrange <- range(0, 250)
+  #header = "Find+ Microbenchmark"
+  y='tfi0'
+  yrange <- range(0,350) #grows_bfs$fti)
   plot  (xrange, yrange,
          yaxs='i',
          col="black", type="n", main=header, ann=FALSE)
-  title(main=header)
-  title(xlab=expression(paste("load factor  ", 1-epsilon)))
-  title(ylab="time per op * epsilon   in ns")
+  #title(main=header)
+  title(xlab=expression(paste("enforced min load   ", delta[min])), line=2.1)
+  title(ylab="time per op    [ns]", line=2.1)
 
   for (i in 1:ti_l)
   {
     epsilon <- (ti_datalines[[i]][,'al']-1.)/ti_datalines[[i]][,'al']
-    yline   <- ti_datalines[[i]][,y]/ti_datalines[[i]][,'n_f']*1000000*epsilon
-    lines(1-epsilon, yline , col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+    xline   <- 1.-epsilon
+    yline   <- ti_datalines[[i]][,y] / ti_datalines[[i]][,'n_f']*1000000
+    lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
   }
 
-  legend(.85, 240, lnames, lty=1, col=lcol, pch=lpch)
+  legend(.85, 335, lnames, lty=1, col=lcol, pch=lpch)
 
   dev.off()
 
@@ -497,16 +1043,87 @@ lpch  =c(15,16,17,4,9)
 : null device
 :           1
 
+**** Find- Benchmark
+#+BEGIN_SRC R :session :results output
+#graphics :file plots/ti_find_u.pdf :bg "white"
+  pdf(file="pres_plots/ti_find_u.pdf", width=6, height=4)
+
+  x='al'
+  xrange <- range(.85,1)
+
+  #header = "Find- Microbenchmark"
+  y='tfi1'
+  yrange <- range(0,350) #grows_bfs$fti)
+  plot  (xrange, yrange,
+         yaxs='i',
+         col="black", type="n", main=header, ann=FALSE)
+  #title(main=header)
+  title(xlab=expression(paste("enforced min load   ", delta[min])), line=2.1)
+  title(ylab="time per op    [ns]", line=2.1)
+
+  for (i in 1:ti_l)
+  {
+    epsilon <- (ti_datalines[[i]][,'al']-1.)/ti_datalines[[i]][,'al']
+    xline   <- 1.-epsilon
+    yline   <- ti_datalines[[i]][,'tfi1'] / ti_datalines[[i]][,'n_f']*1000000
+    lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+  #legend(.85, 385, lnames, lty=1, col=lcol, pch=lpch)
+
+  dev.off()
+#+END_SRC
+
+#+RESULTS:
+: null device
+:           1
+
+**** Insert Benchmark
+#+BEGIN_SRC R :session :results output
+  #graphics :file plots/ti_insert.pdf :bg "white"
+    pdf(file="pres_plots/ti_insert.pdf", width=6, height=4)
+
+    x='al'
+    xrange <- range(.85,1)
+
+    #header = "Insert Microbenchmark"
+    y='tinf'
+    yrange <- range(0, 330)
+    plot  (xrange, yrange,
+           yaxs='i',
+           col="black", type="n", main=header, ann=FALSE)
+    #title(main=header)
+    title(xlab=expression(paste("enforced min load   ", delta[min])), line=2.1)
+    title(ylab=expression(paste("time x ", (1-delta[min]), "   [ns]")), line=2.1)
+
+    for (i in 1:ti_l)
+    {
+      epsilon <- (ti_datalines[[i]][,'al']-1.)/ti_datalines[[i]][,'al']
+      yline   <- ti_datalines[[i]][,y]/ti_datalines[[i]][,'n_f']*1000000*epsilon
+      lines(1-epsilon, yline , col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+    }
+
+    legend(.85, 320, lnames, lty=1, col=lcol, pch=lpch)
+
+    dev.off()
+
+#+END_SRC
+
+#+RESULTS:
+: null device
+:           1
+
+
 ** CRAWL TEST
 *** Reading Data
 #+begin_src R :session :results output
   colc <- c('it', 'al', 'bs', 'tl', 'nh', 'f_cap', 'cap', 'time', 'mult', 'ind', 'err', 'mem', 'mx_mem')
-  #folder = "../132tests/27_03/"
 
   cw_egrow_raw      <- read.table(paste(folder, "ceg2l.crawl"         , sep="") , comment.char = "#", col.names = colc)
   cw_ceipg_raw      <- read.table(paste(folder, "ceipg2l.crawl"       , sep="") , comment.char = "#", col.names = colc)
   cw_simpl_raw      <- read.table(paste(folder, "csimple.crawl"       , sep="") , comment.char = "#", col.names = colc)
   cw_cinpl_raw      <- read.table(paste(folder, "cinplace.crawl"      , sep="") , comment.char = "#", col.names = colc)
+  cw_cindp_raw      <- read.table(paste(folder, "cindependent2l.crawl", sep="") , comment.char = "#", col.names = colc)
 
   colp <- c('it', 'al',                   'f_cap', 'cap', 'time', 'mult', 'ind', 'err', 'mem', 'mx_mem')
   cw_sprob_raw      <- read.table(paste(folder, "spaceprob.crawl",      sep="") , comment.char = "#", col.names = colp)
@@ -524,6 +1141,11 @@ lpch  =c(15,16,17,4,9)
   colh <- c('it', 'al', 'ns', 'rat',      'f_cap', 'cap', 'time', 'mult', 'ind', 'err', 'mem', 'mx_mem')
   cw_shops_raw      <- read.table(paste(folder, "spacehopscotch.crawl", sep="") , comment.char = "#", col.names = colh)
 
+  colp <- c('it', 'al',                   'f_cap', 'cap', 'time', 'mult', 'ind', 'err', 'mem', 'mx_mem')
+  cw_strcp_raw      <- read.table(paste(folder, "strctprob.crawl",      sep="") , comment.char = "#", col.names = colp)
+  cw_strcr_raw      <- read.table(paste(folder, "strctrobin.crawl",     sep="") , comment.char = "#", col.names = colp)
+  cw_strcc_raw      <- read.table(paste(folder, "strctcuckoo.crawl",    sep="") , comment.char = "#", col.names = colp)
+
   loc_groupby <- function(d)
   {
       return( aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean) )
@@ -537,6 +1159,8 @@ lpch  =c(15,16,17,4,9)
   cw_simpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$al), FUN=mean)
   d <- cw_cinpl_raw
   cw_cinpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$al), FUN=mean)
+  d <- cw_cindp_raw
+  cw_cindp = aggregate(d, by=list(d$bs, d$tl, d$nh, d$al), FUN=mean)
   d <- cw_sprob_raw
   cw_sprob = aggregate(d, by=list(d$al), FUN=mean)
   d <- cw_pinpl_raw
@@ -551,6 +1175,12 @@ lpch  =c(15,16,17,4,9)
   cw_riprb = aggregate(d, by=list(d$al), FUN=mean)
   d <- cw_shops_raw
   cw_shops = aggregate(d, by=list(d$ns, d$rat, d$al), FUN=mean)
+  d <- cw_strcp_raw
+  cw_strcp = aggregate(d, by=list(d$al), FUN=mean)
+  d <- cw_strcr_raw
+  cw_strcr = aggregate(d, by=list(d$al), FUN=mean)
+  d <- cw_strcc_raw
+  cw_strcc = aggregate(d, by=list(d$al), FUN=mean)
 #+end_src
 
 #+RESULTS:
@@ -560,28 +1190,28 @@ lpch  =c(15,16,17,4,9)
 #+BEGIN_SRC R :session :results output
 #graphics :file plots/crawl.pdf :bg "white"
 
-  pdf(file="plots/crawl.pdf", width=10, height=4)
+  pdf(file="plots/crawl.pdf", width=5, height=4.3)
 
-  datalines = list(f_err(f_ctable(cw_egrow,256,8,3)),
-                   f_err(f_ctable(cw_ceipg,256,8,3)),
-
-                   f_err(f_ctable(cw_simpl,  1,8,3)),
+  datalines = list(#f_err(f_ctable(cw_simpl,  1,8,3)),
+                   f_err(f_ctable(cw_cindp,256,8,3)),
                    f_err(f_ctable(cw_cinpl,  1,8,3)),
 
-                   f_err(cw_sprob),
+                   #f_err(cw_sprob),
+                   f_err(cw_strcp),
                    f_err(cw_pinpl),
 
-                   f_err(f_htable(cw_hprob, 64)),
-                   f_err(f_htable(cw_hiprb, 64)),
+                   #f_err(cw_rprob),
+                   f_err(cw_strcr),
+                   f_err(cw_riprb),
 
-                   f_err(cw_rprob),
-                   f_err(cw_riprb))
+                   f_err(f_ctable(cw_egrow,256,8,3)),
+                   f_err(f_ctable(cw_ceipg,256,8,3))
+)
 
   l=length(datalines)
 
   par(mfrow=c(1,1))
 
-  header = "Word Count Throughput"
   y='time'
   x='al'
   xrange <- range(.85, 1)
@@ -589,9 +1219,62 @@ lpch  =c(15,16,17,4,9)
   plot  (xrange, yrange,
          yaxs='i',
          col="black", type="n", main=header, ann=FALSE)
-  title(main=header)
-  title(xlab=expression(paste("load  ", 1-1/epsilon)))
-  title(ylab="Time per operation   in ns")
+  title(xlab=expression(paste("enforced min load   ", delta[min])), line=2.3)
+  title(ylab="Time per operation   [ns]", line=2.3)
+
+  for (i in 1:l)
+  {
+    xline <- 1.- (datalines[[i]][,x]-1.)/datalines[[i]][,x]
+    yline <- datalines[[i]][,y]/(datalines[[i]][,'mult'] + datalines[[i]][,'ind']) *1000000
+    lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+  legend(.85, 750, lnames, lty=1, col=lcol, pch=lpch)
+
+  dev.off()
+
+#+END_SRC
+
+#+RESULTS:
+: null device
+:           1
+
+*** Presentation Plot
+
+#+BEGIN_SRC R :session :results output
+#graphics :file plots/crawl.pdf :bg "white"
+
+  pdf(file="pres_plots/crawl.pdf", width=4.8, height=3.8)
+
+  datalines = list(#f_err(f_ctable(cw_simpl,  1,8,3)),
+                   f_err(f_ctable(cw_cindp,256,8,3)),
+                   f_err(f_ctable(cw_cinpl,  1,8,3)),
+
+                   #f_err(cw_sprob),
+                   f_err(cw_strcp),
+                   f_err(cw_pinpl),
+
+                   #f_err(cw_rprob),
+                   f_err(cw_strcr),
+                   f_err(cw_riprb),
+
+                   f_err(f_ctable(cw_egrow,256,8,3)),
+                   f_err(f_ctable(cw_ceipg,256,8,3))
+)
+
+  l=length(datalines)
+
+  par(mfrow=c(1,1))
+
+  y='time'
+  x='al'
+  xrange <- range(.85, 1)
+  yrange <- range(0,800) #grows_bfs$fti)
+  plot  (xrange, yrange,
+         yaxs='i',
+         col="black", type="n", main=header, ann=FALSE)
+  title(xlab=expression(paste("enforced min load   ", delta[min])), line=2.1)
+  title(ylab="Time per operation   [ns]", line=2.1)
 
   for (i in 1:l)
   {
@@ -614,12 +1297,12 @@ lpch  =c(15,16,17,4,9)
 *** Reading Data
 #+begin_src R :session :results output
   colc <- c('it', 'al', 'bs', 'tl', 'nh', 'f_cap', 'cap', 'pat', 'n_0', 'n_f' , 'tpre', 'tmix', 'in_err', 'mem')
-  folder = "../130tests/13_04/"
 
   mx_egrow_raw      <- read.table(paste(folder, "ceg2l.mix"         , sep="") , comment.char = "#", col.names = colc)
   mx_ceipg_raw      <- read.table(paste(folder, "ceipg2l.mix"       , sep="") , comment.char = "#", col.names = colc)
   mx_simpl_raw      <- read.table(paste(folder, "csimple.mix"       , sep="") , comment.char = "#", col.names = colc)
   mx_cinpl_raw      <- read.table(paste(folder, "cinplace.mix"      , sep="") , comment.char = "#", col.names = colc)
+  mx_cindp_raw      <- read.table(paste(folder, "cindependent2l.mix"      , sep="") , comment.char = "#", col.names = colc)
 
   colp <- c('it', 'al',                   'f_cap', 'cap', 'pat', 'n_0', 'n_f', 'tpre', 'tmix', 'in_err', 'mem')
   mx_sprob_raw      <- read.table(paste(folder, "spaceprob.mix",      sep="") , comment.char = "#", col.names = colp)
@@ -637,6 +1320,11 @@ lpch  =c(15,16,17,4,9)
   colh <- c('it', 'al', 'ns', 'rat',      'f_cap', 'cap', 'pat', 'n_0', 'n_f', 'tpre', 'tmix', 'in_err', 'mem')
   mx_shops_raw      <- read.table(paste(folder, "spacehopscotch.mix", sep="") , comment.char = "#", col.names = colh)
 
+  colp <- c('it', 'al',                   'f_cap', 'cap', 'pat', 'n_0', 'n_f', 'tpre', 'tmix', 'in_err', 'mem')
+  mx_strcp_raw      <- read.table(paste(folder, "strctprob.mix",      sep="") , comment.char = "#", col.names = colp)
+  mx_strcr_raw      <- read.table(paste(folder, "strctrobin.mix",     sep="") , comment.char = "#", col.names = colp)
+  mx_strcc_raw      <- read.table(paste(folder, "strctcuckoo.mix",    sep="") , comment.char = "#", col.names = colp)
+
   loc_groupby <- function(d)
   {
       return( aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean) )
@@ -650,6 +1338,8 @@ lpch  =c(15,16,17,4,9)
   mx_simpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al, d$pat), FUN=mean)
   d <- mx_cinpl_raw
   mx_cinpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al, d$pat), FUN=mean)
+  d <- mx_cindp_raw
+  mx_cindp = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al, d$pat), FUN=mean)
 
   d <- mx_sprob_raw
   mx_sprob = aggregate(d, by=list(d$cap, d$al, d$pat), FUN=mean)
@@ -668,6 +1358,13 @@ lpch  =c(15,16,17,4,9)
 
   d <- mx_shops_raw
   mx_shops = aggregate(d, by=list(d$ns, d$rat, d$cap, d$al, d$pat), FUN=mean)
+
+  d <- mx_strcp_raw
+  mx_strcp = aggregate(d, by=list(d$cap, d$al, d$pat), FUN=mean)
+  d <- mx_strcr_raw
+  mx_strcr = aggregate(d, by=list(d$cap, d$al, d$pat), FUN=mean)
+  d <- mx_strcc_raw
+  mx_strcc = aggregate(d, by=list(d$cap, d$al, d$pat), FUN=mean)
 #+end_src
 
 #+RESULTS:
@@ -686,6 +1383,11 @@ lpch  =c(15,16,17,4,9)
   mx_riprb$smix = mx_riprb$n_f / mx_riprb$tmix
   mx_shops$smix = mx_shops$n_f / mx_shops$tmix
 
+  mx_cindp$smix = mx_cindp$n_f / mx_cindp$tmix
+  mx_strcr$smix = mx_strcr$n_f / mx_strcr$tmix
+  mx_strcp$smix = mx_strcp$n_f / mx_strcp$tmix
+  mx_strcc$smix = mx_strcc$n_f / mx_strcc$tmix
+
   mx_egrow$ttmix = mx_egrow$tmix / mx_egrow$n_f * 1000000
   mx_ceipg$ttmix = mx_ceipg$tmix / mx_ceipg$n_f * 1000000
   mx_simpl$ttmix = mx_simpl$tmix / mx_simpl$n_f * 1000000
@@ -697,61 +1399,66 @@ lpch  =c(15,16,17,4,9)
   mx_rprob$ttmix = mx_rprob$tmix / mx_rprob$n_f * 1000000
   mx_riprb$ttmix = mx_riprb$tmix / mx_riprb$n_f * 1000000
   mx_shops$ttmix = mx_shops$tmix / mx_shops$n_f * 1000000
+
+  mx_cindp$ttmix = mx_cindp$tmix / mx_cindp$n_f * 1000000
+  mx_strcr$ttmix = mx_strcr$tmix / mx_strcr$n_f * 1000000
+  mx_strcp$ttmix = mx_strcp$tmix / mx_strcp$n_f * 1000000
+  mx_strcc$ttmix = mx_strcc$tmix / mx_strcc$n_f * 1000000
 #+end_src
 
 #+RESULTS:
 
 *** Shared Plot
 #+BEGIN_SRC R :session :results output
-#graphics :file plots/mix.pdf :bg "white"
+  #graphics :file plots/mix.pdf :bg "white"
 
-  pdf("plots/mix.pdf", width=5, height=4)
+    pdf("plots/mix.pdf", width=5, height=4)
 
-  tcap=50000
-  tal =1.05263
-  datalines = list(f_ierr(f_al(f_cap(f_ctable(mx_egrow,256,8,3), tcap), tal)),
-                   f_ierr(f_al(f_cap(f_ctable(mx_ceipg,256,8,3), tcap), tal)),
+    tcap=50000
+    tal =1.05263
+    datalines = list(#f_ierr(f_al(f_cap(f_ctable(mx_simpl,  1,8,3), tcap), tal)),
+                     f_ierr(f_al(f_cap(f_ctable(mx_cindp,256,8,3), tcap), tal)),
+                     f_ierr(f_al(f_cap(f_ctable(mx_cinpl,  1,8,3), tcap), tal)),
 
-                   f_ierr(f_al(f_cap(f_ctable(mx_simpl,  1,8,3), tcap), tal)),
-                   f_ierr(f_al(f_cap(f_ctable(mx_cinpl,  1,8,3), tcap), tal)),
+                     #f_ierr(f_al(f_cap(mx_sprob, tcap), tal)),
+                     f_ierr(f_al(f_cap(mx_strcp, 200000), tal)),
+                     f_ierr(f_al(f_cap(mx_pinpl, tcap), tal)),
 
-                   f_ierr(f_al(f_cap(mx_sprob, tcap), tal)),
-                   f_ierr(f_al(f_cap(mx_pinpl, tcap), tal)),
+                     #f_ierr(f_al(f_cap(mx_rprob, tcap), tal)),
+                     f_ierr(f_al(f_cap(mx_strcr, 200000), tal)),
+                     f_ierr(f_al(f_cap(mx_riprb, tcap), tal)),
 
-                   f_ierr(f_al(f_cap(f_htable(mx_hprob, 64), tcap), tal)),
-                   f_ierr(f_al(f_cap(f_htable(mx_hiprb, 64), tcap), tal)),
+                     f_ierr(f_al(f_cap(f_ctable(mx_egrow,256,8,3), tcap), tal)),
+                     f_ierr(f_al(f_cap(f_ctable(mx_ceipg,256,8,3), tcap), tal))
 
-                   f_ierr(f_al(f_cap(mx_rprob, tcap), tal)),
-                   f_ierr(f_al(f_cap(mx_riprb, tcap), tal))#,
+                     #f_al(f_cap(f_htable(mx_shops, 62), tcap), tal)
+  )
 
-                   #f_al(f_cap(f_htable(mx_shops, 62), tcap), tal)
-)
+    l=length(datalines)
 
-  l=length(datalines)
+    par(mfrow=c(1,1))  #two plots next to each other
 
-  par(mfrow=c(1,1))  #two plots next to each other
+    #header = "Mixed Tests Insert and Successful Finds"
+    y='ttmix'
+    x='pat'
+    xrange <- range(0,100)
+    yrange <- range(0, 3500)
+    plot  (x=NULL, y=NULL, xlim=xrange, ylim=yrange,
+           xaxs='i', yaxs='i',
+           col="black", type="n", main=header, ann=FALSE)
+    #title(main=header)
+    title(xlab="fraction of insert operations   [%]", line=2.3)
+    title(ylab="time per operation   [ns]", line=2.3)
+    for (i in 1:l)
+    {
+      xline <- datalines[[i]][,x] * 10
+      yline <- datalines[[i]][,y]
+      lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+    }
 
-  header = "Mixed Tests Insert and Successful Finds"
-  y='ttmix'
-  x='pat'
-  xrange <- range(0,100)
-  yrange <- range(0, 3000)
-  plot  (x=NULL, y=NULL, xlim=xrange, ylim=yrange,
-         xaxs='i', yaxs='i',
-         col="black", type="n", main=header, ann=FALSE)
-  title(main=header)
-  title(xlab="fraction of insert operations   in %")
-  title(ylab="average time per operation   in ns")
-  for (i in 1:l)
-  {
-    xline <- datalines[[i]][,x] * 10
-    yline <- datalines[[i]][,y]
-    lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
-  }
+    legend(2, 3400, lnames, lty=1, col=lcol, pch=lpch)
 
-  legend(2, 2900, lnames, lty=1, col=lcol, pch=lpch)
-
-  dev.off()
+    dev.off()
 
 #+END_SRC
 
@@ -763,28 +1470,33 @@ lpch  =c(15,16,17,4,9)
 *** Reading Data
 #+begin_src R :session :results output
   colc <- c('it', 'al', 'bs', 'tl', 'nh', 'f_cap', 'cap', 'pat', 'n_0', 'n_f' , 'tpre', 'tmix', 'in_err', 'mem')
-  folder = "../130tests/18_04/"
 
   md_egrow_raw      <- read.table(paste(folder, "ceg2l.mixd"         , sep="") , comment.char = "#", col.names = colc)
   md_ceipg_raw      <- read.table(paste(folder, "ceipg2l.mixd"       , sep="") , comment.char = "#", col.names = colc)
   md_simpl_raw      <- read.table(paste(folder, "csimple.mixd"       , sep="") , comment.char = "#", col.names = colc)
   md_cinpl_raw      <- read.table(paste(folder, "cinplace.mixd"      , sep="") , comment.char = "#", col.names = colc)
+  md_cindp_raw      <- read.table(paste(folder, "cindependent2l.mixd", sep="") , comment.char = "#", col.names = colc)
 
   colp <- c('it', 'al',                   'f_cap', 'cap', 'pat', 'n_0', 'n_f', 'tpre', 'tmix', 'in_err', 'mem')
   md_sprob_raw      <- read.table(paste(folder, "spaceprob.mixd",      sep="") , comment.char = "#", col.names = colp)
   colp <- c('it', 'al', 'bufs',           'f_cap', 'cap', 'pat', 'n_0', 'n_f', 'tpre', 'tmix', 'in_err', 'mem')
   md_pinpl_raw      <- read.table(paste(folder, "inplaceprob.mixd",    sep="") , comment.char = "#", col.names = colp)
 
-  colh <- c('it', 'al', 'ns',             'f_cap', 'cap', 'pat', 'n_0', 'n_f', 'tpre', 'tmix', 'in_err', 'mem')
-  md_hprob_raw      <- read.table(paste(folder, "hopprob.mixd", sep="") , comment.char = "#", col.names = colh)
-  md_hiprb_raw      <- read.table(paste(folder, "hipprob.mixd", sep="") , comment.char = "#", col.names = colh)
+  #colh <- c('it', 'al', 'ns',             'f_cap', 'cap', 'pat', 'n_0', 'n_f', 'tpre', 'tmix', 'in_err', 'mem')
+  #md_hprob_raw      <- read.table(paste(folder, "hopprob.mixd", sep="") , comment.char = "#", col.names = colh)
+  #md_hiprb_raw      <- read.table(paste(folder, "hipprob.mixd", sep="") , comment.char = "#", col.names = colh)
 
   colp <- c('it', 'al',           'mdis', 'f_cap', 'cap', 'pat', 'n_0', 'n_f', 'tpre', 'tmix', 'in_err', 'mem')
   md_rprob_raw      <- read.table(paste(folder, "robinprob.mixd",      sep="") , comment.char = "#", col.names = colp)
-  md_riprb_raw      <- read.table(paste(folder, "robinprob.mixd",        sep="") , comment.char = "#", col.names = colp)
+  #md_riprb_raw      <- read.table(paste(folder, "ripprob.mixd",        sep="") , comment.char = "#", col.names = colp)
 
   colh <- c('it', 'al', 'ns', 'rat',      'f_cap', 'cap', 'pat', 'n_0', 'n_f', 'tpre', 'tmix', 'in_err', 'mem')
   md_shops_raw      <- read.table(paste(folder, "spacehopscotch.mixd", sep="") , comment.char = "#", col.names = colh)
+
+  colp <- c('it', 'al',                   'f_cap', 'cap', 'pat', 'n_0', 'n_f', 'tpre', 'tmix', 'in_err', 'mem')
+  md_strcp_raw      <- read.table(paste(folder, "strctprob.mixd",      sep="") , comment.char = "#", col.names = colp)
+  md_strcr_raw      <- read.table(paste(folder, "strctrobin.mixd",     sep="") , comment.char = "#", col.names = colp)
+  md_strcc_raw      <- read.table(paste(folder, "strctcuckoo.mixd",    sep="") , comment.char = "#", col.names = colp)
 
   loc_groupby <- function(d)
   {
@@ -799,24 +1511,33 @@ lpch  =c(15,16,17,4,9)
   md_simpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al, d$pat), FUN=mean)
   d <- md_cinpl_raw
   md_cinpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al, d$pat), FUN=mean)
+  d <- md_cindp_raw
+  md_cindp = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al, d$pat), FUN=mean)
 
   d <- md_sprob_raw
   md_sprob = aggregate(d, by=list(d$cap, d$al, d$pat), FUN=mean)
   d <- md_pinpl_raw
   md_pinpl = aggregate(d, by=list(d$cap, d$al, d$pat), FUN=mean)
 
-  d <- md_hprob_raw
-  md_hprob = aggregate(d, by=list(d$ns, d$cap, d$al, d$pat), FUN=mean)
-  d <- md_hiprb_raw
-  md_hiprb = aggregate(d, by=list(d$ns, d$cap, d$al, d$pat), FUN=mean)
+  #d <- md_hprob_raw
+  #md_hprob = aggregate(d, by=list(d$ns, d$cap, d$al, d$pat), FUN=mean)
+  #d <- md_hiprb_raw
+  #md_hiprb = aggregate(d, by=list(d$ns, d$cap, d$al, d$pat), FUN=mean)
 
   d <- md_rprob_raw
   md_rprob = aggregate(d, by=list(d$cap, d$al, d$pat), FUN=mean)
-  d <- md_riprb_raw
-  md_riprb = aggregate(d, by=list(d$cap, d$al, d$pat), FUN=mean)
+  #d <- md_riprb_raw
+  md_riprb = md_rprob #= aggregate(d, by=list(d$cap, d$al, d$pat), FUN=mean)
 
   d <- md_shops_raw
   md_shops = aggregate(d, by=list(d$ns, d$rat, d$cap, d$al, d$pat), FUN=mean)
+
+  d <- md_strcp_raw
+  md_strcp = aggregate(d, by=list(d$cap, d$al, d$pat), FUN=mean)
+  d <- md_strcr_raw
+  md_strcr = aggregate(d, by=list(d$cap, d$al, d$pat), FUN=mean)
+  d <- md_strcc_raw
+  md_strcc = aggregate(d, by=list(d$cap, d$al, d$pat), FUN=mean)
 #+end_src
 
 #+RESULTS:
@@ -829,11 +1550,16 @@ lpch  =c(15,16,17,4,9)
   md_cinpl$smix = md_cinpl$n_f / md_cinpl$tmix
   md_sprob$smix = md_sprob$n_f / md_sprob$tmix
   md_pinpl$smix = md_pinpl$n_f / md_pinpl$tmix
-  md_hprob$smix = md_hprob$n_f / md_hprob$tmix
-  md_hiprb$smix = md_hiprb$n_f / md_hiprb$tmix
+  #md_hprob$smix = md_hprob$n_f / md_hprob$tmix
+  #md_hiprb$smix = md_hiprb$n_f / md_hiprb$tmix
   md_rprob$smix = md_rprob$n_f / md_rprob$tmix
   md_riprb$smix = md_riprb$n_f / md_riprb$tmix
   md_shops$smix = md_shops$n_f / md_shops$tmix
+
+  md_cindp$smix = md_cindp$n_f / md_cindp$tmix
+  md_strcp$smix = md_strcp$n_f / md_strcp$tmix
+  md_strcr$smix = md_strcr$n_f / md_strcr$tmix
+  md_strcc$smix = md_strcc$n_f / md_strcc$tmix
 
   md_egrow$ttmix = md_egrow$tmix / md_egrow$n_f * 1000000
   md_ceipg$ttmix = md_ceipg$tmix / md_ceipg$n_f * 1000000
@@ -841,11 +1567,16 @@ lpch  =c(15,16,17,4,9)
   md_cinpl$ttmix = md_cinpl$tmix / md_cinpl$n_f * 1000000
   md_sprob$ttmix = md_sprob$tmix / md_sprob$n_f * 1000000
   md_pinpl$ttmix = md_pinpl$tmix / md_pinpl$n_f * 1000000
-  md_hprob$ttmix = md_hprob$tmix / md_hprob$n_f * 1000000
-  md_hiprb$ttmix = md_hiprb$tmix / md_hiprb$n_f * 1000000
+  #md_hprob$ttmix = md_hprob$tmix / md_hprob$n_f * 1000000
+  #md_hiprb$ttmix = md_hiprb$tmix / md_hiprb$n_f * 1000000
   md_rprob$ttmix = md_rprob$tmix / md_rprob$n_f * 1000000
   md_riprb$ttmix = md_riprb$tmix / md_riprb$n_f * 1000000
   md_shops$ttmix = md_shops$tmix / md_shops$n_f * 1000000
+
+  md_cindp$ttmix = md_cindp$tmix / md_cindp$n_f * 1000000
+  md_strcp$ttmix = md_strcp$tmix / md_strcp$n_f * 1000000
+  md_strcr$ttmix = md_strcr$tmix / md_strcr$n_f * 1000000
+  md_strcc$ttmix = md_strcc$tmix / md_strcc$n_f * 1000000
 #+end_src
 
 #+RESULTS:
@@ -858,20 +1589,20 @@ lpch  =c(15,16,17,4,9)
 
   tcap=50000
   tal =1.05263
-  datalines = list(f_ierr(f_al(f_cap(f_ctable(md_egrow,256,8,3), tcap), tal)),
-                   f_ierr(f_al(f_cap(f_ctable(md_ceipg,256,8,3), tcap), tal)),
-
-                   f_ierr(f_al(f_cap(f_ctable(md_simpl,  1,8,3), tcap), tal)),
+  datalines = list(#f_ierr(f_al(f_cap(f_ctable(md_simpl,  1,8,3), tcap), tal)),
+                   f_ierr(f_al(f_cap(f_ctable(md_cindp,256,8,3), tcap), tal)),
                    f_ierr(f_al(f_cap(f_ctable(md_cinpl,  1,8,3), tcap), tal)),
 
-                   f_ierr(f_al(f_cap(md_sprob, tcap), tal)),
+                   #f_ierr(f_al(f_cap(md_sprob, tcap), tal)),
+                   f_ierr(f_al(f_cap(md_strcp, 200000), tal)),
                    f_ierr(f_al(f_cap(md_pinpl, tcap), tal)),
 
-                   f_ierr(f_al(f_cap(f_htable(md_hprob, 64), tcap), tal)),
-                   f_ierr(f_al(f_cap(f_htable(md_hiprb, 64), tcap), tal)),
+                   #f_ierr(f_al(f_cap(md_rprob, tcap), tal)),
+                   f_ierr(f_al(f_cap(md_strcr, 200000), tal)),
+                   f_ierr(f_al(f_cap(md_riprb, tcap), tal)),
 
-                   f_ierr(f_al(f_cap(md_rprob, tcap), tal)),
-                   f_ierr(f_al(f_cap(md_riprb, tcap), tal))#,
+                   f_ierr(f_al(f_cap(f_ctable(md_egrow,256,8,3), tcap), tal)),
+                   f_ierr(f_al(f_cap(f_ctable(md_ceipg,256,8,3), tcap), tal))
 
 #                   f_al(f_cap(f_htable(md_shops, 62), tcap), tal)
 )
@@ -880,17 +1611,17 @@ lpch  =c(15,16,17,4,9)
 
   par(mfrow=c(1,1))  #two plots next to each other
 
-  header = "Mixed Tests Insert and Erase"
+  #header = "Mixed Tests Insert and Erase"
   y='ttmix'
   x='pat'
   xrange <- range(50,100)
-  yrange <- range(0, 5500)
+  yrange <- range(0, 3500)
   plot  (x=NULL, y=NULL, xlim=xrange, ylim=yrange,
          xaxs='i', yaxs='i',
          col="black", type="n", main=header, ann=FALSE)
-  title(main=header)
-  title(xlab="fraction of insert operations   in %")
-  title(ylab="average time per operation   in ns")
+  #title(main=header)
+  title(xlab="fraction of insert operations   [%]", line=2.3)
+  title(ylab="time per operation   [ns]", line=2.3)
   for (i in 1:l)
   {
     xline <- datalines[[i]][,x] * 10
@@ -908,165 +1639,330 @@ lpch  =c(15,16,17,4,9)
 : null device
 :           1
 
-** EPS   TEST
+** LRU TEST
 *** Reading Data
 #+begin_src R :session :results output
-  colc <- c('it', 'bs', 'tl', 'nh', 'f_cap', 'n_step', 'win', 'eps', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
-  folder = "../130tests/18_04/"
+  colc <- c('it', 'al', 'bs', 'tl', 'nh', 'f_cap', 'cap', 'n_win', 'n_mix', 't_pre', 't_mix', 't_fin', 'err', 'ev_err', 'mem')
+  #folder = "../132tests/27_03/"
 
-  ep_egrow_raw      <- read.table(paste(folder, "ceg2l.eps"         , sep="") , comment.char = "#", col.names = colc)
-  ep_ceipg_raw      <- read.table(paste(folder, "ceipg2l.eps"       , sep="") , comment.char = "#", col.names = colc)
-  ep_simpl_raw      <- read.table(paste(folder, "csimple.eps"       , sep="") , comment.char = "#", col.names = colc)
-  ep_cinpl_raw      <- read.table(paste(folder, "cinplace.eps"         , sep="") , comment.char = "#", col.names = colc)
+  dw_egrow_raw      <- read.table(paste(folder, "ceg2l.del"         , sep="") , comment.char = "#", col.names = colc)
+  dw_ceipg_raw      <- read.table(paste(folder, "ceipg2l.del"       , sep="") , comment.char = "#", col.names = colc)
+  dw_simpl_raw      <- read.table(paste(folder, "csimple.del"       , sep="") , comment.char = "#", col.names = colc)
+  dw_cinpl_raw      <- read.table(paste(folder, "cinplace.del"      , sep="") , comment.char = "#", col.names = colc)
 
-  colp <- c('it',                   'f_cap', 'n_step', 'win', 'eps', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
-  ep_sprob_raw      <- read.table(paste(folder, "spaceprob.eps",      sep="") , comment.char = "#", col.names = colp)
-  colp <- c('it', 'bufs',           'f_cap', 'n_step', 'win', 'eps', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
-  ep_pinpl_raw      <- read.table(paste(folder, "inplaceprob.eps",    sep="") , comment.char = "#", col.names = colp)
+  colp <- c('it', 'al',                   'f_cap', 'cap', 'n_win', 'n_mix', 't_pre', 't_mix', 't_fin', 'err', 'ev_err', 'mem')
+  dw_sprob_raw      <- read.table(paste(folder, "spaceprob.del"     , sep="") , comment.char = "#", col.names = colp)
+  colp <- c('it', 'al', 'bufs',           'f_cap', 'cap', 'n_win', 'n_mix', 't_pre', 't_mix', 't_fin', 'err', 'ev_err', 'mem')
+  dw_pinpl_raw      <- read.table(paste(folder, "inplaceprob.del"   , sep="") , comment.char = "#", col.names = colp)
 
-  colh <- c('it', 'ns',             'f_cap', 'n_step', 'win', 'eps', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
-  ep_hprob_raw      <- read.table(paste(folder, "hopprob.eps",        sep="") , comment.char = "#", col.names = colh)
-  ep_hiprb_raw      <- read.table(paste(folder, "hipprob.eps",        sep="") , comment.char = "#", col.names = colh)
+  colh <- c('it', 'al', 'ns',             'f_cap', 'cap', 'n_win', 'n_mix', 't_pre', 't_mix', 't_fin', 'err', 'ev_err', 'mem')
+  dw_hprob_raw      <- read.table(paste(folder, "hopprob.del"       , sep="") , comment.char = "#", col.names = colh)
+  dw_hiprb_raw      <- read.table(paste(folder, "hipprob.del"       , sep="") , comment.char = "#", col.names = colh)
 
-  colp <- c('it', 'mdis',           'f_cap', 'n_step', 'win', 'eps', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
-  ep_rprob_raw      <- read.table(paste(folder, "robinprob.eps",      sep="") , comment.char = "#", col.names = colp)
-  ep_riprb_raw      <- read.table(paste(folder, "robinprob.eps",      sep="") , comment.char = "#", col.names = colp)
-
-  colh <- c('it', 'ns', 'rat',      'f_cap', 'n_step', 'win', 'eps', 'tin', 'tfi', 'tfu', 'in_err', 'fi_err', 'mem')
-  ep_shops_raw      <- read.table(paste(folder, "spacehopscotch.eps", sep="") , comment.char = "#", col.names = colh)
+  colp <- c('it', 'al', 'mdis',           'f_cap', 'cap', 'n_win', 'n_mix', 't_pre', 't_mix', 't_fin', 'err', 'ev_err', 'mem')
+  dw_rprob_raw      <- read.table(paste(folder, "robinprob.del",      sep="") , comment.char = "#", col.names = colp)
+  dw_riprb_raw      <- read.table(paste(folder, "robinprob.del",      sep="") , comment.char = "#", col.names = colp)
 
   loc_groupby <- function(d)
   {
-      return( aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$eps), FUN=mean) )
+      return( aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean) )
   }
 
-  d <- ep_egrow_raw
-  ep_egrow = aggregate(d, by=list(d$bs, d$tl, d$nh, d$eps), FUN=mean)
-  d <- ep_ceipg_raw
-  ep_ceipg = aggregate(d, by=list(d$bs, d$tl, d$nh, d$eps), FUN=mean)
-  d <- ep_simpl_raw
-  ep_simpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$eps), FUN=mean)
-  d <- ep_cinpl_raw
-  ep_cinpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$eps), FUN=mean)
-
-  d <- ep_sprob_raw
-  ep_sprob = aggregate(d, by=list(d$eps), FUN=mean)
-  d <- ep_pinpl_raw
-  ep_pinpl = aggregate(d, by=list(d$eps), FUN=mean)
-  d <- ep_hprob_raw
-  ep_hprob = aggregate(d, by=list(d$ns, d$eps), FUN=mean)
-  d <- ep_hiprb_raw
-  ep_hiprb = aggregate(d, by=list(d$ns, d$eps), FUN=mean)
-  d <- ep_rprob_raw
-  ep_rprob = aggregate(d, by=list(d$eps), FUN=mean)
-  d <- ep_riprb_raw
-  ep_riprb = aggregate(d, by=list(d$eps), FUN=mean)
-  d <- ep_shops_raw
-  ep_shops = aggregate(d, by=list(d$ns, d$rat, d$eps), FUN=mean)
+  d <- dw_egrow_raw
+  dw_egrow = aggregate(d, by=list(d$bs, d$tl, d$nh, d$al), FUN=mean)
+  d <- dw_ceipg_raw
+  dw_ceipg = aggregate(d, by=list(d$bs, d$tl, d$nh, d$al), FUN=mean)
+  d <- dw_simpl_raw
+  dw_simpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$al), FUN=mean)
+  d <- dw_cinpl_raw
+  dw_cinpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$al), FUN=mean)
+  d <- dw_sprob_raw
+  dw_sprob = aggregate(d, by=list(d$al), FUN=mean)
+  d <- dw_pinpl_raw
+  dw_pinpl = aggregate(d, by=list(d$al), FUN=mean)
+  d <- dw_hprob_raw
+  dw_hprob = aggregate(d, by=list(d$ns, d$al), FUN=mean)
+  d <- dw_hiprb_raw
+  dw_hiprb = aggregate(d, by=list(d$ns, d$al), FUN=mean)
+  d <- dw_rprob_raw
+  dw_rprob = aggregate(d, by=list(d$al), FUN=mean)
+  d <- dw_riprb_raw
+  dw_riprb = aggregate(d, by=list(d$al), FUN=mean)
 #+end_src
 
 #+RESULTS:
 
-*** Plots
-#+BEGIN_SRC R :session :results output graphics
-  datalines = list(f_ctable(ep_egrow,256,8,3),
-                   f_ctable(ep_ceipg,256,8,3),
+*** Shared Plot
 
-                   f_ctable(ep_simpl,  1,8,3),
-                   f_ctable(ep_cinpl,  1,8,3),
+#+BEGIN_SRC R :session :results output
+  #graphics :file plots/crawl.pdf :bg "white"
 
-                   ep_sprob,
-                   ep_pinpl,
+    pdf(file="plots/lru.pdf", width=10, height=4)
 
-                   f_htable(ep_hprob, 64),
-                   f_htable(ep_hiprb, 64),
+    datalines = list(f_err(f_ctable(dw_egrow,256,8,3)),
+                     f_err(f_ctable(dw_ceipg,256,8,3)),
 
-                   ep_rprob,
-                   ep_riprb#,
-                   #hhh(ep_shops, 62)
+                     f_err(f_ctable(dw_simpl,  1,8,3)),
+                     f_err(f_ctable(dw_cinpl,  1,8,3)),
+
+                     f_err(dw_sprob),
+                     f_err(dw_pinpl),
+
+                     f_err(dw_rprob),
+                     f_err(dw_riprb))
+
+    l=length(datalines)
+
+    par(mfrow=c(1,1))
+
+    header = "Least Recently Used"
+    y='t_mix'
+    x='al'
+    xrange <- range(.85, 1)
+    yrange <- range(0,1500) #grows_bfs$fti)
+    plot  (xrange, yrange,
+           yaxs='i',
+           col="black", type="n", main=header, ann=FALSE)
+    title(main=header)
+    title(xlab=expression(paste("load  ", 1-1/epsilon)))
+    title(ylab="Time per operation   in ns")
+
+    for (i in 1:l)
+    {
+      xline <- 1.- (datalines[[i]][,x]-1.)/datalines[[i]][,x]
+      yline <- datalines[[i]][,y]/(datalines[[i]][,'n_mix'])*1000000
+      lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+    }
+
+    legend(.977, 750, lnames, lty=1, col=lcol, pch=lpch)
+
+    dev.off()
+
+#+END_SRC
+
+#+RESULTS:
+: null device
+:           1
+
+
+* APPENDIX TESTS (B/H)
+** Define Filters
+#+BEGIN_SRC R :session
+  maskBS <- function (d, bs = 8)
+  {
+      return (d$bs == bs)
+  }
+  maskTL <- function (d, tl = 256)
+  {
+      return (d$tl == tl)
+  }
+  maskAL <- function (d, al = 1.1)
+  {
+      return (d$al == al)
+  }
+  maskNH <- function (d, nh = 2)
+  {
+      return (d$nh == nh)
+  }
+  maskCAP <- function (d, cap = 1)
+  {
+      return (d$cap == cap)
+  }
+  maskNS <- function(d, ns = 32)
+  {
+      return (d$ns ==ns)
+  }
+
+  f_ctable <- function (d, ltl, lbs, lnh)
+  {
+      return (d[maskTL(d,ltl) & maskBS(d,lbs) & maskNH(d,lnh), ])
+  }
+
+  f_htable <- function (d, lns)
+  {
+      return (d[maskNS(d,lns),])
+  }
+
+  f_cap    <- function (d, lcap)
+  {
+      return (d[maskCAP(d, lcap), ])
+  }
+
+  f_al     <- function (d, lal)
+  {
+      return (d[maskAL(d, lal), ])
+  }
+
+  f_ierr    <- function (d)
+  {
+      return (d[d$in_err<1, ])
+  }
+
+  f_err     <- function (d)
+  {
+      return (d[d$err<1, ])
+  }
+  f_off     <- function (d)
+  {
+      return (d[1<0,])
+  }
+#+END_SRC
+
+#+RESULTS:
+
+** Common Stuff
+#+BEGIN_SRC R :session
+
+  folder="../tests/130/special/"
+
+  # Hopscotch "forestgreen" pch=4
+  col_vec = list("forestgreen",
+                 "violet",
+                 "skyblue",
+                 "black",
+                 "forestgreen",
+                 "violet",
+                 "skyblue",
+                 "black")
+  pch_vec = list(15,15,15,15, 16,16,16,16)
+  lty_vec = list( 1, 1, 1, 1,  2, 2, 2, 2)
+
+  lnames=c("8/3", "8/2", "4/3", "4/2")
+  lcol  =c("black"     , "forestgreen", "violet", "skyblue")
+  #lpch  =c(1,16,16,16)
+#+END_SRC
+
+#+RESULTS:
+| black       |
+| forestgreen |
+| violet      |
+| skyblue     |
+
+** TIME  TEST
+*** Reading Data
+#+begin_src R :session :results output
+  colc <- c('it', 'al', 'bs', 'tl', 'nh', 'f_cap', 'cap', 'n_0', 'n_f' , 'tin0', 'tin1', 'tfi0', 'tfi1', 'in_err', 'fi_err', 'mem')
+
+  ti_ceipg_raw      <- read.table(paste(folder, "sp_ceipg2l.time"       , sep="") , comment.char = "#", col.names = colc)
+  ti_cinpl_raw      <- read.table(paste(folder, "sp_cinplace.time"      , sep="") , comment.char = "#", col.names = colc)
+
+  d <- ti_ceipg_raw
+  ti_ceipg = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean)
+  d <- ti_cinpl_raw
+  ti_cinpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean)
+#+end_src
+
+#+RESULTS:
+
+*** Compute Some Columns
+#+BEGIN_SRC R :session :results output
+  ti_ceipg$tinf = ti_ceipg$tin0 + ti_ceipg$tin1
+  ti_cinpl$tinf = ti_cinpl$tin0 + ti_cinpl$tin1
+
+  ti_ceipg$sinf = ti_ceipg$n_f / ti_ceipg$tinf
+  ti_cinpl$sinf = ti_cinpl$n_f / ti_cinpl$tinf
+
+  ti_ceipg$sfi0 = ti_ceipg$n_f / ti_ceipg$tfi0
+  ti_cinpl$sfi0 = ti_cinpl$n_f / ti_cinpl$tfi0
+
+  ti_ceipg$sfi1 = ti_ceipg$n_f / ti_ceipg$tfi1
+  ti_cinpl$sfi1 = ti_cinpl$n_f / ti_cinpl$tfi1
+
+  ti_ceipg$sin0 = ti_ceipg$n_0 / ti_ceipg$tin0
+  ti_cinpl$sin0 = ti_cinpl$n_0 / ti_cinpl$tin0
+
+  ti_ceipg$sin1 = (ti_ceipg$n_f - ti_ceipg$n_0) / ti_ceipg$tin1
+  ti_cinpl$sin1 = (ti_cinpl$n_f - ti_cinpl$n_0) / ti_cinpl$tin1
+#+END_SRC
+
+#+RESULTS:
+
+*** Plot
+#+BEGIN_SRC R :session :results output
+  tcap=50000
+
+  ti_datalines = list(
+                   f_ierr(f_cap(f_ctable(ti_ceipg,256,8,2), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_ceipg,256,4,3), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_ceipg,256,4,2), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_ceipg,256,8,3), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_cinpl,  1,4,3), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_cinpl,  1,8,2), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_cinpl,  1,4,2), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_cinpl,  1,8,3), tcap))
+
+
                    )
-  l=length(datalines)
+
+  ti_l = length(ti_datalines)
 #+END_SRC
 
 #+RESULTS:
 
-**** Combined Plots
-#+BEGIN_SRC R :session :results output graphics :file plots/temp.pdf :bg "white"
-
-  #pdf("eps132_27_03_plot.pdf", width=10, height=7)
-
-  par(mfrow=c(3,1))  #two plots next to each other
-  header="Normalized Insertion Time"
-  y='tin'
-  x='eps'
-  xrange <- range(0.8,1)
-  yrange <- range(0,80) #grows_bfs$fti)
-  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
-  title(main=header)
-  title(xlab=expression(paste("load factor  ", 1-epsilon)))
-  title(ylab=expression(paste("time x ", epsilon, "   in ns")))
-
-  for (i in 1:l)
-  {
-    lines(datalines[[i]][,x], datepsines[[i]][,y]*(1.-datalines[[i]][,x]), col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
-  }
-
-
-  header="Successful Find Operation"
-  y='tfi'
-  yrange <- range(0,200) #grows_bfs$fti)
-  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
-  title(main=header)
-  title(xlab=expression(paste("load factor  ", 1-epsilon)))
-  title(ylab="time   in ns")
-
-  for (i in 1:l)
-  {
-    lines(datalines[[i]][,x], datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
-  }
-
-
-  header="Unsuccessful Find Operation"
-  y='tfu'
-  yrange <- range(0,400) #grows_bfs$fti)
-  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
-  title(main=header)
-  title(xlab=expression(paste("load factor  ", 1-epsilon)))
-  title(ylab="time   in ns")
-
-  for (i in 1:l)
-  {
-    lines(datalines[[i]][,x], datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
-  }
-
-  #dev.off()
-#+END_SRC
-
-#+RESULTS:
-[[file:plots/temp.pdf]]
-
-**** Insert
+**** Find+ Benchmark
 #+BEGIN_SRC R :session :results output
-#graphics :file plots/eps_insert.pdf :bg "white"
+#graphics :file plots/ti_find_s.pdf :bg "white"
+  pdf(file="plots/param_find_s.pdf", width=5, height=4)
 
-  pdf("plots/eps_insert.pdf", width=10, height=5)
+  x='al'
+  xrange <- range(.85,1)
 
-  header="Normalized Insertion Time"
-  y='tin'
-  x='eps'
-  xrange <- range(0.8,1)
-  yrange <- range(0,80) #grows_bfs$fti)
-  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
-  title(main=header)
-  title(xlab=expression(paste("load factor  ", 1-epsilon)))
-  title(ylab=expression(paste("time x ", epsilon, "   in ns")))
+  #header = "Find+ Microbenchmark"
+  y='tfi0'
+  yrange <- range(0,140) #grows_bfs$fti)
+  plot  (xrange, yrange,
+         yaxs='i',
+         col="black", type="n", main=header, ann=FALSE)
+  #title(main=header)
+  title(xlab=expression(paste("enforced min load   ", delta[min])), line=2.3)
+  title(ylab="time per op    [ns]", line=2.3)
 
-  for (i in 1:l)
+  for (i in 1:ti_l)
   {
-    lines(datalines[[i]][,x], datalines[[i]][,y]*(1.-datalines[[i]][,x]), col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+    epsilon <- (ti_datalines[[i]][,'al']-1.)/ti_datalines[[i]][,'al']
+    xline   <- 1.-epsilon
+    yline   <- ti_datalines[[i]][,y] / ti_datalines[[i]][,'n_f']*1000000
+    lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
   }
 
-  legend(.8, 75, lnames, lty=1, col=lcol, pch=lpch)
+  legend(.965, 70, lnames, lty=1, col=lcol)
+  legend(.905, 44, c("DySECT", "Cuckoo"), lty=c(1,2), col="black", pch=c(15,16))
+
+  dev.off()
+
+#+END_SRC
+
+#+RESULTS:
+: null device
+:           1
+
+**** Find- Benchmark
+#+BEGIN_SRC R :session :results output
+#graphics :file plots/ti_find_u.pdf :bg "white"
+  pdf(file="plots/param_find_u.pdf", width=5, height=4)
+
+  x='al'
+  xrange <- range(.85,1)
+
+  #header = "Find- Microbenchmark"
+  y='tfi1'
+  yrange <- range(0,140) #grows_bfs$fti)
+  plot  (xrange, yrange,
+         yaxs='i',
+         col="black", type="n", main=header, ann=FALSE)
+  #title(main=header)
+  title(xlab=expression(paste("enforced min load   ", delta[min])), line=2.3)
+  title(ylab="time per op    [ns]", line=2.3)
+
+  for (i in 1:ti_l)
+  {
+    epsilon <- (ti_datalines[[i]][,'al']-1.)/ti_datalines[[i]][,'al']
+    xline   <- 1.-epsilon
+    yline   <- ti_datalines[[i]][,'tfi1'] / ti_datalines[[i]][,'n_f']*1000000
+    lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+  #legend(.85, 385, lnames, lty=1, col=lcol, pch=lpch)
 
   dev.off()
 #+END_SRC
@@ -1075,28 +1971,128 @@ lpch  =c(15,16,17,4,9)
 : null device
 :           1
 
-**** Find+
+**** Insert Benchmark
 #+BEGIN_SRC R :session :results output
-#graphics :file plots/eps_find_s.pdf :bg "white"
+#graphics :file plots/ti_insert.pdf :bg "white"
+  pdf(file="plots/param_insert.pdf", width=5, height=4)
 
-  pdf("plots/eps_find_s.pdf", width=5, height=4)
-  x='eps'
-  xrange <- range(0.8,1)
+  x='al'
+  xrange <- range(.85,1)
 
-  header="Successful Find Operation"
-  y='tfi'
-  yrange <- range(0,400) #grows_bfs$fti)
-  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
-  title(main=header)
-  title(xlab=expression(paste("load factor  ", 1-epsilon)))
-  title(ylab="time   in ns")
+  #header = "Insert Microbenchmark"
+  y='tinf'
+  yrange <- range(0, 320)
+  plot  (xrange, yrange,
+         yaxs='i',
+         col="black", type="n", main=header, ann=FALSE)
+  #title(main=header)
+  title(xlab=expression(paste("enforced min load   ", delta[min])), line=2.3)
+  title(ylab=expression(paste("time x ", (1-delta[min]), "   [ns]")), line=2.3)
 
-  for (i in 1:l)
+  for (i in 1:ti_l)
   {
-    lines(datalines[[i]][,x], datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]], cex=0.5)
+    epsilon <- (ti_datalines[[i]][,'al']-1.)/ti_datalines[[i]][,'al']
+    yline   <- ti_datalines[[i]][,y]/ti_datalines[[i]][,'n_f']*1000000*epsilon
+    lines(1-epsilon, yline , col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
   }
 
-  legend(.8, 380, lnames, lty=1, col=lcol, pch=lpch)
+  legend(.85, 310, lnames, lty=1, col=lcol)
+  legend(.893,310, c("DySECT", "Cuckoo"), lty=c(1,2), col="black", pch=c(15,16))
+
+  dev.off()
+
+#+END_SRC
+
+#+RESULTS:
+: null device
+:           1
+
+*** Presentation Plot
+#+BEGIN_SRC R :session :results output
+  tcap=50000
+
+  ti_datalines = list(
+                   f_ierr(f_cap(f_ctable(ti_ceipg,256,8,2), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_ceipg,256,4,3), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_ceipg,256,4,2), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_ceipg,256,8,3), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_cinpl,  1,4,3), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_cinpl,  1,8,2), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_cinpl,  1,4,2), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_cinpl,  1,8,3), tcap))
+
+
+                   )
+
+  ti_l = length(ti_datalines)
+#+END_SRC
+
+#+RESULTS:
+
+**** Find+ Benchmark
+#+BEGIN_SRC R :session :results output
+#graphics :file plots/ti_find_s.pdf :bg "white"
+  pdf(file="pres_plots/param_find_s.pdf", width=4, height=4)
+
+  x='al'
+  xrange <- range(.85,1)
+
+  #header = "Find+ Microbenchmark"
+  y='tfi0'
+  yrange <- range(0,140) #grows_bfs$fti)
+  plot  (xrange, yrange,
+         yaxs='i',
+         col="black", type="n", main=header, ann=FALSE)
+  #title(main=header)
+  title(xlab=expression(paste("enforced min load   ", delta[min])), line=2.3)
+  title(ylab="time per op    [ns]", line=2.3)
+
+  for (i in 1:ti_l)
+  {
+    epsilon <- (ti_datalines[[i]][,'al']-1.)/ti_datalines[[i]][,'al']
+    xline   <- 1.-epsilon
+    yline   <- ti_datalines[[i]][,y] / ti_datalines[[i]][,'n_f']*1000000
+    lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+  legend(.94, 70, lnames, lty=1, col=lcol)
+  legend(.85, 44, c("DySECT", "Cuckoo"), lty=c(1,2), col="black", pch=c(15,16))
+
+  dev.off()
+
+#+END_SRC
+
+#+RESULTS:
+: null device
+:           1
+
+**** Find- Benchmark
+#+BEGIN_SRC R :session :results output
+#graphics :file plots/ti_find_u.pdf :bg "white"
+  pdf(file="plots/param_find_u.pdf", width=5, height=4)
+
+  x='al'
+  xrange <- range(.85,1)
+
+  #header = "Find- Microbenchmark"
+  y='tfi1'
+  yrange <- range(0,140) #grows_bfs$fti)
+  plot  (xrange, yrange,
+         yaxs='i',
+         col="black", type="n", main=header, ann=FALSE)
+  #title(main=header)
+  title(xlab=expression(paste("enforced min load   ", delta[min])), line=2.3)
+  title(ylab="time per op    [ns]", line=2.3)
+
+  for (i in 1:ti_l)
+  {
+    epsilon <- (ti_datalines[[i]][,'al']-1.)/ti_datalines[[i]][,'al']
+    xline   <- 1.-epsilon
+    yline   <- ti_datalines[[i]][,'tfi1'] / ti_datalines[[i]][,'n_f']*1000000
+    lines(xline, yline, col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+  #legend(.85, 385, lnames, lty=1, col=lcol, pch=lpch)
 
   dev.off()
 #+END_SRC
@@ -1105,30 +2101,474 @@ lpch  =c(15,16,17,4,9)
 : null device
 :           1
 
-**** Find-
+**** Insert Benchmark
 #+BEGIN_SRC R :session :results output
-#graphics :file plots/eps_find_u.pdf :bg "white"
-  pdf("plots/eps_find_u.pdf", width=5, height=4)
+#graphics :file plots/ti_insert.pdf :bg "white"
+  pdf(file="pres_plots/param_insert.pdf", width=4, height=4)
 
-  x='eps'
-  xrange <- range(0.8,1)
+  x='al'
+  xrange <- range(.85,1)
 
-  header="Unsuccessful Find Operation"
-  y='tfu'
-  yrange <- range(0,400) #grows_bfs$fti)
-  plot  (xrange, yrange, yaxs='i', col="black", type="n", main=header, ann=FALSE)
-  title(main=header)
-  title(xlab=expression(paste("load factor  ", 1-epsilon)))
-  title(ylab="time   in ns")
+  #header = "Insert Microbenchmark"
+  y='tinf'
+  yrange <- range(0, 350)
+  plot  (xrange, yrange,
+         yaxs='i',
+         col="black", type="n", main=header, ann=FALSE)
+  #title(main=header)
+  title(xlab=expression(paste("enforced min load   ", delta[min])), line=2.3)
+  title(ylab=expression(paste("time x ", (1-delta[min]), "   [ns]")), line=2.3)
 
-  for (i in 1:l)
+  for (i in 1:ti_l)
   {
-    lines(datalines[[i]][,x], datalines[[i]][,y], col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]], cex=0.5)
+    epsilon <- (ti_datalines[[i]][,'al']-1.)/ti_datalines[[i]][,'al']
+    yline   <- ti_datalines[[i]][,y]/ti_datalines[[i]][,'n_f']*1000000*epsilon
+    lines(1-epsilon, yline , col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
   }
 
-  #legend(.8, 380, lnames, lty=1, col=lcol, pch=lpch)
+  legend(.85, 340, lnames, lty=1, col=lcol)
+  legend(.91, 340, c("DySECT", "Cuckoo"), lty=c(1,2), col="black", pch=c(15,16))
 
   dev.off()
+
+#+END_SRC
+
+#+RESULTS:
+: null device
+:           1
+
+
+* APPENDIX TESTS DISP
+** Define Filters
+#+BEGIN_SRC R :session
+  maskBS <- function (d, bs = 8)
+  {
+      return (d$bs == bs)
+  }
+  maskTL <- function (d, tl = 256)
+  {
+      return (d$tl == tl)
+  }
+  maskAL <- function (d, al = 1.1)
+  {
+      return (d$al == al)
+  }
+  maskNH <- function (d, nh = 2)
+  {
+      return (d$nh == nh)
+  }
+  maskCAP <- function (d, cap = 1)
+  {
+      return (d$cap == cap)
+  }
+  maskNS <- function(d, ns = 32)
+  {
+      return (d$ns ==ns)
+  }
+
+  f_ctable <- function (d, ltl, lbs, lnh)
+  {
+      return (d[maskTL(d,ltl) & maskBS(d,lbs) & maskNH(d,lnh), ])
+  }
+
+  f_htable <- function (d, lns)
+  {
+      return (d[maskNS(d,lns),])
+  }
+
+  f_cap    <- function (d, lcap)
+  {
+      return (d[maskCAP(d, lcap), ])
+  }
+
+  f_al     <- function (d, lal)
+  {
+      return (d[maskAL(d, lal), ])
+  }
+
+  f_ierr    <- function (d)
+  {
+      return (d[d$in_err<1, ])
+  }
+
+  f_err     <- function (d)
+  {
+      return (d[d$err<1, ])
+  }
+  f_off     <- function (d)
+  {
+      return (d[1<0,])
+  }
+#+END_SRC
+
+#+RESULTS:
+
+** Common Stuff
+#+BEGIN_SRC R :session
+
+  folder="../tests/130/special/"
+
+  # Hopscotch "forestgreen" pch=4
+  col_vec = list("gray",
+                 "brown",
+                 "black",
+                 "gray",
+                 "brown",
+                 "black")
+  pch_vec = list(15,15,15,16,16,16)
+  lty_vec = list( 1, 1, 1, 2, 2, 2)
+
+  lnames=c("bfs", "opt-rwalk", "pess-rwalk")
+  lcol  =c("black", "brown", "gray")
+  #lpch  =c(1,16,16,16)
+#+END_SRC
+
+#+RESULTS:
+| black |
+| brown |
+| gray  |
+
+** TIME  TEST
+*** Reading Data
+#+begin_src R :session :results output
+  colc <- c('it', 'al', 'bs', 'tl', 'nh', 'f_cap', 'cap', 'n_0', 'n_f' , 'tin0', 'tin1', 'tfi0', 'tfi1', 'in_err', 'fi_err', 'mem')
+
+  ti_ceipgb_raw      <- read.table(paste(folder, "sp_ceipg2l.time"          , sep="") , comment.char = "#", col.names = colc)
+  ti_cinplb_raw      <- read.table(paste(folder, "sp_cinplace.time"         , sep="") , comment.char = "#", col.names = colc)
+  ti_ceipgo_raw      <- read.table(paste(folder, "sp_ceipg2l_rwalkcyc.time" , sep="") , comment.char = "#", col.names = colc)
+  ti_cinplo_raw      <- read.table(paste(folder, "sp_cinplace_rwalkcyc.time", sep="") , comment.char = "#", col.names = colc)
+  ti_ceipgp_raw      <- read.table(paste(folder, "sp_ceipg2l_rwalk.time"    , sep="") , comment.char = "#", col.names = colc)
+  ti_cinplp_raw      <- read.table(paste(folder, "sp_cinplace_rwalk.time"   , sep="") , comment.char = "#", col.names = colc)
+
+  d <- ti_ceipgb_raw
+  ti_ceipgb = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean)
+  d <- ti_cinplb_raw
+  ti_cinplb = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean)
+  d <- ti_ceipgo_raw
+  ti_ceipgo = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean)
+  d <- ti_cinplo_raw
+  ti_cinplo = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean)
+  d <- ti_ceipgp_raw
+  ti_ceipgp = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean)
+  d <- ti_cinplp_raw
+  ti_cinplp = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$al), FUN=mean)
+#+end_src
+
+#+RESULTS:
+
+*** Compute Some Columns
+#+BEGIN_SRC R :session :results output
+  ti_ceipgb$tinf = ti_ceipgb$tin0 + ti_ceipgb$tin1
+  ti_cinplb$tinf = ti_cinplb$tin0 + ti_cinplb$tin1
+  ti_ceipgo$tinf = ti_ceipgo$tin0 + ti_ceipgo$tin1
+  ti_cinplo$tinf = ti_cinplo$tin0 + ti_cinplo$tin1
+  ti_ceipgp$tinf = ti_ceipgp$tin0 + ti_ceipgp$tin1
+  ti_cinplp$tinf = ti_cinplp$tin0 + ti_cinplp$tin1
+
+  ti_ceipgb$sinf = ti_ceipgb$n_f / ti_ceipgb$tinf
+  ti_cinplb$sinf = ti_cinplb$n_f / ti_cinplb$tinf
+  ti_ceipgo$sinf = ti_ceipgo$n_f / ti_ceipgo$tinf
+  ti_cinplo$sinf = ti_cinplo$n_f / ti_cinplo$tinf
+  ti_ceipgp$sinf = ti_ceipgp$n_f / ti_ceipgp$tinf
+  ti_cinplp$sinf = ti_cinplp$n_f / ti_cinplp$tinf
+
+  ti_ceipgb$sfi0 = ti_ceipgb$n_f / ti_ceipgb$tfi0
+  ti_cinplb$sfi0 = ti_cinplb$n_f / ti_cinplb$tfi0
+  ti_ceipgo$sfi0 = ti_ceipgo$n_f / ti_ceipgo$tfi0
+  ti_cinplo$sfi0 = ti_cinplo$n_f / ti_cinplo$tfi0
+  ti_ceipgp$sfi0 = ti_ceipgp$n_f / ti_ceipgp$tfi0
+  ti_cinplp$sfi0 = ti_cinplp$n_f / ti_cinplp$tfi0
+
+  ti_ceipgb$sfi1 = ti_ceipgb$n_f / ti_ceipgb$tfi1
+  ti_cinplb$sfi1 = ti_cinplb$n_f / ti_cinplb$tfi1
+  ti_ceipgo$sfi1 = ti_ceipgo$n_f / ti_ceipgo$tfi1
+  ti_cinplo$sfi1 = ti_cinplo$n_f / ti_cinplo$tfi1
+  ti_ceipgp$sfi1 = ti_ceipgp$n_f / ti_ceipgp$tfi1
+  ti_cinplp$sfi1 = ti_cinplp$n_f / ti_cinplp$tfi1
+
+  ti_ceipgb$sin0 = ti_ceipgb$n_0 / ti_ceipgb$tin0
+  ti_cinplb$sin0 = ti_cinplb$n_0 / ti_cinplb$tin0
+  ti_ceipgo$sin0 = ti_ceipgo$n_0 / ti_ceipgo$tin0
+  ti_cinplo$sin0 = ti_cinplo$n_0 / ti_cinplo$tin0
+  ti_ceipgp$sin0 = ti_ceipgp$n_0 / ti_ceipgp$tin0
+  ti_cinplp$sin0 = ti_cinplp$n_0 / ti_cinplp$tin0
+
+  ti_ceipgb$sin1 = (ti_ceipgb$n_f - ti_ceipgb$n_0) / ti_ceipgb$tin1
+  ti_cinplb$sin1 = (ti_cinplb$n_f - ti_cinplb$n_0) / ti_cinplb$tin1
+  ti_ceipgo$sin1 = (ti_ceipgo$n_f - ti_ceipgo$n_0) / ti_ceipgo$tin1
+  ti_cinplo$sin1 = (ti_cinplo$n_f - ti_cinplo$n_0) / ti_cinplo$tin1
+  ti_ceipgp$sin1 = (ti_ceipgp$n_f - ti_ceipgp$n_0) / ti_ceipgp$tin1
+  ti_cinplp$sin1 = (ti_cinplp$n_f - ti_cinplp$n_0) / ti_cinplp$tin1
+#+END_SRC
+
+#+RESULTS:
+
+*** Plot
+#+BEGIN_SRC R :session :results output
+  tcap=50000
+
+  ti_datalines = list(
+                   f_ierr(f_cap(f_ctable(ti_ceipgp,256,8,3), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_ceipgo,256,8,3), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_ceipgb,256,8,3), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_cinplp,  1,8,3), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_cinplo,  1,8,3), tcap)),
+                   f_ierr(f_cap(f_ctable(ti_cinplb,  1,8,3), tcap))
+                   )
+
+  ti_l = length(ti_datalines)
+
+  pdf(file="plots/disp_insert.pdf", width=5, height=4)
+
+  x='al'
+  xrange <- range(.85,1)
+
+  #header = "Insert Microbenchmark"
+  y='tinf'
+  yrange <- range(0, 320)
+  plot  (xrange, yrange,
+         yaxs='i',
+         col="black", type="n", main=header, ann=FALSE)
+  #title(main=header)
+  title(xlab=expression(paste("enforced min load   ", delta[min])), line=2.3)
+  title(ylab=expression(paste("time x ", (1-delta[min]), "   [ns]")), line=2.3)
+
+  for (i in 1:ti_l)
+  {
+    epsilon <- (ti_datalines[[i]][,'al']-1.)/ti_datalines[[i]][,'al']
+    yline   <- ti_datalines[[i]][,y]/ti_datalines[[i]][,'n_f']*1000000*epsilon
+    lines(1-epsilon, yline , col=col_vec[[i]], type="o", pch=pch_vec[[i]], lty=lty_vec[[i]])
+  }
+
+  legend(.85,  310, lnames, lty=1, col=lcol)
+  legend(.918, 310, c("DySECT", "Cuckoo"), lty=c(1,2), col="black", pch=c(15,16) )
+
+  dev.off()
+
+#+END_SRC
+
+#+RESULTS:
+: null device
+:           1
+
+* FILL BOUNDS MEASURE
+** Read Data
+#+begin_src R :session :results output
+  folder = "../tests/130/fill/"
+  colc <- c('it', 'cap', 'n', 'steps', 'ngrow', 'bs', 'tl', 'nh', 'f_cap', 'elem')
+
+  fl_ceipg_raw      <- read.table(paste(folder, "tceipg2l" , sep="") , comment.char = "#", col.names = colc)
+  fl_ceg2l_raw      <- read.table(paste(folder, "tceg2l"   , sep="") , comment.char = "#", col.names = colc)
+  fl_simpl_raw      <- read.table(paste(folder, "tcsimple" , sep="") , comment.char = "#", col.names = colc)
+  fl_cinpl_raw      <- read.table(paste(folder, "tcinplace", sep="") , comment.char = "#", col.names = colc)
+
+  d <- fl_ceipg_raw
+  fl_ceipg = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$n, d$ngrow, d$steps), FUN=mean)
+  d <- fl_ceg2l_raw
+  fl_ceg2l = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$n, d$ngrow, d$steps), FUN=mean)
+  d <- fl_simpl_raw
+  fl_simpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$n, d$ngrow, d$steps), FUN=mean)
+  d <- fl_cinpl_raw
+  fl_cinpl = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$n, d$ngrow, d$steps), FUN=mean)
+#+end_src
+
+#+RESULTS:
+
+#+BEGIN_SRC R :session :results output
+   d <- fl_ceg2l
+   d$load = d$elem / d$f_cap
+   d$growval = 2**(pracma::nextpow2((d$f_cap / d$tl)+1)-1)
+   d$eff_cap = d$f_cap + d$growval
+   d$eff_load= d$elem / d$eff_cap
+   fl_ceg2l <- d
+   fl_ceg2l_min  = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$n, d$steps), FUN=min)
+
+   d <- fl_ceipg
+   d$load = d$elem / d$f_cap
+   d$growval = 2**(pracma::nextpow2((d$f_cap / d$tl)+1)-1)
+   d$eff_cap = d$f_cap + d$growval
+   d$eff_load= d$elem / d$eff_cap
+   fl_ceipg <- d
+   fl_ceipg_min  = aggregate(d, by=list(d$bs, d$tl, d$nh, d$cap, d$n, d$steps), FUN=min)
+
+   d <- fl_simpl
+   d$load = d$elem / d$f_cap
+   d$growval = 0
+   d$eff_cap = d$f_cap
+   d$eff_load= d$elem / d$eff_cap
+   fl_simpl <- d
+
+   d <- fl_cinpl
+   d$load = d$elem / d$f_cap
+   d$growval = 0
+   d$eff_cap = d$f_cap
+   d$eff_load= d$elem / d$eff_cap
+   fl_cinpl <- d
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC R :session :results output
+#install.packages("pracma")
+#install.packages("ifutools")
+#print(fl_ceg2l$growval[1:5])
+print (fl_ceg2l_min[(fl_ceg2l_min$steps == 16384) & (fl_ceg2l_min$tl == 4096),c('bs','nh','load','eff_load')])
+print (fl_ceipg_min[(fl_ceipg_min$steps == 16384) & (fl_ceipg_min$tl == 4096),c('bs','nh','load','eff_load')])
+print (fl_simpl[(fl_simpl$steps == 16384),c('bs','nh','load')])
+print (fl_cinpl[(fl_cinpl$steps == 16384),c('bs','nh','load')])
+#+END_SRC
+
+#+RESULTS:
+=   bs nh      load  eff_load
+29  4  2 0.9274274 0.9272584
+30  8  2 0.9667746 0.9665832
+35  4  3 0.9891705 0.9889700
+36  8  3 0.9973106 0.9970931
+   bs nh      load  eff_load
+29  4  2 0.9274274 0.9272584
+30  8  2 0.9667746 0.9665832
+35  4  3 0.9891705 0.9889700
+36  8  3 0.9973106 0.9970931
+   bs nh      load
+9   4  2 0.9779280
+10  8  2 0.9970079
+11  4  3 0.9984292
+12  8  3 0.9998222
+   bs nh      load
+9   4  2 0.9779280
+10  8  2 0.9970079
+11  4  3 0.9984292
+12  8  3 0.9998222
+
+#+BEGIN_SRC R :session :results output
+#install.packages("pracma")
+#install.packages("ifutools")
+#print(fl_ceg2l$growval[1:5])
+d <- fl_ceipg[(fl_ceipg$tl==4096)& (fl_ceipg$steps == 16384) & (fl_ceipg$bs==4) & (fl_ceipg$nh==2),c('eff_load', 'load', 'ngrow')]
+d$shortest <- apply(df[,2:4],1,min)
+#+END_SRC
+
+
+** Plot over ngrow Benchmark
+
+#+BEGIN_SRC R :session :results output
+
+  datalines = list(
+                fl_ceipg#,
+              #  fl_ceg2l
+              )
+  z=0.002
+
+  py <- function(y) { return (1./((1+z)-y))}
+
+  lnames=c("8/3", "8/2", "4/3", "4/2")
+  lcol  =c("black", "forestgreen", "violet", "skyblue")
+
+  pdf(file="plots/load_bound.pdf", width=4.7, height=3.3)
+
+  #header = "Find+ Microbenchmark"
+  y='tfi0'
+  yrange <- range(py(c(.885, 1.)))
+  xrange <- range(50000, 20000000)
+
+  par(mar=c(4, 4, 1, 4) + 0.1)
+
+  plot  (xrange, yrange, log='xy',
+         yaxs='i', xaxt='n', yaxt='n',
+         col="black", type="n", main=header, ann=FALSE)
+  #title(main=header)
+  title(xlab=expression(paste("number of cells   ", m)), line=2.1)
+  title(ylab=expression(paste("max load   "  , delta)), line=2.8)
+
+  xticks <- 2^seq(16,24, by=1)
+  xsticks <- seq(16,24, by=2)
+  xlabs  <- sapply(xsticks, function(i) {as.expression(bquote(2^.(i)))})
+  xsticks <- 2^xsticks
+  axis(1, at=xticks,  labels=FALSE)
+  axis(1, at=xsticks, labels=xlabs)
+
+  yticks <- append(seq(.9,1.,0.01), seq(.99,1.,0.001))
+  ysticks <- c(0.9, 0.99, 0.999, 1)
+  ylabs  <-  ysticks #c(expression(1-10^-1), expression(1-10^-2),expression(1-10^-3), 1) sapply(xsticks, function(i) {as.expression(bquote(10^.(i)))})
+  ysticks <- py(ysticks)
+  yticks <-  py(yticks)
+  axis(2, at=yticks,  labels=FALSE, tck=-.025)
+  axis(2, at=ysticks, labels=ylabs, las=1)
+
+  b <- fl_cinpl[(fl_cinpl$steps==16384) & (fl_cinpl$bs==4) & (fl_cinpl$nh==2), 'load']
+  axis(4, at=py(b), labels=round(b, digits=3),
+          col.axis="skyblue", cex.axis=.8, las=2, tck=-.025)
+
+  b <- fl_cinpl[(fl_cinpl$steps==16384) & (fl_cinpl$bs==4) & (fl_cinpl$nh==3), 'load']
+  axis(4, at=py(b), labels=round(b, digits=3),
+          col.axis="violet", cex.axis=.8, las=2, tck=-.025)
+
+  b <- fl_cinpl[(fl_cinpl$steps==16384) & (fl_cinpl$bs==8) & (fl_cinpl$nh==2), 'load']
+  axis(4, at=py(b-.00045), labels=round(b, digits=3),
+          col.axis="forestgreen", cex.axis=.8, las=2, tck=-.0)
+  axis(4, at=py(b), labels='',
+          col.axis="forestgreen", cex.axis=.8, las=2, tck=-.025)
+
+  b <- fl_cinpl[(fl_cinpl$steps==16384) & (fl_cinpl$bs==8) & (fl_cinpl$nh==3), 'load']
+  axis(4, at=py(b), labels=round(b, digits=4),
+          col.axis="black", cex.axis=.8, las=2, tck=-.025)
+
+  b <- fl_ceipg_min[(fl_ceipg_min$steps==16384) & (fl_ceipg_min$bs==4) & (fl_ceipg_min$nh==2) & (fl_ceipg_min$tl==4096), 'load']
+  axis(4, at=py(b), labels=round(b, digits=3),
+          col.axis="skyblue", cex.axis=.8, las=2, tck=-.025)
+
+  b <- fl_ceipg_min[(fl_ceipg_min$steps==16384) & (fl_ceipg_min$bs==4) & (fl_ceipg_min$nh==3) & (fl_ceipg_min$tl==4096), 'load']
+  axis(4, at=py(b), labels=round(b, digits=3),
+          col.axis="violet", cex.axis=.8, las=2, tck=-.025)
+
+  b <- fl_ceipg_min[(fl_ceipg_min$steps==16384) & (fl_ceipg_min$bs==8) & (fl_ceipg_min$nh==2) & (fl_ceipg_min$tl==4096), 'load']
+  axis(4, at=py(b), labels=round(b, digits=3),
+          col.axis="forestgreen", cex.axis=.8, las=2, tck=-.025)
+
+  b <- fl_ceipg_min[(fl_ceipg_min$steps==16384) & (fl_ceipg_min$bs==8) & (fl_ceipg_min$nh==3) & (fl_ceipg_min$tl==4096), 'load']
+  axis(4, at=py(b+.0003), labels=round(b, digits=3),
+          col.axis="black", cex.axis=.8, tck=.0, las=2)
+  axis(4, at=py(b), labels='',
+          col.axis="black", cex.axis=.8, las=2, tck=-.025)
+
+
+  d <- fl_ceipg
+  d <- d[(d$steps==16384) & (d$tl==4096) & (d$bs == 4) & (d$nh == 2),]
+  xline   <- d[,'eff_cap']
+  yline   <- d[,'eff_load']
+  lines(xline, py(yline), col="skyblue")
+
+  d <- fl_ceipg
+  d <- d[(d$steps==16384) & (d$tl==4096) & (d$bs == 4) & (d$nh == 3),]
+  xline   <- d[,'eff_cap']
+  yline   <- d[,'eff_load']
+  lines(xline, py(yline), col="violet")
+
+  d <- fl_ceipg
+  d <- d[(d$steps==16384) & (d$tl==4096) & (d$bs == 8) & (d$nh == 2),]
+  xline   <- d[,'eff_cap']
+  yline   <- d[,'eff_load']
+  lines(xline, py(yline), col="forestgreen")
+
+  d <- fl_ceipg
+  d <- d[(d$steps==16384) & (d$tl==4096) & (d$bs == 8) & (d$nh == 3),]
+  xline   <- d[,'eff_cap']
+  yline   <- d[,'eff_load']
+  lines(xline, py(yline), col="black")
+
+  b <- fl_cinpl[(fl_cinpl$steps==16384) & (fl_cinpl$bs==4) & (fl_cinpl$nh==2), 'load']
+  lines(xrange+c(0,100000000), py(c(b,b)), col="skyblue", lty=2)
+  b <- fl_cinpl[(fl_cinpl$steps==16384) & (fl_cinpl$bs==4) & (fl_cinpl$nh==3), 'load']
+  lines(xrange+c(0,100000000), py(c(b,b)), col="violet", lty=2)
+  b <- fl_cinpl[(fl_cinpl$steps==16384) & (fl_cinpl$bs==8) & (fl_cinpl$nh==2), 'load']
+  lines(xrange+c(0,100000000), py(c(b,b)), col="forestgreen", lty=2)
+  b <- fl_cinpl[(fl_cinpl$steps==16384) & (fl_cinpl$bs==8) & (fl_cinpl$nh==3), 'load']
+  lines(xrange+c(0,100000000), py(c(b,b)), col="black", lty=2)
+
+  legend(50000, py(0.984), lnames, col=lcol, lty=1, bg='white')
+
+  dev.off()
+
 #+END_SRC
 
 #+RESULTS:

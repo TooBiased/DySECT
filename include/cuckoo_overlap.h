@@ -17,13 +17,14 @@
  * All rights reserved. Published under the BSD-2 license in the LICENSE file.
  ******************************************************************************/
 
+#include "utils/default_hash.h"
 #include "cuckoo_base.h"
 #include "cobucket.h"
 
 namespace dysect
 {
 
-    template<class K, class D, class HF = std::hash<K>,
+    template<class K, class D, class HF = hash::default_hash,
              class Conf = cuckoo_config<> >
     class cuckoo_overlap : public cuckoo_traits<cuckoo_overlap<K,D,HF,Conf> >::base_type
     {
@@ -287,7 +288,7 @@ namespace dysect
 // IN PLACE GROWING ************************************************************
 // *****************************************************************************
 
-    template<class K, class D, class HF = std::hash<K>,
+    template<class K, class D, class HF = hash::default_hash,
              class Conf = cuckoo_config<> >
     class cuckoo_overlap_inplace : public cuckoo_traits<cuckoo_overlap_inplace<K,D,HF,Conf> >::base_type
     {
