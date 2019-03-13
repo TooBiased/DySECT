@@ -1,16 +1,44 @@
+#include <random>
+#include <iostream>
+#include <fstream>
+#include <chrono>
+
 #include "selection.h"
 #include "utils/default_hash.h"
 #include "utils/commandline.h"
 #include "utils/thread_basics.h"
 
 #ifdef MALLOC_COUNT
-#include "malloc_count.h"
+  #include "malloc_count.h"
+  static constexpr bool malloc_mode = true;
+  size_t get_malloc () { return malloc_count_current(); }
+#else
+  static constexpr bool malloc_mode = false;
+  constexpr size_t get_malloc () { return 0; }
 #endif
 
-#include <random>
-#include <iostream>
-#include <fstream>
-#include <chrono>
+#ifdef RSS_COUNT
+  #include <stdio.h>
+  static constexpr bool rss_mode = true;
+  size_t get_rss()
+  {
+      long rss = 0L;
+      FILE* fp = NULL;
+      if ( (fp = fopen( "/proc/self/statm", "r" )) == NULL )
+          return (size_t)0L;		/* Can't open? */
+      if ( fscanf( fp, "%*s%ld", &rss ) != 1 )
+      {
+          fclose( fp );
+          return (size_t)0L;		/* Can't read? */
+      }
+      fclose( fp );
+      return (size_t)rss;
+  }
+#else
+  static constexpr bool rss_mode = false;
+  constexpr size_t get_rss() { return 0; }
+#endif
+
 
 template <class T>
 inline void print(std::ostream& out, const T& t, size_t w)
@@ -39,9 +67,8 @@ struct Test
         print(out, "t_find-", 8);
         print(out, "in_err" , 6);
         print(out, "fi_err" , 6);
-        #ifdef MALLOC_COUNT
-        print(out, "memory" , 7);
-        #endif
+        if constexpr (malloc_mode) print(out, "memory" , 7);
+        if constexpr (rss_mode)    print(out, "rss"    , 7);
         out << std::endl;
     }
 
@@ -57,6 +84,7 @@ struct Test
                              double d_fn1,
                              size_t in_err,
                              size_t fi_err,
+                             size_t rss,
                              Table& table)
     {
         print(out, i     , 4);
@@ -71,9 +99,10 @@ struct Test
         print(out, d_fn1 , 8);
         print(out, in_err, 6);
         print(out, fi_err, 6);
-        #ifdef MALLOC_COUNT
-        print(out, double(malloc_count_current())/double(8*2*n)-1., 7);
-        #endif
+        if constexpr (malloc_mode)
+            print(out, double(get_malloc())/double(8*2*n)-1., 7);
+        if constexpr (rss_mode)
+            print(out, rss, 7);
         out << std::endl;
     }
 
@@ -96,12 +125,13 @@ struct Test
         if (name == "") file = &(std::cout);
         else file = new std::ofstream(name + ".time",
                                       std::ofstream::out | std::ofstream::app);
-        //std::ofstream file(name + ".time",
-        //                   std::ofstream::out | std::ofstream::app);
+
         print_headline(*file);
 
         for (size_t i = 0; i < it; ++i)
         {
+            size_t start_rss = get_rss();
+
             Table table(cap, alpha, steps);
 
             auto in_errors = 0ull;
@@ -118,7 +148,12 @@ struct Test
             {
                 if (!table.insert(keys[i], i).second) ++in_errors;
             }
+
             auto t2 = std::chrono::high_resolution_clock::now();
+
+            size_t final_rss = get_rss() - start_rss;
+
+            auto t2i = std::chrono::high_resolution_clock::now();
             //const Table& ctable = table;
             for (size_t i = 0; i < n; ++i)
             {
@@ -136,13 +171,18 @@ struct Test
             }
             auto t4 = std::chrono::high_resolution_clock::now();
 
-            double d_in0 = std::chrono::duration_cast<std::chrono::microseconds> (t1 - t0).count()/1000.;
-            double d_in1 = std::chrono::duration_cast<std::chrono::microseconds> (t2 - t1).count()/1000.;
-            double d_fn0 = std::chrono::duration_cast<std::chrono::microseconds> (t3 - t2).count()/1000.;
-            double d_fn1 = std::chrono::duration_cast<std::chrono::microseconds> (t4 - t3).count()/1000.;
+            double d_in0 = std::chrono::duration_cast<std::chrono::microseconds>
+                (t1 - t0).count()/1000.;
+            double d_in1 = std::chrono::duration_cast<std::chrono::microseconds>
+                (t2 - t1).count()/1000.;
+            double d_fn0 = std::chrono::duration_cast<std::chrono::microseconds>
+                (t3 - t2i).count()/1000.;
+            double d_fn1 = std::chrono::duration_cast<std::chrono::microseconds>
+                (t4 - t3).count()/1000.;
 
-            print_timing(*file, i, alpha, cap, n0, n, d_in0, d_in1, d_fn0, d_fn1,
-                         in_errors, fin_errors, table);
+            print_timing(*file, i, alpha, cap, n0, n,
+                         d_in0, d_in1, d_fn0, d_fn1,
+                         in_errors, fin_errors, final_rss, table);
         }
 
         delete[] keys;
