@@ -75,6 +75,8 @@ namespace dysect
         cuckoo_standard(cuckoo_standard&&) = default;
         cuckoo_standard& operator=(cuckoo_standard&&) = default;
 
+        ~cuckoo_standard() = default;
+
     private:
         using base_type::n;
         using base_type::capacity;

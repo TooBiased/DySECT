@@ -445,6 +445,8 @@ namespace dysect
 // IN PLACE ********************************************************************
 // *****************************************************************************
 
+    #include <stdlib.h>
+
     template<class K, class D, class HF = hash::default_hash,
              class Conf = cuckoo_config<> >
     class cuckoo_dysect_inplace : public cuckoo_traits<cuckoo_dysect_inplace<K,D,HF,Conf> >::base_type
@@ -483,8 +485,8 @@ namespace dysect
                               size_type dis_steps = 0, size_type seed = 0)
             : base_type(size_constraint, dis_steps, seed)
         {
-            auto temp = static_cast<bucket_type*>(operator new (max_size));
-
+            //auto temp = operator new (max_size);
+            auto temp = static_cast<bucket_type*>(aligned_alloc(4096,max_size));
             table     = std::unique_ptr<bucket_type[]>(temp);
 
             double avg_size_f = double(cap) * size_constraint / double(tl*bs);
@@ -540,6 +542,8 @@ namespace dysect
         size_type bits_large;
         size_type shrnk_thresh;
 
+        //std::unique_ptr<bucket_type[]> memory;
+        //bucket_type* table;
         std::unique_ptr<bucket_type[]> table;
 
         static constexpr size_type tl_bitmask = tl - 1;
