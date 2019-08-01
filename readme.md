@@ -1,6 +1,7 @@
 # DySECT
 
-## Motivation In many circumstances hash tables can only be space
+## Motivation 
+In many circumstances hash tables can only be space
 efficient when they can also adapt to the number of inserted elements.
 Otherwise programmers have to correctly estimate the final table size
 to create densely filled hash tables.  Guessing conservatively will
