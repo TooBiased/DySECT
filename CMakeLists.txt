@@ -14,6 +14,9 @@ set_property(CACHE DYSECT_HASHFCT PROPERTY STRINGS XXHASH MURMUR2 MURMUR3 CRC)
 set(DYSECT_MALLOC_COUNT OFF CACHE BOOL
   "Display the amount of allocated memory! Needs the malloc_count submodule.")
 
+set(DYSECT_RSS_COUNT OFF CACHE BOOL
+  "Display the amount of physically used memory pages (resident set size must be linux + no malloc_count)!")
+
 #### BASIC SETTINGS ############################################################
 
 include_directories(.)
@@ -85,6 +88,9 @@ foreach(t time del eps mix crawl mixd)
     if (DYSECT_MALLOC_COUNT)
       add_executable(${t}_${h} source/${t}_test.cpp ${MALLOC_COUNT_DIR}/malloc_count/malloc_count.c)
       target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${DYSECT_HASHFCT} -D MALLOC_COUNT)
+    else if (DYSECT_RSS_COUNT)
+      add_executable(${t}_${h} source/${t}_test.cpp)
+      target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${DYSECT_HASHFCT} -D RSS_COUNT)
     else()
       add_executable(${t}_${h} source/${t}_test.cpp)
       target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${DYSECT_HASHFCT})
