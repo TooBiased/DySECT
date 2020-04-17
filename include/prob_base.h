@@ -90,7 +90,8 @@ namespace dysect
         const_iterator            find  (const key_type& k) const;
         std::pair<iterator, bool> insert(const key_type& k, const mapped_type& d);
         std::pair<iterator, bool> insert(const value_intern& t);
-        size_type                    erase (const key_type& k);
+        size_type                 erase (const key_type& k);
+        int                 displacement(const key_type& k) const;
 
         // Easy use Accessors for std compliance ***********************************
         inline iterator           begin ()
@@ -253,6 +254,28 @@ namespace dysect
         return 0;
     }
 
+    template<class SpProb>
+    inline int
+    prob_base<SpProb>::displacement(const key_type& k) const
+    {
+        auto ind = h(k);
+
+        for (size_type i = ind; ; ++i)
+        {
+            size_type ti = static_cast<const specialized_type*>(this)->mod(i);
+            auto temp = table[ti];
+
+            if ( temp.first == 0 )
+            {
+                break;
+            }
+            else if ( temp.first == k )
+            {
+                return i - ind;
+            }
+        }
+        return -1;
+    }
 
 
 // Accessor Implementations ****************************************************

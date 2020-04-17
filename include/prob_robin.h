@@ -171,6 +171,26 @@ namespace dysect
             return 0;
         }
 
+        inline int displacement(const key_type& k) const
+        {
+            auto ind = h(k);
+
+            for (size_type i = ind; i <= ind+pdistance; ++i)
+            {
+                auto temp = table[i];
+
+                if ( temp.first == 0 )
+                {
+                    break;
+                }
+                else if ( temp.first == k )
+                {
+                    return i-ind;
+                }
+            }
+            return -1;
+        }
+
     private:
         inline size_type index (size_type i) const
         { return double(bitmask & i) * factor; }

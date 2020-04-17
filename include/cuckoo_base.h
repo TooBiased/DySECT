@@ -139,7 +139,7 @@ namespace dysect
         cuckoo_base(double size_constraint = 1.1,
                     size_type dis_steps = 0, size_type seed = 0);
         ~cuckoo_base() = default;
-        cuckoo_base(const cuckoo_base&     ) = delete;
+f        cuckoo_base(const cuckoo_base&     ) = delete;
         cuckoo_base(      cuckoo_base&& rhs);
         cuckoo_base& operator=(const cuckoo_base&     ) = delete;
         cuckoo_base& operator=(      cuckoo_base&& rhs)
@@ -169,6 +169,7 @@ namespace dysect
         insert_return_type    insert(const key_type& k, const mapped_type& d);
         insert_return_type    insert(const value_intern& t);
         size_type             erase (const key_type& k);
+        int             displacement(const key_type& k) const;
 
     // Easy use Accessors for std compliance ***********************************
         inline iterator       begin ();       // see specialized_type
@@ -273,8 +274,8 @@ namespace dysect
 
         for (size_type i = 0; i < nh; ++i)
         {
-            bucket_type* tb = get_bucket(hash, i);
-            value_intern*   tp = tb->find_ptr(k);
+            bucket_type*  tb = get_bucket(hash, i);
+            value_intern* tp = tb->find_ptr(k);
             if (tp) return make_citerator(tp);
         }
         return end();
@@ -342,7 +343,22 @@ namespace dysect
         return 0;
     }
 
+    template<class SCuckoo>
+    inline int
+    cuckoo_base<SCuckoo>::displacement(const key_type& k) const
+    {
+        auto hash = hasher(k);
+        int disp = 0;
 
+        for (size_type i = 0; i < nh; ++i)
+        {
+            bucket_type*  tb = get_bucket(hash, i);
+            int           td = tb->displacement(k);
+            disp += td;
+            if (td < bs) return disp;
+        }
+        return end();
+    }
 
 // Accessor Implementations ****************************************************
 

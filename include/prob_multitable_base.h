@@ -52,11 +52,20 @@ public:
         return tables[getInd(k)].find(k);
     }
 
+    inline const_iterator find(key_type k) const
+    {
+        return tables[getInd(k)].find(k);
+    }
+
     inline size_t erase(key_type k)
     {
         return tables[getInd(k)].erase(k);
     }
 
+    inline int displacement(key_type k) const
+    {
+        return tables[getInd(k)].displacement(k);
+    }
 
 
     inline iterator begin()              { return tables[0].begin(); }
@@ -67,7 +76,7 @@ public:
     inline const_iterator cend()   const { return tables[0].cend(); }
 
 private:
-    inline size_t getInd(key_type k)
+    inline size_t getInd(key_type k) const
     {
         return hasher(k) & bits;
     }

@@ -268,6 +268,23 @@ namespace dysect
             return 0;
         }
 
+        inline int displacement(const key_type& k) const
+        {
+            auto ind = h(k);
+            size_t bits = nh_data.get_neighborhood(ind);
+
+            for (size_t i = ind; bits; ++i, bits>>=1)
+            {
+                if (!(bits & 1)) continue;
+                auto temp = table[i];
+                if ( temp.first == k )
+                {
+                    return i-ind;
+                }
+            }
+            return -1;
+        }
+
     private:
         inline size_t index(size_t i) const
         { return double(bitmask & i) * factor; }
