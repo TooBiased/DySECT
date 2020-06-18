@@ -1,9 +1,11 @@
-//#include "include/spacegrow.h"
 #include "selection.h"
 
-#include "utils/default_hash.h"
-#include "utils/commandline.h"
-#include "utils/thread_basics.h"
+#include "utils/default_hash.hpp"
+#include "utils/command_line_parser.hpp"
+#include "utils/pin_thread.hpp"
+#include "utils/output.hpp"
+namespace utm = utils_tm;
+namespace otm = utils_tm::out_tm;
 
 #ifdef MALLOC_COUNT
 #include "malloc_count.h"
@@ -14,64 +16,31 @@
 #include <fstream>
 #include <chrono>
 
-template <class T>
-inline void print(std::ostream& out, const T& t, size_t w)
-{
-    out.width(w);
-    out << t << " " << std::flush;
-}
 
 template<class Config>
 struct Test
 {
-    //using Table = ProbIndependentBase<HASHTYPE<size_t, size_t, dysect::hash::default_hash, Config> >;
-    using Table = HASHTYPE<size_t, size_t, dysect::hash::default_hash, Config>;
+    using table_type = HASHTYPE<size_t, size_t, utm::hash_tm::default_hash, Config>;
 
     constexpr static size_t block_size = 100000;
 
-    inline void print_headline(std::ostream& out)
-    {
-        print(out, "# it"   , 4);
-        print(out, "block"  , 6);
-        print(out, "alpha"  , 5);
-        Table::print_init_header(out);
-        print(out, "cap"    , 9);
-        print(out, "n_full" , 9);
-        print(out, "t_in"   , 8);
-        print(out, "in_err" , 6);
-        #ifdef MALLOC_COUNT
-        print(out, "memory" , 7);
-        #endif
-        out << std::endl;
-    }
-
-    inline void print_timing(std::ostream& out,
-                             size_t i,
-                             size_t block,
-                             double alpha,
-                             size_t cap  ,
-                             size_t n ,
-                             double d_step,
-                             size_t in_err,
-                             Table& table)
-    {
-        print(out, i     , 4);
-        print(out, block , 6);
-        print(out, alpha , 5);
-        table.print_init_data(out);
-        print(out, cap   , 9);
-        print(out, n     , 9);
-        print(out, d_step, 8);
-        print(out, in_err, 6);
-        #ifdef MALLOC_COUNT
-        print(out, double(malloc_count_current()-n*8)/double(8*2*block_size), 7);
-        #endif
-        out << std::endl;
-    }
-
     int operator()(size_t it, size_t n, size_t cap, size_t steps,
-                   double alpha, std::string name)
+                   double alpha)
     {
+        otm::out() << otm::width(4) << "# it"
+                   << otm::width(6) << "block"
+                   << otm::width(5) << "alpha";
+        table_type::print_init_header(out);
+        otm::out() << otm::width( 9) << "cap"
+                   << otm::width( 9) << "n_full"
+                   << otm::width( 8) << "t_in"
+                   << otm::width( 6) << "in_err"
+#ifdef MALLOC_COUNT
+                   << otm::width( 7) << "memory"
+#endif
+                   << std::endl;
+
+
         constexpr size_t range = (1ull<<63) -1;
 
         size_t* keys = new size_t[n];
@@ -84,16 +53,9 @@ struct Test
             keys[i] = dis(re);
         }
 
-        std::ostream* file;
-        if (name == "") file = &(std::cout);
-        else file = new std::ofstream(name + ".reg",
-                                      std::ofstream::out | std::ofstream::app);
-
-        print_headline(*file);
-
         for (size_t i = 0; i < it; ++i)
         {
-            Table table(cap, alpha, steps);
+            table_type table(cap, alpha, steps);
 
             auto in_errors = 0ull;
 
@@ -107,10 +69,20 @@ struct Test
                 auto t2 = std::chrono::high_resolution_clock::now();
                 double d_step = std::chrono::duration_cast<std::chrono::microseconds> (t2 - t1).count()/1000.;
 
-                print_timing(*file, i, j, alpha, cap, n, d_step,
-                         in_errors, table);
+                otm::out() << otm::width(4) << i
+                           << otm::width(6) << j
+                           << otm::width(5) << alpha;
+                table.print_init_data(out);
+                otm::out() << otm::width(9) << cap
+                           << otm::width(9) << n
+                           << otm::width(8) << d_step
+                           << otm::width(6) << in_errors
+#ifdef MALLOC_COUNT
+                           << otm::width(7) << double(malloc_count_current()-n*8)
+                                               /double(8*2*block_size)
+#endif
+                           << std::endl;
             }
-
         }
 
         delete[] keys;
@@ -121,17 +93,25 @@ struct Test
 
 int main(int argn, char** argc)
 {
-    pin_to_core(0);
-    CommandLine c(argn, argc);
-    size_t      it    = c.intArg("-it"   , 5);
-    size_t      n     = c.intArg("-n"    , 2000000);
-    size_t      cap   = c.intArg("-cap"  , n);
-    size_t      steps = c.intArg("-steps", 512);
-    const std::string name  = c.strArg("-out"  , "");
-    double      alpha = c.doubleArg("-alpha", 1.1);
-    double      load  = c.doubleArg("-load" , 2.0);
-    double      eps   = c.doubleArg("-eps"  , 1.0-load);
+    utils_tm::pin_to_core(0);
+    utils_tm::command_line_parser c(argn, argc);
+
+    size_t      it    = c.int_arg("-it"   , 5);
+    size_t      n     = c.int_arg("-n"    , 2000000);
+    size_t      cap   = c.int_arg("-cap"  , n);
+    size_t      steps = c.int_arg("-steps", 512);
+
+    double      alpha = c.double_arg("-alpha", 1.1);
+    double      load  = c.double_arg("-load" , 2.0);
+    double      eps   = c.double_arg("-eps"  , 1.0-load);
     if (eps > 0.) alpha = 1./(1.-eps);
 
-    return Chooser::execute<Test,no_hist_count> (c, it, n, cap, steps, alpha, name);
+    if (c.bool_arg("-out") || c.bool_arg("-file"))
+    {
+        std::string name = c.str_arg("-out", "");
+        name = c.str_arg("-file", name) + ".del";
+        otm::out().set_file(name);
+    }
+
+    return Chooser::execute<Test,no_hist_count> (c, it, n, cap, steps, alpha);
 }

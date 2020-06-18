@@ -4,9 +4,12 @@
 #include <chrono>
 
 #include "selection.h"
-#include "utils/default_hash.h"
-#include "utils/commandline.h"
-#include "utils/thread_basics.h"
+#include "utils/default_hash.hpp"
+#include "utils/command_line_parser.hpp"
+#include "utils/pin_thread.hpp"
+#include "utils/output.hpp"
+namespace utm = utils_tm;
+namespace otm = utils_tm::out_tm;
 
 #ifdef MALLOC_COUNT
   #include "malloc_count.h"
@@ -39,76 +42,31 @@
   constexpr size_t get_rss() { return 0; }
 #endif
 
-
-template <class T>
-inline void print(std::ostream& out, const T& t, size_t w)
-{
-    out.width(w);
-    out << t << " " << std::flush;
-}
-
 template<class Config>
 struct Test
 {
-    //using Table = ProbIndependentBase<HASHTYPE<size_t, size_t, dysect::hash::default_hash, Config> >;
-    using Table = HASHTYPE<size_t, size_t, dysect::hash::default_hash, Config>;
-
-    inline void print_headline(std::ostream& out)
-    {
-        print(out, "# it"   , 4);
-        print(out, "alpha"  , 5);
-        Table::print_init_header(out);
-        print(out, "cap"    , 9);
-        print(out, "n_0"  , 9);
-        print(out, "n_full" , 9);
-        print(out, "t_in0"  , 8);
-        print(out, "t_in1"  , 8);
-        print(out, "t_find+", 8);
-        print(out, "t_find-", 8);
-        print(out, "in_err" , 6);
-        print(out, "fi_err" , 6);
-        if constexpr (malloc_mode) print(out, "memory" , 7);
-        if constexpr (rss_mode)    print(out, "rss"    , 7);
-        out << std::endl;
-    }
-
-    inline void print_timing(std::ostream& out,
-                             size_t i,
-                             double alpha,
-                             size_t cap  ,
-                             size_t n0 ,
-                             size_t n ,
-                             double d_in0,
-                             double d_in1,
-                             double d_fn0,
-                             double d_fn1,
-                             size_t in_err,
-                             size_t fi_err,
-                             [[maybe_unused]] size_t rss,
-                             Table& table)
-    {
-        print(out, i     , 4);
-        print(out, alpha , 5);
-        table.print_init_data(out);
-        print(out, cap   , 9);
-        print(out, n0    , 9);
-        print(out, n     , 9);
-        print(out, d_in0 , 8);
-        print(out, d_in1 , 8);
-        print(out, d_fn0 , 8);
-        print(out, d_fn1 , 8);
-        print(out, in_err, 6);
-        print(out, fi_err, 6);
-        if constexpr (malloc_mode)
-            print(out, double(get_malloc())/double(8*2*n)-1., 7);
-        if constexpr (rss_mode)
-            print(out, rss, 7);
-        out << std::endl;
-    }
+    //using table_type = ProbIndependentBase<HASHTYPE<size_t, size_t, dysect::hash::default_hash, Config> >;
+    using table_type = HASHTYPE<size_t, size_t, utm::hash_tm::default_hash, Config>;
 
     int operator()(size_t it, size_t n, size_t n0,  size_t cap, size_t steps,
-                   double alpha, std::string name)
+                   double alpha)
     {
+        otm::out() << otm::width(4) << "# it"
+                   << otm::width(5) << "alpha";
+        table_type::print_init_header(otm::out());
+        otm::out() << otm::width(9) << "cap"
+                   << otm::width(9) << "n_0"
+                   << otm::width(9) << "n_full"
+                   << otm::width(8) << "t_in0"
+                   << otm::width(8) << "t_in1"
+                   << otm::width(8) << "t_find+"
+                   << otm::width(8) << "t_find-"
+                   << otm::width(6) << "in_err"
+                   << otm::width(6) << "fi_err";
+        if constexpr (malloc_mode) otm::out() << otm::width(7) << "memory";
+        if constexpr (rss_mode)    otm::out() << otm::width(7) << "rss";
+        otm::out() << std::endl;
+
         constexpr size_t range = (1ull<<63) -1;
 
         size_t* keys = new size_t[2*n];
@@ -121,18 +79,11 @@ struct Test
             keys[i] = dis(re);
         }
 
-        std::ostream* file;
-        if (name == "") file = &(std::cout);
-        else file = new std::ofstream(name + ".time",
-                                      std::ofstream::out | std::ofstream::app);
-
-        print_headline(*file);
-
         for (size_t i = 0; i < it; ++i)
         {
             size_t start_rss = get_rss();
 
-            Table table(cap, alpha, steps);
+            table_type table(cap, alpha, steps);
 
             auto in_errors = 0ull;
             auto fin_errors = 0ull;
@@ -151,10 +102,10 @@ struct Test
 
             auto t2 = std::chrono::high_resolution_clock::now();
 
-            size_t final_rss = get_rss() - start_rss;
+            [[maybe_unused]] size_t final_rss = get_rss() - start_rss;
 
             auto t2i = std::chrono::high_resolution_clock::now();
-            //const Table& ctable = table;
+            //const table_type& ctable = table;
             for (size_t i = 0; i < n; ++i)
             {
                 auto e = table.find(keys[i]);
@@ -180,9 +131,24 @@ struct Test
             double d_fn1 = std::chrono::duration_cast<std::chrono::microseconds>
                 (t4 - t3).count()/1000.;
 
-            print_timing(*file, i, alpha, cap, n0, n,
-                         d_in0, d_in1, d_fn0, d_fn1,
-                         in_errors, fin_errors, final_rss, table);
+            otm::out() << otm::width(4) << i
+                       << otm::width(5) << alpha;
+            table.print_init_data(otm::out());
+            otm::out() << otm::width(9) << cap
+                       << otm::width(9) << n0
+                       << otm::width(9) << n
+                       << otm::width(8) << d_in0
+                       << otm::width(8) << d_in1
+                       << otm::width(8) << d_fn0
+                       << otm::width(8) << d_fn1
+                       << otm::width(6) << in_errors
+                       << otm::width(6) << fin_errors;
+            if constexpr (malloc_mode)
+                otm::out() << otm::width( 7)
+                           << double(get_malloc())/double(8*2*n)-1.;
+            if constexpr (rss_mode)
+                otm::out() << otm::width( 7) << final_rss;
+            otm::out() << std::endl;
         }
 
         delete[] keys;
@@ -193,19 +159,27 @@ struct Test
 
 int main(int argn, char** argc)
 {
-    pin_to_core(0);
-    CommandLine c(argn, argc);
-    size_t      it    = c.intArg("-it"   , 5);
-    size_t      n     = c.intArg("-n"    , 2000000);
-    size_t      n0    = c.intArg("-pre"  , n/2);
+    utm::pin_to_core(0);
+    utm::command_line_parser c(argn, argc);
+
+    size_t      it    = c.int_arg("-it"   , 5);
+    size_t      n     = c.int_arg("-n"    , 2000000);
+    size_t      n0    = c.int_arg("-pre"  , n/2);
     if (n0 > n) std::cout << "n0 (pre) has to be smaller than n! set n = n0 = " << n0 << std::endl;
-    size_t      cap   = c.intArg("-cap"  , n);
-    size_t      steps = c.intArg("-steps", 512);
-    const std::string name  = c.strArg("-out"  , "");
-    double      alpha = c.doubleArg("-alpha", 1.1);
-    double      load  = c.doubleArg("-load" , 2.0);
-    double      eps   = c.doubleArg("-eps"  , 1.0-load);
+    size_t      cap   = c.int_arg("-cap"  , n);
+    size_t      steps = c.int_arg("-steps", 512);
+
+    double      alpha = c.double_arg("-alpha", 1.1);
+    double      load  = c.double_arg("-load" , 2.0);
+    double      eps   = c.double_arg("-eps"  , 1.0-load);
     if (eps > 0.) alpha = 1./(1.-eps);
 
-    return Chooser::execute<Test,false> (c, it, n, n0, cap, steps, alpha, name);
+    if (c.bool_arg("-out") || c.bool_arg("-file"))
+    {
+        std::string name = c.str_arg("-out", "");
+        name = c.str_arg("-file", name) + ".del";
+        otm::out().set_file(name);
+    }
+
+    return Chooser::execute<Test,false> (c, it, n, n0, cap, steps, alpha);
 }

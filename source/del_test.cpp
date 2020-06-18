@@ -3,6 +3,9 @@
 #include "utils/default_hash.hpp"
 #include "utils/command_line_parser.hpp"
 #include "utils/pin_thread.hpp"
+#include "utils/output.hpp"
+namespace utm = utils_tm;
+namespace otm = utils_tm::out_tm;
 
 #ifdef MALLOC_COUNT
 #include "malloc_count.h"
@@ -12,9 +15,6 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
-
-namespace utm = utils_tm;
-namespace otm = utils_tm::out_tm;
 
 template<class Config>
 struct test_type
@@ -123,11 +123,13 @@ int main(int argn, char** argc)
 {
     utm::pin_to_core(0);
     utm::command_line_parser c(argn, argc);
+
     size_t      it    = c.int_arg("-it"   , 5);
     size_t      n     = c.int_arg("-n"    , 1000000);
     size_t      win   = c.int_arg("-pre"  , n/2);
     size_t      cap   = c.int_arg("-cap"  , win);
     size_t      steps = c.int_arg("-steps", 512);
+
     double      alpha = c.double_arg("-alpha", 1.1);
     double      load  = c.double_arg("-load" , 2.0);
     double      eps   = c.double_arg("-eps"  , 1.0-load);

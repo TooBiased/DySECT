@@ -128,16 +128,19 @@ int main(int argn, char** argc)
 {
     utm::pin_to_core(0);
     utm::command_line_parser c(argn, argc);
+
     size_t      n     = c.int_arg("-n"    , 1000000);
     size_t      pre   = c.int_arg("-pre"  , 0);
     size_t      cap   = c.int_arg("-cap"  , 1000000);
     size_t      steps = c.int_arg("-steps", 512);
-    std::string name  = c.str_arg("-out"  , "temp");
-    name              = c.str_arg("-file" , name);
+
     double      alpha = c.double_arg("-alpha", 1.1);
     double      load  = c.double_arg("-load" , 2.0);
     double      eps   = c.double_arg("-eps"  , 1.0-load);
     if (eps > 0.) alpha = 1./(1.-eps);
+
+    std::string name  = c.str_arg("-out"  , "temp");
+    name              = c.str_arg("-file" , name);
 
     return Chooser::execute<test_type, hist_count>(c, n, pre, cap, steps, alpha, name);
 }

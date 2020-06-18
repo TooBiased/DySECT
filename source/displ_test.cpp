@@ -8,18 +8,15 @@
 #include "utils/command_line_parser.hpp"
 #include "utils/pin_thread.hpp"
 #include "utils/output.hpp"
+namespace utm = utils_tm;
+namespace otm = utils_tm::out_tm;
 
-using namespace utils_tm;
-using namespace utils_tm::hash_tm;
 #include "selection.h"
 
 #ifdef MALLOC_COUNT
 #include "malloc_count.h"
 #endif
 
-
-namespace utm = utils_tm;
-namespace otm = utils_tm::out_tm;
 
 template<class Config>
 struct test_type
@@ -29,6 +26,14 @@ struct test_type
 
     int operator()(size_t it, size_t n, size_t cap, size_t mdisp)
     {
+        otm::out() << otm::width(3) << "#it"
+                   << otm::width(9) << "n"
+                   << otm::width(8) << "cap"
+                   << otm::width(5) << "disp"
+                   << otm::width(9) << "ndisp"
+                   << otm::width(10) << "time"
+                   << std::endl;
+
         constexpr size_t range = std::numeric_limits<size_t>::max();
 
         size_t*              keys  = new size_t[n];
@@ -114,6 +119,7 @@ int main(int argn, char** argc)
 {
     // pin_to_core(0);
     utm::command_line_parser c(argn, argc);
+
     size_t it     = c.int_arg("-it" , 5);
     size_t n      = c.int_arg("-n"  , 700000);
     size_t cap    = c.int_arg("-cap", 1000000);
@@ -141,14 +147,6 @@ int main(int argn, char** argc)
                    << std::endl;
         return 0;
     }
-
-    otm::out() << otm::width(3) << "#it"
-               << otm::width(9) << "n"
-               << otm::width(8) << "cap"
-               << otm::width(5) << "disp"
-               << otm::width(9) << "ndisp"
-               << otm::width(10) << "time"
-               << std::endl;
 
     return Chooser::execute<test_type,true> (c, it, n, cap, mdisp);
 }

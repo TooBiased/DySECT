@@ -5,9 +5,12 @@
 // #include "include/strategies/dstrat_rwalk.h"
 // #include "include/strategies/dstrat_rwalk_cyclic.h"
 
-#include "utils/default_hash.h"
-#include "utils/commandline.h"
-#include "utils/thread_basics.h"
+#include "utils/default_hash.hpp"
+#include "utils/command_line_parser.hpp"
+#include "utils/pin_thread.hpp"
+#include "utils/output.hpp"
+namespace utm = utils_tm;
+namespace otm = utils_tm::out_tm;
 
 #ifdef MALLOC_COUNT
 #include "malloc_count.h"
@@ -18,69 +21,31 @@
 #include <fstream>
 #include <chrono>
 
-template <class T>
-inline void print(std::ostream& out, const T& t, size_t w)
-{
-    out.width(w);
-    out << t << " " << std::flush;
-}
-
 template<class Config>
 struct Test
 {
-    //using Table = ProbIndependentBase<HASHTYPE<size_t, size_t, dysect::hash::default_hash, Config> >;
-    using Table = HASHTYPE<size_t, size_t, dysect::hash::default_hash, Config>;
+    //using table_type = ProbIndependentBase<HASHTYPE<size_t, size_t, dysect::hash::default_hash, Config> >;
+    using table_type = HASHTYPE<size_t, size_t, utm::hash_tm::default_hash, Config>;
 
-    inline void print_headline(std::ostream& out)
-    {
-        print(out, "# it"   , 4);
-        print(out, "alpha"  , 5);
-        Table::print_init_header(out);
-        print(out, "cap"    , 9);
-        print(out, "pat"    , 4);
-        print(out, "pre"    , 9);
-        print(out, "n"      , 9);
-        print(out, "t_pre"  , 8);
-        print(out, "t_mix"  , 8);
-        print(out, "in_err" , 6);
-        #ifdef MALLOC_COUNT
-        print(out, "memory" , 7);
-        #endif
-        out << std::endl;
-    }
-
-    inline void print_timing(std::ostream& out,
-                             size_t i,
-                             double alpha,
-                             size_t cap  ,
-                             size_t pattern,
-                             size_t pre ,
-                             size_t n ,
-                             double d_pre,
-                             double d_mix,
-                             size_t errors,
-                             Table& table)
-    {
-        print(out, i     , 4);
-        print(out, alpha , 5);
-        table.print_init_data(out);
-        print(out, cap   , 9);
-        print(out, pattern, 4);
-        print(out, pre    , 9);
-        print(out, n     , 9);
-        print(out, d_pre , 8);
-        print(out, d_mix , 8);
-        print(out, errors, 6);
-        #ifdef MALLOC_COUNT
-        print(out, double(malloc_count_current()-(n+pre)*8)/
-                   (0.1*double(pattern*8*2*n)+double(8*2*pre)), 7);
-        #endif
-        out << std::endl;
-    }
 
     int operator()(size_t it, size_t n, size_t pre, size_t cap, size_t pattern, size_t steps,
-                   double alpha, std::string name)
+                   double alpha)
     {
+        otm::out() << otm::width(4) << "# it"
+                   << otm::width(5) << "alpha";
+        table_type::print_init_header(otm::out());
+        otm::out() << otm::width(9) << "cap"
+                   << otm::width(4) << "pat"
+                   << otm::width(9) << "pre"
+                   << otm::width(9) << "n"
+                   << otm::width(8) << "t_pre"
+                   << otm::width(8) << "t_mix"
+                   << otm::width(6) << "in_err"
+        #ifdef MALLOC_COUNT
+                   << otm::width(7) << "memory"
+        #endif
+                   << std::endl;
+
         constexpr size_t range = (1ull<<63) -1;
 
         size_t  p_rep = n/10;
@@ -118,17 +83,9 @@ struct Test
         }
         delete[] dbool;
 
-
-        std::ostream* file;
-        if (name == "") file = &(std::cout);
-        else file = new std::ofstream(name + ".mixd",
-                                      std::ofstream::out | std::ofstream::app);
-
-        print_headline(*file);
-
         for (size_t i = 0; i < it; ++i)
         {
-            Table table(cap, alpha, steps);
+            table_type table(cap, alpha, steps);
 
             auto errors  = 0ull;
             auto ferrors = 0ull;
@@ -161,8 +118,23 @@ struct Test
             double d_pre = std::chrono::duration_cast<std::chrono::microseconds> (t1 - t0).count()/1000.;
             double d_mix = std::chrono::duration_cast<std::chrono::microseconds> (t2 - t1).count()/1000.;
 
-            print_timing(*file, i, alpha, cap, pattern, pre, n, d_pre, d_mix, errors, table);
-            if (ferrors && (!errors)) (*file) << "Critical Error" << std::endl;
+            otm::out() << otm::width(4) << i
+                       << otm::width(5) << alpha;
+            table.print_init_data(otm::out());
+            otm::out() << otm::width(9) << cap
+                       << otm::width(4) << pattern
+                       << otm::width(9) << pre
+                       << otm::width(9) << n
+                       << otm::width(8) << d_pre
+                       << otm::width(8) << d_mix
+                       << otm::width(6) << errors
+#ifdef MALLOC_COUNT
+                       << otm::width(7) << double(malloc_count_current()-(n+pre)*8)/
+                (0.1*double(pattern*8*2*n)+double(8*2*pre))
+#endif
+                       << std::endl;
+
+            if (ferrors && (!errors)) otm::out() << "Critical Error" << std::endl;
         }
 
         delete[] ikeys;
@@ -174,19 +146,27 @@ struct Test
 
 int main(int argn, char** argc)
 {
-    pin_to_core(0);
-    CommandLine c(argn, argc);
-    size_t      it    = c.intArg("-it"   , 5);
-    size_t      n     = c.intArg("-n"    , 1000000);
-    size_t      n0    = c.intArg("-pre"  , n/4);
-    size_t      cap   = c.intArg("-cap"  , n0);
-    size_t      pattern = c.intArg("-pattern", 5);
-    size_t      steps = c.intArg("-steps", 512);
-    const std::string name  = c.strArg("-out"  , "");
-    double      alpha = c.doubleArg("-alpha", 1.1);
-    double      load  = c.doubleArg("-load" , 2.0);
-    double      eps   = c.doubleArg("-eps"  , 1.0-load);
+    utm::pin_to_core(0);
+    utm::command_line_parser c(argn, argc);
+
+    size_t      it    = c.int_arg("-it"   , 5);
+    size_t      n     = c.int_arg("-n"    , 1000000);
+    size_t      n0    = c.int_arg("-pre"  , n/4);
+    size_t      cap   = c.int_arg("-cap"  , n0);
+    size_t      pattern = c.int_arg("-pattern", 5);
+    size_t      steps = c.int_arg("-steps", 512);
+
+    double      alpha = c.double_arg("-alpha", 1.1);
+    double      load  = c.double_arg("-load" , 2.0);
+    double      eps   = c.double_arg("-eps"  , 1.0-load);
     if (eps > 0.) alpha = 1./(1.-eps);
 
-    return Chooser::execute<Test,false> (c, it, n, n0, cap, pattern, steps, alpha, name);
+    if (c.bool_arg("-out") || c.bool_arg("-file"))
+    {
+        std::string name = c.str_arg("-out", "");
+        name = c.str_arg("-file", name) + ".del";
+        otm::out().set_file(name);
+    }
+
+    return Chooser::execute<Test,false> (c, it, n, n0, cap, pattern, steps, alpha);
 }
