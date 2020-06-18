@@ -81,7 +81,7 @@ add_executable(example example/example.cpp)
 #### CONSTRUCT EXECUTABLE ######################################################
 #add_library(mallocc /home/maier/RANDOM/malloc_count/malloc_count.c)
 
-foreach(t time del eps mix crawl mixd)
+foreach(t time del eps mix crawl mixd displ)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${t})
   foreach(h ${HASH_TABLES_LIST})
     string(TOUPPER ${h} h_uc)
@@ -149,6 +149,28 @@ add_dependencies(all_time
   time_linear_inplace
   time_multitable_linear
   time_quadratic)
+
+add_custom_target(all_displ)
+add_dependencies(all_displ
+  displ_dysect
+  displ_dysect_inplace
+  displ_cuckoo_standard
+  displ_cuckoo_standard_inplace
+  displ_cuckoo_deamortized
+  displ_cuckoo_independent_2lvl
+  displ_cuckoo_overlap
+  displ_cuckoo_overlap_inplace
+  displ_hopscotch
+  displ_hopscotch_inplace
+  displ_robin
+  displ_robin_inplace
+  displ_multitable_robin
+  displ_linear_doubling
+  displ_linear
+  displ_linear_inplace
+  displ_multitable_linear
+  displ_quadratic)
+
 
 add_custom_target(all_del)
 add_dependencies(all_del
@@ -262,7 +284,8 @@ add_dependencies(all_linear
   eps_linear
   mix_linear
   mixd_linear
-  crawl_linear)
+  crawl_linear
+  displ_linear)
 
 add_custom_target(all_linear_inplace)
 add_dependencies(all_linear_inplace
@@ -271,7 +294,8 @@ add_dependencies(all_linear_inplace
   eps_linear_inplace
   mix_linear_inplace
   mixd_linear_inplace
-  crawl_linear_inplace)
+  crawl_linear_inplace
+  displ_linear_inplace)
 
 add_custom_target(all_cuckoo_standard)
 add_dependencies(all_cuckoo_standard
@@ -280,7 +304,8 @@ add_dependencies(all_cuckoo_standard
   eps_cuckoo_standard
   mix_cuckoo_standard
   mixd_cuckoo_standard
-  crawl_cuckoo_standard)
+  crawl_cuckoo_standard
+  displ_cuckoo_standard)
 
 add_custom_target(all_cuckoo_standard_inplace)
 add_dependencies(all_cuckoo_standard_inplace
@@ -289,7 +314,8 @@ add_dependencies(all_cuckoo_standard_inplace
   eps_cuckoo_standard_inplace
   mix_cuckoo_standard_inplace
   mixd_cuckoo_standard_inplace
-  crawl_cuckoo_standard_inplace)
+  crawl_cuckoo_standard_inplace
+  displ_cuckoo_standard_inplace)
 
 add_custom_target(all_robin)
 add_dependencies(all_robin
@@ -298,7 +324,8 @@ add_dependencies(all_robin
   eps_robin
   mix_robin
   mixd_robin
-  crawl_robin)
+  crawl_robin
+  displ_robin)
 
 add_custom_target(all_robin_inplace)
 add_dependencies(all_robin_inplace
@@ -307,7 +334,8 @@ add_dependencies(all_robin_inplace
   eps_robin_inplace
   mix_robin_inplace
   mixd_robin_inplace
-  crawl_robin_inplace)
+  crawl_robin_inplace
+  displ_robin_inplace)
 
 add_custom_target(all_dysect)
 add_dependencies(all_dysect
@@ -316,7 +344,8 @@ add_dependencies(all_dysect
   eps_dysect
   mix_dysect
   mixd_dysect
-  crawl_dysect)
+  crawl_dysect
+  displ_dysect)
 
 add_custom_target(all_dysect_inplace)
 add_dependencies(all_dysect_inplace
@@ -325,7 +354,8 @@ add_dependencies(all_dysect_inplace
   eps_dysect_inplace
   mix_dysect_inplace
   mixd_dysect_inplace
-  crawl_dysect_inplace)
+  crawl_dysect_inplace
+  displ_dysect_inplace)
 
 add_custom_target(all_quadratic)
 add_dependencies(all_quadratic
@@ -334,4 +364,5 @@ add_dependencies(all_quadratic
   eps_quadratic
   mix_quadratic
   mixd_quadratic
-  crawl_quadratic)
+  crawl_quadratic
+  displ_quadratic)

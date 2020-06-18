@@ -45,7 +45,7 @@ namespace dysect
         find_return_type   pop   (const key_type& k);
 
         int    probe (const key_type& k);
-        int    displacement(const key_type& k);
+        int    displacement(const key_type& k) const;
 
         bool   space ();
         value_intern get(const size_t i);
@@ -159,7 +159,7 @@ namespace dysect
     }
 
     template<class K, class D, size_t BS>
-    inline int bucket<K,D,BS>::displacement(const key_type& k)
+    inline int bucket<K,D,BS>::displacement(const key_type& k) const
     {
         for (size_t i = 0; i < BS; ++i)
         {

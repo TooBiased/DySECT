@@ -27,7 +27,7 @@
  ******************************************************************************/
 
 #include <cmath>
-#include "utils/default_hash.h"
+#include "utils/default_hash.hpp"
 #include "cuckoo_base.h"
 
 namespace dysect
@@ -35,7 +35,7 @@ namespace dysect
     template<class T>
     class cuckoo_traits;
 
-    template<class K, class D, class HF = hash::default_hash,
+    template<class K, class D, class HF = utils_tm::hash_tm::default_hash,
              class Conf = cuckoo_config<> >
     class cuckoo_dysect : public cuckoo_traits<cuckoo_dysect<K,D,HF,Conf> >::base_type
     {
@@ -447,7 +447,7 @@ namespace dysect
 
     #include <stdlib.h>
 
-    template<class K, class D, class HF = hash::default_hash,
+    template<class K, class D, class HF = utils_tm::hash_tm::default_hash,
              class Conf = cuckoo_config<> >
     class cuckoo_dysect_inplace : public cuckoo_traits<cuckoo_dysect_inplace<K,D,HF,Conf> >::base_type
     {

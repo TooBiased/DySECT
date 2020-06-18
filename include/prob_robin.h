@@ -15,13 +15,17 @@
  * All rights reserved. Published under the BSD-2 license in the LICENSE file.
  ******************************************************************************/
 
-#include "utils/default_hash.h"
+#include "utils/default_hash.hpp"
+#include "utils/output.hpp"
+
 #include "prob_base.h"
+
+namespace otm = utils_tm::out_tm;
 
 namespace dysect
 {
 
-    template <class K, class D, class HF = hash::default_hash,
+    template <class K, class D, class HF = utils_tm::hash_tm::default_hash,
               class Conf = triv_config>
     class prob_robin : public prob_traits<prob_robin<K,D,HF,Conf> >::base_type
     {
@@ -249,15 +253,15 @@ namespace dysect
         }
 
     public:
-        inline static void print_init_header(std::ostream& out)
+        inline static void print_init_header(otm::output_type& out)
         {
-            out.width(5); out  << "pdis" << " ";
+            out << otm::width(6) << "pdis";
             base_type::print_init_header(out);
         }
 
-        inline        void print_init_data  (std::ostream& out)
+        inline        void print_init_data  (otm::output_type& out)
         {
-            out.width(5);  out << pdistance << " ";
+            out << otm::width(6) << pdistance;
             base_type::print_init_data(out);
         }
     };
@@ -287,7 +291,7 @@ namespace dysect
 // Same as Above, but Growing Using in Place Migration *************************
 // *****************************************************************************
 
-    template <class K, class D, class HF = hash::default_hash,
+    template <class K, class D, class HF = utils_tm::hash_tm::default_hash,
               class Conf = triv_config>
     class prob_robin_inplace : public prob_traits<prob_robin_inplace<K,D,HF,Conf> >::base_type
     {
@@ -532,15 +536,15 @@ namespace dysect
         }
 
     public:
-        inline static void print_init_header(std::ostream& out)
+        inline static void print_init_header(otm::output_type& out)
         {
-            out.width(5); out  << "pdis" << " ";
+            out << otm::width(6) << "pdis";
             base_type::print_init_header(out);
         }
 
-        inline        void print_init_data  (std::ostream& out)
+        inline        void print_init_data  (otm::output_type& out)
         {
-            out.width(5);  out << pdistance << " ";
+            out << otm::width(6) << pdistance;
             base_type::print_init_data(out);
         }
     };

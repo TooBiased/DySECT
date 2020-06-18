@@ -19,7 +19,8 @@
  * All rights reserved. Published under the BSD-2 license in the LICENSE file.
  ******************************************************************************/
 
-#include "utils/default_hash.h"
+#include "utils/default_hash.hpp"
+
 #include "prob_base.h"
 
 namespace dysect
@@ -27,7 +28,7 @@ namespace dysect
 
 
 /* Fast linear probing table using powers of 2 and bitmasking *****************/
-    template <class K, class D, class HF = hash::default_hash,
+    template <class K, class D, class HF = utils_tm::hash_tm::default_hash,
               class Conf = triv_config>
     class prob_linear_doubling : public prob_traits<prob_linear_doubling<K,D,HF,Conf> >::base_type
     {
@@ -119,7 +120,7 @@ namespace dysect
 
 
 /* Using Classic Linear Probing to Fill a Table Densely ***********************/
-    template <class K, class D, class HF = std::hash<K>,
+    template <class K, class D, class HF = utils_tm::hash_tm::default_hash,
               class Conf = triv_config>
     class prob_linear : public prob_traits<prob_linear<K,D,HF,Conf> >::base_type
     {
@@ -224,7 +225,7 @@ namespace dysect
 // Same as Above, but Growing Using in Place Migration *************************
 // *****************************************************************************
 
-    template <class K, class D, class HF = hash::default_hash,
+    template <class K, class D, class HF = utils_tm::hash_tm::default_hash,
               class Conf = triv_config>
     class prob_linear_inplace : public prob_traits<prob_linear_inplace<K,D,HF,Conf> >::base_type
     {
@@ -360,15 +361,15 @@ namespace dysect
         }
 
     public:
-        inline static void print_init_header(std::ostream& out)
+        inline static void print_init_header(otm::output_type& out)
         {
-            out.width(6); out  << "busize" << " ";
+            out << otm::width(8) << "busize";
             base_type::print_init_header(out);
         }
 
-        inline        void print_init_data  (std::ostream& out)
+        inline        void print_init_data  (otm::output_type& out)
         {
-            out.width(6);  out << bla << " ";
+            out << otm::width(8) << bla;
             base_type::print_init_data(out);
         }
     };

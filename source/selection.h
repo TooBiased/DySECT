@@ -1,8 +1,5 @@
 #pragma once
 
-
-#include "utils/commandline.h"
-
 // cuckoo_simple tables
 
 #ifdef CUCKOO_STANDARD
@@ -176,6 +173,9 @@
 */
 
 
+#include "utils/command_line_parser.hpp"
+namespace utm = utils_tm;
+
 // #define QUICK_MULTI
 
 struct Chooser
@@ -184,7 +184,7 @@ struct Chooser
     template<template<class> class Functor, bool HistCount,
              class ... Types>
     inline static typename std::result_of<Functor<dysect::cuckoo_config<> >(Types&& ...)>::type
-    execute(CommandLine&, Types&& ... param)
+    execute(utm::command_line_parser&, Types&& ... param)
     {
         Functor<dysect::cuckoo_config<8,3,256,DisBFS> > f;
         return f(std::forward<Types>(param)...);
@@ -193,14 +193,14 @@ struct Chooser
     template<template<class> class Functor, bool HistCount,
              class ... Types>
     inline static typename std::result_of<Functor<dysect::cuckoo_config<> >(Types&& ...)>::type
-    execute(CommandLine& c, Types&& ... param)
+    execute(utm::command_line_parser& c, Types&& ... param)
     {
         //return executeD<Functor, HistCount, DisRWalk>     ( c, std::forward<Types>(param)...);
         ///*
-        if      (c.boolArg("-bfs"))
+        if      (c.bool_arg("-bfs"))
             return executeD<Functor, HistCount, dysect::cuckoo_displacement::bfs>
                 ( c, std::forward<Types>(param)...);
-        else if (c.boolArg("-rwalk"))
+        else if (c.bool_arg("-rwalk"))
             return executeD<Functor, HistCount, dysect::cuckoo_displacement::random_walk>
                 ( c, std::forward<Types>(param)...);
 
@@ -214,9 +214,9 @@ struct Chooser
              template<class> class Displacer,
              class ... Types>
     inline static typename std::result_of<Functor<dysect::cuckoo_config<> >(Types&& ...)>::type
-    executeD(CommandLine& c, Types&& ... param)
+    executeD(utm::command_line_parser& c, Types&& ... param)
     {
-        auto tl = c.intArg("-tl", dysect::cuckoo_config<>::tl);
+        auto tl = c.int_arg("-tl", dysect::cuckoo_config<>::tl);
         switch (tl)
         {
         // case 64:
@@ -245,9 +245,9 @@ struct Chooser
              template<class> class Displacer, size_t TL,
              class ... Types>
     inline static typename std::result_of<Functor<dysect::cuckoo_config<> >(Types&& ...)>::type
-    executeDT(CommandLine& c, Types&& ... param)
+    executeDT(utm::command_line_parser& c, Types&& ... param)
     {
-        auto bs = c.intArg("-bs", dysect::cuckoo_config<>::bs);
+        auto bs = c.int_arg("-bs", dysect::cuckoo_config<>::bs);
         switch (bs)
         {
         case 4:
@@ -272,9 +272,9 @@ struct Chooser
              template<class> class Displacer, size_t TL, size_t BS,
              class ... Types>
     inline static typename std::result_of<Functor<dysect::cuckoo_config<> >(Types&& ...)>::type
-    executeDTB(CommandLine& c, Types&& ... param)
+    executeDTB(utm::command_line_parser& c, Types&& ... param)
     {
-        auto nh = c.intArg("-nh", dysect::cuckoo_config<>::nh);
+        auto nh = c.int_arg("-nh", dysect::cuckoo_config<>::nh);
         switch (nh)
         {
         case 2:
@@ -299,7 +299,7 @@ struct Chooser
              template<class> class Displacer, size_t TL, size_t BS, size_t NH,
              class ... Types>
     inline static typename std::result_of<Functor<dysect::cuckoo_config<> >(Types&& ...)>::type
-    executeDTBN(CommandLine&, Types&& ... param)
+    executeDTBN(utm::command_line_parser&, Types&& ... param)
     {
         if (HistCount)
         {
@@ -318,9 +318,9 @@ struct Chooser
 #elif defined HOPSCOTCH_CONFIG
     template<template<class> class Functor, bool, class ... Types>
     inline static typename std::result_of<Functor<dysect::hopscotch_config<> >(Types&& ...)>::type
-    execute(CommandLine& c, Types&& ... param)
+    execute(utm::command_line_parser& c, Types&& ... param)
     {
-        auto ns = c.intArg("-ns", dysect::hopscotch_config<>::neighborhood_size);
+        auto ns = c.int_arg("-ns", dysect::hopscotch_config<>::neighborhood_size);
         switch (ns)
         {
         case 64:
@@ -347,7 +347,7 @@ struct Chooser
 
     template<template<class> class Functor, size_t NS, class ... Types>
     inline static typename std::result_of<Functor<dysect::hopscotch_config<> >(Types&& ...)>::type
-    executeN(CommandLine&, Types&& ... param)
+    executeN(utm::command_line_parser&, Types&& ... param)
     {
         Functor<dysect::hopscotch_config<NS> > f;
         return f(std::forward<Types>(param)...);
@@ -356,7 +356,7 @@ struct Chooser
 #elif defined TRIV_CONFIG
     template<template<class> class Functor, bool, class ... Types>
     inline static typename std::result_of<Functor<dysect::triv_config>(Types&& ...)>::type
-    execute(CommandLine&, Types&& ... param)
+    execute(utm::command_line_parser&, Types&& ... param)
     {
         Functor<dysect::triv_config> f;
         return f(std::forward<Types>(param)...);
@@ -365,7 +365,7 @@ struct Chooser
 #else
 
     template<template<class> class Functor, bool, class ... Types>
-    inline static void execute(CommandLine&, Types&& ...)
+    inline static void execute(utm::command_line_parser&, Types&& ...)
     {
         std::cout << "some precompiler shit is broken" << std::endl;
     }

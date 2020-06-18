@@ -5,9 +5,10 @@
 // #include "include/strategies/dstrat_rwalk.h"
 // #include "include/strategies/dstrat_rwalk_cyclic.h"
 
-#include "utils/default_hash.h"
-#include "utils/commandline.h"
-#include "utils/thread_basics.h"
+#include "utils/default_hash.hpp"
+#include "utils/command_line_parser.hpp"
+#include "utils/pin_thread.hpp"
+#include "utils/output.hpp"
 
 #ifdef MALLOC_COUNT
 #include "malloc_count.h"
@@ -18,66 +19,16 @@
 #include <fstream>
 #include <chrono>
 
-template <class T>
-inline void print(std::ostream& out, const T& t, size_t w)
-{
-    out.width(w);
-    out << t << " " << std::flush;
-}
+namespace utm = utils_tm;
+namespace otm = utils_tm::out_tm;
 
 template<class Config>
-struct Test
+struct test_type
 {
-    //using Table = ProbIndependentBase<HASHTYPE<size_t, size_t, dysect::hash::default_hash, Config> >;
-    using Table = HASHTYPE<size_t, size_t, dysect::hash::default_hash, Config>;
+    //using table_type = ProbIndependentBase<HASHTYPE<size_t, size_t, dysect::hash::default_hash, Config> >;
+    using table_type = HASHTYPE<size_t, size_t, utm::hash_tm::default_hash, Config>;
 
     constexpr static size_t block_size = 100000;
-
-    inline void print_headline(std::ostream& out)
-    {
-        print(out, "# it"   , 4);
-        Table::print_init_header(out);
-        print(out, "n_step" , 9);
-        print(out, "win"    , 5);
-        print(out, "load"   , 6);
-        print(out, "t_in"   , 8);
-        print(out, "t_fip"  , 8);
-        print(out, "t_fin"  , 8);
-        print(out, "in_err" , 6);
-        #ifdef MALLOC_COUNT
-        print(out, "memory" , 7);
-        #endif
-        out << std::endl;
-    }
-
-    inline void print_timing(std::ostream& out,
-                             size_t i,
-                             size_t ncurr,
-                             size_t win,
-                             double load,
-                             double tin,
-                             double tfip,
-                             double tfin,
-                             size_t in_err,
-                             size_t fi_err,
-                             [[maybe_unused]] size_t n,
-                             Table& table)
-    {
-        print(out, i     , 4);
-        table.print_init_data(out);
-        print(out, ncurr , 9);
-        print(out, win   , 5);
-        print(out, load  , 6);
-        print(out, tin   , 8);
-        print(out, tfip  , 8);
-        print(out, tfin  , 8);
-        print(out, in_err, 6);
-        print(out, fi_err, 6);
-        #ifdef MALLOC_COUNT
-        print(out, malloc_count_current() - n*8 -win*16, 7);
-        #endif
-        out << std::endl;
-    }
 
     void prepare_find_keys(size_t* fikeys, size_t* inkeys, size_t fis, size_t ins)
     {
@@ -95,8 +46,23 @@ struct Test
     }
 
     int operator()(size_t it, size_t n, size_t steps,
-                   double eps, double epstp, size_t win, std::string name)
+                   double eps, double epstp, size_t win)
     {
+        otm::out() << otm::width(4) << "# it";
+        table_type::print_init_header(otm::out());
+        otm::out() << otm::width(9) << "n_step"
+                   << otm::width(5) << "win"
+                   << otm::width(6) << "load"
+                   << otm::width(8) << "t_in"
+                   << otm::width(8) << "t_fip"
+                   << otm::width(8) << "t_fin"
+                   << otm::width(6) << "in_err"
+                   << otm::width(6) << "fi_err"
+#ifdef MALLOC_COUNT
+                   << otm::width(7) << "memory"
+#endif
+                   << std::endl;
+
         constexpr size_t range = (1ull<<63) -1;
 
         size_t* inkeys = new size_t[n];
@@ -105,22 +71,16 @@ struct Test
         std::uniform_int_distribution<uint64_t> dis(1,range);
         std::mt19937_64 re;
 
-        std::ostream* file;
-        if (name == "") file = &(std::cout);
-        else file = new std::ofstream(name + ".eps",
-                                      std::ofstream::out | std::ofstream::app);
-
-        print_headline(*file);
-
         for (size_t i = 0; i < it; ++i)
         {
+
             // prepare execution randomize each iteration seperately
             // to take variance into account
             for (size_t i = 0; i < n; ++i)
             {
                 inkeys[i] = dis(re);
             }
-            Table table(n, 1.0, steps);
+            table_type table(n, 1.0, steps);
 
             size_t in_errors = 0ull;
             size_t fi_errors = 0ull;
@@ -157,13 +117,30 @@ struct Test
                     if (temp != table.end()) ++fi_errors;
                 }
                 auto t4 = std::chrono::high_resolution_clock::now();
-                double d_in  = std::chrono::duration_cast<std::chrono::nanoseconds> (t2 - t1).count()/double(win);
-                double d_fip = std::chrono::duration_cast<std::chrono::nanoseconds> (t3 - t2).count()/double(win);
-                double d_fin = std::chrono::duration_cast<std::chrono::nanoseconds> (t4 - t3).count()/double(win);
+                double d_in  = std::chrono::duration_cast<std::chrono::nanoseconds>
+                    (t2 - t1).count()/double(win);
+                double d_fip = std::chrono::duration_cast<std::chrono::nanoseconds>
+                    (t3 - t2).count()/double(win);
+                double d_fin = std::chrono::duration_cast<std::chrono::nanoseconds>
+                    (t4 - t3).count()/double(win);
 
                 if (in_errors > 100) break;
-                print_timing(*file, i, nxt_blk, win, tlf, d_in, d_fip, d_fin,
-                             in_errors, fi_errors, n, table);
+
+                otm::out() << otm::width(4) << i;
+                table.print_init_data(otm::out());
+                otm::out() << otm::width(9) << nxt_blk
+                           << otm::width(5) << win
+                           << otm::width(6) << tlf
+                           << otm::width(8) << d_in
+                           << otm::width(8) << d_fip
+                           << otm::width(8) << d_fin
+                           << otm::width(6) << in_errors
+                           << otm::width(6) << fi_errors
+#ifdef MALLOC_COUNT
+                           << otm::width(7)
+                           << malloc_count_current() - n*8 -win*16
+#endif
+                           << std::endl;
 
                 tlf += epstp;
                 nxt_blk = n*tlf;
@@ -181,21 +158,45 @@ struct Test
 
 int main(int argn, char** argc)
 {
-    pin_to_core(0);
-    CommandLine c(argn, argc);
-    size_t      it    = c.intArg("-it"      , 5);
-    size_t      n     = c.intArg("-n"       , 2000000);
-    size_t      steps = c.intArg("-steps"   , 512);
-    const std::string name  = c.strArg("-out"     , "");
-    double      alpha = c.doubleArg("-alpha", 0.1);
-    double      load  = c.doubleArg("-load" , 1.0-(alpha-1.0)/alpha);
-    double      eps   = c.doubleArg("-eps"  , 1.0-load);
+    utm::pin_to_core(0);
+    utm::command_line_parser c(argn, argc);
+    size_t      it    = c.int_arg("-it"      , 5);
+    size_t      n     = c.int_arg("-n"       , 2000000);
+    size_t      steps = c.int_arg("-steps"   , 512);
+    double      alpha = c.double_arg("-alpha", 0.1);
+    double      load  = c.double_arg("-load" , 1.0-(alpha-1.0)/alpha);
+    double      eps   = c.double_arg("-eps"  , 1.0-load);
 
-    const double      epstp = c.doubleArg("-epsteps", 0.005);
-    const size_t      win   = c.intArg("-win"     , 1000);
+    const double      epstp = c.double_arg("-epsteps", 0.005);
+    const size_t      win   = c.int_arg("-win"     , 1000);
+
+    if (c.bool_arg("-out") || c.bool_arg("-file"))
+    {
+        std::string name = c.str_arg("-out", "");
+        name = c.str_arg("-file", name) + ".eps";
+        otm::out().set_file(name);
+    }
+
+    if (c.bool_arg("-help") || c.bool_arg("-h"))
+    {
+        otm::out() << "Test the performance depending on the fill degree\n"
+                   << "stepwise test after blocks\n"
+                   << "\n"
+                   << otm::color::blue << "1. " << otm::color::reset
+                   << "insert to the next fill degree test window\n"
+                   << otm::color::blue << "2. " << otm::color::reset
+                   << "test insert performance with -win new inserts\n"
+                   << otm::color::blue << "3. " << otm::color::reset
+                   << "query -win random inserted elements\n"
+                   << otm::color::blue << "4. " << otm::color::reset
+                   << "query -win not inserted elements\n"
+                   << otm::color::blue << "repeat" << otm::color::reset
+                   << std::endl;
+        return 0;
+    }
 
     if (eps < 0.) { std::cout << "please input eps" << std::endl; return 8;}
 
-    return Chooser::execute<Test,false>
-        (c, it, n, steps, eps, epstp, win, name);
+    return Chooser::execute<test_type,false>
+        (c, it, n, steps, eps, epstp, win);
 }

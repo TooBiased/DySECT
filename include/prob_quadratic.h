@@ -15,7 +15,7 @@
  * All rights reserved. Published under the BSD-2 license in the LICENSE file.
  ******************************************************************************/
 
-#include "utils/default_hash.h"
+#include "utils/default_hash.hpp"
 #include "prob_base.h"
 
 namespace dysect
@@ -23,7 +23,7 @@ namespace dysect
 
 
 /* Using Classic Quadratic Probing to Fill a Table Densely ********************/
-    template <class K, class D, class HF = std::hash<K>,
+    template <class K, class D, class HF = utils_tm::hash_tm::default_hash,
               class Conf = triv_config>
     class prob_quadratic : public prob_traits<prob_quadratic<K,D,HF,Conf> >::base_type
     {
@@ -33,9 +33,11 @@ namespace dysect
 
         friend base_type;
     public:
-        using size_type   = typename base_type::size_type;
-        using key_type    = typename prob_traits<this_type>::key_type;
-        using mapped_type = typename prob_traits<this_type>::mapped_type;
+        using size_type      = typename base_type::size_type;
+        using key_type       = typename prob_traits<this_type>::key_type;
+        using mapped_type    = typename prob_traits<this_type>::mapped_type;
+        using iterator       = typename base_type::iterator;
+        using const_iterator = typename base_type::const_iterator;
 
         prob_quadratic(size_type cap = 0, double size_constraint = 1.1, size_type /*steps*/=0)
             : base_type(std::max<size_type>(cap, 500), size_constraint)
@@ -47,12 +49,21 @@ namespace dysect
         prob_quadratic(prob_quadratic&& rhs)  = default;
         prob_quadratic& operator=(prob_quadratic&& ) = default;
 
+        std::pair<iterator, bool> insert(const key_type& k, const mapped_type& d);
+        std::pair<iterator, bool> insert(const std::pair<key_type, mapped_type>&t);
+        iterator       find(const key_type& k);
+        const_iterator find(const key_type& k) const;
+        size_type      erase(const key_type& k);
+        int            displacement(const key_type& k) const;
     private:
         using base_type::alpha;
         using base_type::n;
         using base_type::capacity;
         using base_type::table;
         using base_type::h;
+        using base_type::inc_n;
+        using base_type::make_iterator;
+        using base_type::make_citerator;
 
         double factor;
 
@@ -63,7 +74,7 @@ namespace dysect
         inline size_type index(size_type i) const
         { return (bitmask & i)*factor; }
         inline size_type mod(size_type i)   const
-        { return (i < capacity) i : i-capacity; }
+        { return (i < capacity) ? i : i-capacity; }
 
         // Growing *************************************************************
         inline void grow()
@@ -81,14 +92,6 @@ namespace dysect
 
             (*this) = std::move(ntable);
         }
-
-        std::pair<iterator, bool> insert(const key_type& k, const mapped_type& d);
-        std::pair<iterator, bool> insert(const std::pair<key_type, mapped_type>&t);
-        iterator       find(const key_type& k);
-        const_iterator find(const key_type& k) const;
-        size_type      erase(const key_type& k);
-        int            displacement(const key_type& k) const;
-
         // Specialized Deletion stuff ******************************************
     };
 
@@ -117,7 +120,7 @@ namespace dysect
 
     template <class K, class D, class HF, class C>
     inline std::pair<typename prob_quadratic<K,D,HF,C>::iterator, bool>
-    prob_quadratic<K,D,HF,C>::insert(const std::pair<key_type, mapped_type>&t);
+    prob_quadratic<K,D,HF,C>::insert(const std::pair<key_type, mapped_type>&t)
     {
         size_t ind = h(t.first);
         for (size_t i=0; ; ++i)
@@ -140,15 +143,15 @@ namespace dysect
 
     template <class K, class D, class HF, class C>
     inline typename prob_quadratic<K,D,HF,C>::iterator
-    prob_quadratic<K,D,HF,C>::find(const key_type& k);
+    prob_quadratic<K,D,HF,C>::find(const key_type& k)
     {
-        size_t ind = h(t.first);
+        size_t ind = h(k);
         for (size_t i=0; ; ++i)
         {
             auto ti    = mod(i*i + ind);
             auto temp  = table[ti];
 
-            if (temp.first == t.first)
+            if (temp.first == k)
             {
                 return make_iterator(&table[ti]);
             }
@@ -161,15 +164,15 @@ namespace dysect
 
     template <class K, class D, class HF, class C>
     inline typename prob_quadratic<K,D,HF,C>::const_iterator
-    prob_quadratic<K,D,HF,C>::find(const key_type& k) const;
+    prob_quadratic<K,D,HF,C>::find(const key_type& k) const
     {
-        size_t ind = h(t.first);
+        size_t ind = h(k);
         for (size_t i=0; ; ++i)
         {
             auto ti    = mod(i*i + ind);
             auto temp  = table[ti];
 
-            if (temp.first == t.first)
+            if (temp.first == k)
             {
                 return make_citerator(&table[ti]);
             }
@@ -181,23 +184,23 @@ namespace dysect
     }
 
     template <class K, class D, class HF, class C>
-    inline size_type
-    prob_quadratic<K,D,HF,C>::erase(const key_type& k);
+    inline typename prob_quadratic<K,D,HF,C>::size_type
+    prob_quadratic<K,D,HF,C>::erase(const key_type& k)
     {
         // TODO
         return 0;
     }
 
     template <class K, class D, class HF, class C>
-    prob_quadratic<K,D,HF,C>::inline int
-    displacement(const key_type& k) const
+    inline int
+    prob_quadratic<K,D,HF,C>::displacement(const key_type& k) const
     {
-        size_t ind = h(t.first);
+        size_t ind = h(k);
         for (size_t i=0; ; ++i)
         {
             auto ti    = mod(i*i + ind);
 
-            if (temp[ti].first == t.first)
+            if (table[ti].first == k)
             {
                 return i;
             }
@@ -227,7 +230,7 @@ namespace dysect
 // Same as Above, but Growing Using in Place Migration *************************
 // *****************************************************************************
 
-    template <class K, class D, class HF = hash::default_hash,
+    template <class K, class D, class HF = utils_tm::hash_tm::default_hash,
               class Conf = triv_config>
     class prob_quadratic_inplace : public prob_traits<prob_quadratic_inplace<K,D,HF,Conf> >::base_type
     {
@@ -238,9 +241,11 @@ namespace dysect
         friend base_type;
 
     public:
-        using size_type   = typename base_type::size_type;
-        using key_type    = typename prob_traits<this_type>::key_type;
-        using mapped_type = typename prob_traits<this_type>::mapped_type;
+        using size_type      = typename base_type::size_type;
+        using key_type       = typename prob_traits<this_type>::key_type;
+        using mapped_type    = typename prob_traits<this_type>::mapped_type;
+        using iterator       = typename base_type::iterator;
+        using const_iterator = typename base_type::const_iterator;
     private:
         using value_intern = std::pair<key_type, mapped_type>;
 
@@ -266,6 +271,12 @@ namespace dysect
         prob_quadratic_inplace(prob_quadratic_inplace&& rhs)  = default;
         prob_quadratic_inplace& operator=(prob_quadratic_inplace&& ) = default;
 
+        std::pair<iterator, bool> insert(const key_type& k, const mapped_type& d);
+        std::pair<iterator, bool> insert(const std::pair<key_type, mapped_type>&t);
+        iterator       find(const key_type& k);
+        const_iterator find(const key_type& k) const;
+        size_type      erase(const key_type& k);
+        int            displacement(const key_type& k) const;
     private:
         using base_type::alpha;
         using base_type::beta;
@@ -273,6 +284,9 @@ namespace dysect
         using base_type::capacity;
         using base_type::thresh;
         using base_type::table;
+        using base_type::inc_n;
+        using base_type::make_iterator;
+        using base_type::make_citerator;
 
         double    factor;
         size_type bla;
@@ -285,10 +299,7 @@ namespace dysect
         inline size_type index(size_type i) const
         { return (bitmask & i)*factor; }
         inline size_type mod(size_type i)   const
-        { return (i < capacity) i : i-capacity; }
-
-    public:
-        using base_type::insert;
+        { return (i < capacity) ? i : i-capacity; }
 
     private:
         // Growing *************************************************************
@@ -335,7 +346,7 @@ namespace dysect
 
     template <class K, class D, class HF, class C>
     inline std::pair<typename prob_quadratic_inplace<K,D,HF,C>::iterator, bool>
-    prob_quadratic_inplace<K,D,HF,C>::insert(const std::pair<key_type, mapped_type>&t);
+    prob_quadratic_inplace<K,D,HF,C>::insert(const std::pair<key_type, mapped_type>&t)
     {
         size_t ind = h(t.first);
         for (size_t i=0; ; ++i)
@@ -358,15 +369,15 @@ namespace dysect
 
     template <class K, class D, class HF, class C>
     inline typename prob_quadratic_inplace<K,D,HF,C>::iterator
-    prob_quadratic_inplace<K,D,HF,C>::find(const key_type& k);
+    prob_quadratic_inplace<K,D,HF,C>::find(const key_type& k)
     {
-        size_t ind = h(t.first);
+        size_t ind = h(k);
         for (size_t i=0; ; ++i)
         {
             auto ti    = mod(i*i + ind);
             auto temp  = table[ti];
 
-            if (temp.first == t.first)
+            if (temp.first == k)
             {
                 return make_iterator(&table[ti]);
             }
@@ -379,15 +390,15 @@ namespace dysect
 
     template <class K, class D, class HF, class C>
     inline typename prob_quadratic_inplace<K,D,HF,C>::const_iterator
-    prob_quadratic_inplace<K,D,HF,C>::find(const key_type& k) const;
+    prob_quadratic_inplace<K,D,HF,C>::find(const key_type& k) const
     {
-        size_t ind = h(t.first);
+        size_t ind = h(k);
         for (size_t i=0; ; ++i)
         {
             auto ti    = mod(i*i + ind);
             auto temp  = table[ti];
 
-            if (temp.first == t.first)
+            if (temp.first == k)
             {
                 return make_citerator(&table[ti]);
             }
@@ -399,23 +410,23 @@ namespace dysect
     }
 
     template <class K, class D, class HF, class C>
-    inline size_type
-    prob_quadratic_inplace<K,D,HF,C>::erase(const key_type& k);
+    inline typename prob_quadratic_inplace<K,D,HF,C>::size_type
+    prob_quadratic_inplace<K,D,HF,C>::erase(const key_type& k)
     {
         // TODO
         return 0;
     }
 
     template <class K, class D, class HF, class C>
-    prob_quadratic_inplace<K,D,HF,C>::inline int
-    displacement(const key_type& k) const
+    inline int
+    prob_quadratic_inplace<K,D,HF,C>::displacement(const key_type& k) const
     {
-        size_t ind = h(t.first);
+        size_t ind = h(k);
         for (size_t i=0; ; ++i)
         {
             auto ti    = mod(i*i + ind);
 
-            if (temp[ti].first == t.first)
+            if (table[ti].first == k)
             {
                 return i;
             }

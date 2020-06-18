@@ -15,8 +15,12 @@
  * All rights reserved. Published under the BSD-2 license in the LICENSE file.
  ******************************************************************************/
 
-#include "utils/default_hash.h"
+#include "utils/default_hash.hpp"
+#include "utils/output.hpp"
+
 #include "prob_base.h"
+
+namespace otm = utils_tm::out_tm;
 
 namespace dysect
 {
@@ -118,7 +122,7 @@ namespace dysect
 // MAIN CLASS ******************************************************************
 // *****************************************************************************
 
-    template <class K, class D, class HF = hash::default_hash,
+    template <class K, class D, class HF = utils_tm::hash_tm::default_hash,
               class Conf = hopscotch_config<> >
     class prob_hopscotch : public prob_traits<prob_hopscotch<K,D,HF,Conf> >::base_type
     {
@@ -327,15 +331,15 @@ namespace dysect
         }
 
     public:
-        inline static void print_init_header(std::ostream& out)
+        inline static void print_init_header(otm::output_type& out)
         {
-            out.width(5); out << "nghb" << " ";
+            out << otm::width(6) << "nghb";
             base_type::print_init_header(out);
         }
 
-        inline void print_init_data(std::ostream& out)
+        inline void print_init_data(otm::output_type& out)
         {
-            out.width(5); out << nh_size << " ";
+            out << otm::width(6) << nh_size;
             base_type::print_init_data(out);
         }
     };
@@ -368,7 +372,7 @@ namespace dysect
 // Same as Above, but Growing Using in Place Migration *************************
 // *****************************************************************************
 
-    template <class K, class D, class HF = hash::default_hash,
+    template <class K, class D, class HF = utils_tm::hash_tm::default_hash,
               class Conf = hopscotch_config<> >
     class prob_hopscotch_inplace : public prob_traits<prob_hopscotch_inplace<K,D,HF,Conf> >::base_type
     {
@@ -630,15 +634,15 @@ namespace dysect
         }
 
     public:
-        inline static void print_init_header(std::ostream& out)
+        inline static void print_init_header(otm::output_type& out)
         {
-            out.width(5); out << "nghb" << " ";
+            out << otm::width(6) << "nghb";
             base_type::print_init_header(out);
         }
 
-        inline void print_init_data(std::ostream& out)
+        inline void print_init_data(otm::output_type& out)
         {
-            out.width(5); out << nh_size << " ";
+            out << otm::width(6) << nh_size;
             base_type::print_init_data(out);
         }
     };

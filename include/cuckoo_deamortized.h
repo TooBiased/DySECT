@@ -22,13 +22,13 @@
  * All rights reserved. Published under the BSD-2 license in the LICENSE file.
  ******************************************************************************/
 
-#include "utils/default_hash.h"
+#include "utils/default_hash.hpp"
 #include "cuckoo_base.h"
 
 namespace dysect
 {
 
-    template<class K, class D, class HF = hash::default_hash,
+    template<class K, class D, class HF = utils_tm::hash_tm::default_hash,
              class Conf = cuckoo_config<> >
     class cuckoo_deamortized : public cuckoo_traits<cuckoo_deamortized<K,D,HF,Conf> >::base_type
     {

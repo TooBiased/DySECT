@@ -84,7 +84,7 @@ struct Test
                              double d_fn1,
                              size_t in_err,
                              size_t fi_err,
-                             size_t rss,
+                             [[maybe_unused]] size_t rss,
                              Table& table)
     {
         print(out, i     , 4);

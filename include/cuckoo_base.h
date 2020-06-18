@@ -22,10 +22,14 @@
 #include <tuple>
 #include <limits>
 
+#include "utils/output.hpp"
+
 #include "bucket.h"
 #include "hasher.h"
 #include "iterator_base.h"
 #include "displacement_strategies/main_strategies.h"
+
+namespace otm = utils_tm::out_tm;
 
 // CRTP base class for all cuckoo tables, this encapsulates
 // main cuckoo table functionality (insert, find, and remove)
@@ -139,7 +143,7 @@ namespace dysect
         cuckoo_base(double size_constraint = 1.1,
                     size_type dis_steps = 0, size_type seed = 0);
         ~cuckoo_base() = default;
-f        cuckoo_base(const cuckoo_base&     ) = delete;
+        cuckoo_base(const cuckoo_base&     ) = delete;
         cuckoo_base(      cuckoo_base&& rhs);
         cuckoo_base& operator=(const cuckoo_base&     ) = delete;
         cuckoo_base& operator=(      cuckoo_base&& rhs)
@@ -212,19 +216,19 @@ f        cuckoo_base(const cuckoo_base&     ) = delete;
     public:
     // auxiliary functions for testing *****************************************
         void                  clearHist();
-        void                  print_init_data(std::ostream& out);
-        static void           print_init_header(std::ostream& out)
+        void                  print_init_data(otm::output_type& out);
+        static void           print_init_header(otm::output_type& out)
         {
-            out.width(6); out << "bsize";
-            out.width(6); out << "ntabl";
-            out.width(6); out << "nhash";
-            out.width(9); out << "f_cap";
-            out << std::flush;
+            out << otm::width(6) << "bsize"
+                << otm::width(6) << "ntabl"
+                << otm::width(6) << "nhash"
+                << otm::width(9) << "f_cap"
+                << std::flush;
         }
 
         void explicit_grow()
         {
-                static_cast<specialized_type*>(this)->grow();
+            static_cast<specialized_type*>(this)->grow();
         }
     };
 
@@ -355,9 +359,9 @@ f        cuckoo_base(const cuckoo_base&     ) = delete;
             bucket_type*  tb = get_bucket(hash, i);
             int           td = tb->displacement(k);
             disp += td;
-            if (td < bs) return disp;
+            if (td < int(bs)) return disp;
         }
-        return end();
+        return -1;
     }
 
 // Accessor Implementations ****************************************************
@@ -392,31 +396,21 @@ f        cuckoo_base(const cuckoo_base&     ) = delete;
     inline typename cuckoo_base<SCuckoo>::size_type
     cuckoo_base<SCuckoo>::count(const key_type& k) const
     {
-        return (static_cast<const specialized_type*>(this)->find(k) != cend()) ? 1 : 0;
+        return (static_cast<const specialized_type*>(this)->find(k) != cend())
+            ? 1 : 0;
     }
 
 
 
 // Print Parameter Functions ***************************************************
-
-/*template<class SCuckoo>
-  inline static void cuckoo_base<SCuckoo>::print_init_header(std::ostream& out)
-  {
-  out.width(6); out << "bsize";
-  out.width(6); out << "ntabl";
-  out.width(6); out << "nhash";
-  out.width(9); out << "f_cap";
-  out << std::flush;
-  }*/
-
     template<class SCuckoo>
-    inline void cuckoo_base<SCuckoo>::print_init_data(std::ostream& out)
+    inline void cuckoo_base<SCuckoo>::print_init_data(otm::output_type& out)
     {
-        out.width(6); out << bs;
-        out.width(6); out << tl;
-        out.width(6); out << nh;
-        out.width(9); out << capacity;
-        out << std::flush;
+        out << otm::width(6) << bs
+            << otm::width(6) << tl
+            << otm::width(6) << nh
+            << otm::width(9) << capacity
+            << std::flush;
     }
 
     template<class SCuckoo>

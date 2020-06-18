@@ -1,65 +1,59 @@
 #include "selection.h"
-#include "utils/default_hash.h"
-#include "utils/commandline.h"
-#include "utils/thread_basics.h"
+#include "utils/default_hash.hpp"
+#include "utils/command_line_parser.hpp"
+#include "utils/pin_thread.hpp"
+#include "utils/output.hpp"
 
 #include <random>
 #include <iostream>
 #include <fstream>
 
-template <class T>
-inline void print(std::ostream& out, const T& t, size_t w)
-{
-    out.width(w);
-    out << t << " " << std::flush;
-}
+namespace utm = utils_tm;
+namespace otm = utils_tm::out_tm;
 
 template<class Config>
-struct Test
+struct test_type
 {
-    using Table = HASHTYPE<size_t, size_t, dysect::hash::default_hash, Config>;
+    using table_type = HASHTYPE<size_t, size_t, utm::hash_tm::default_hash, Config>;
 
-    void print_hist(Table& table, std::string name)
+    void print_hist(table_type& table)
     {
         std::ofstream out(name, std::ofstream::out);
 
         auto& hcount = table.hcounter;
 
-        print(out, "# steps", 7);
-        print(out, "nFitted", 8);
-        out << std::endl;
+        otm::out() << otm::width(7) << "# steps"
+                   << otm::width(8) << "nFitted"
+                   << std::endl;
 
         for (size_t i = 0; i < hcount.steps; ++i)
         {
-            print(out, i, 7);
-            print(out, hcount.hist[i], 8);
-            out << std::endl;
+            otm::out() << otm::width(7) << i
+                       << otm::width(8) << hcount.hist[i]
+                       << std::endl;
         }
-        out.close();
     }
 
-    void print_dist(Table& table, std::string name)
+    void print_dist(table_type& table)
     {
-        std::ofstream out(name, std::ofstream::out);
-
-        print (out, "# tab", 5);
+        otm::out() << otm::width(5) << "# tab";
         size_t gHist[table.bs+1];
         for (size_t i = 0; i <= table.bs; ++i)
         {
             gHist[i] = 0;
-            print (out, i, 6);
+            otm::out() << otm::width(6) << i;
         }
 
-        print (out, "n"    , 8);
-        print (out, "cap"  , 8);
-        out << std::endl;
+        otm::out() << otm::width(8) << "n"
+                   << otm::width(8) << "cap"
+                   << std::endl;
 
         for (size_t tl = 0; tl < table.tl; ++tl)
         {
             size_t lHist[table.bs+1];
             for (size_t i = 0; i <= table.bs; ++i) lHist[i] = 0;
 
-            auto ltab = table.getTable(tl);
+            auto ltab = table.gettable_type(tl);
 
             for (size_t j = 0; j < ltab.first; ++j)
             {
@@ -68,33 +62,30 @@ struct Test
             }
 
             size_t n = 0;
-            print (out, tl, 5);
+            otm::out() << otm::width(5) << tl;
             for (size_t i = 0; i <= table.bs; ++i)
             {
-                print (out, lHist[i], 6);
+                otm::out() << otm::width(6) << lHist[i];
                 n += lHist[i] * (table.bs - i);
                 gHist[i] += lHist[i];
             }
-            print (out, n, 8);
-            print (out, ltab.first*table.bs, 8);
-            out << std::endl;
+            otm::out() << otm::width(8) << n
+                       << otm::width(8) << ltab.first*table.bs
+                       << std::endl;
         }
 
         size_t n = 0;
-        print (out, "#all", 5);
+        otm::out() << otm::width(5) << "#all";
         for (size_t i = 0; i <= table.bs; ++i)
         {
-            print (out, gHist[i], 6);
+            otm::out() <<  otm::width(6) << gHist[i];
             n += gHist[i] * (table.bs - i);
         }
-        print (out, n, 8);
-        //print (out, table.curGrowAmount * (table.tl+table.curGrowTable), 8);
-        out << std::endl;
-
-        out.close();
+        otm::out() <<  otm::width(8) << n
+                   << std::endl;
     }
 
-    int operator()(size_t n, size_t pre, size_t cap, size_t steps, double alpha, std::string name)
+    int operator()(size_t n, size_t pre, size_t cap, size_t steps, double alpha)
     {
         constexpr size_t range = (1ull<<63) -1;
 
@@ -108,7 +99,7 @@ struct Test
             keys[i] = dis(re);
         }
 
-        Table table(cap, alpha, steps);
+        table_type table(cap, alpha, steps);
 
         for (size_t i = 0; i < pre; ++i)
         {
@@ -122,8 +113,10 @@ struct Test
             table.insert(keys[i], i);
         }
 
-        print_dist(table, name + ".dist");
-        print_hist(table, name + ".hist");
+        otm::out().set_file(name + ".dist");
+        print_dist(table);
+        otm::out().set_file(name + ".hist");
+        print_hist(table);
 
         delete[] keys;
 
@@ -133,17 +126,18 @@ struct Test
 
 int main(int argn, char** argc)
 {
-    pin_to_core(0);
-    CommandLine c(argn, argc);
-    size_t      n     = c.intArg("-n"    , 1000000);
-    size_t      pre   = c.intArg("-pre"  , 0);
-    size_t      cap   = c.intArg("-cap"  , 1000000);
-    size_t      steps = c.intArg("-steps", 512);
-    std::string name  = c.strArg("-out"  , "temp");
-    double      alpha = c.doubleArg("-alpha", 1.1);
-    double      load  = c.doubleArg("-load" , 2.0);
-    double      eps   = c.doubleArg("-eps"  , 1.0-load);
+    utm::pin_to_core(0);
+    utm::command_line_parser c(argn, argc);
+    size_t      n     = c.int_arg("-n"    , 1000000);
+    size_t      pre   = c.int_arg("-pre"  , 0);
+    size_t      cap   = c.int_arg("-cap"  , 1000000);
+    size_t      steps = c.int_arg("-steps", 512);
+    std::string name  = c.str_arg("-out"  , "temp");
+    name              = c.str_arg("-file" , name);
+    double      alpha = c.double_arg("-alpha", 1.1);
+    double      load  = c.double_arg("-load" , 2.0);
+    double      eps   = c.double_arg("-eps"  , 1.0-load);
     if (eps > 0.) alpha = 1./(1.-eps);
 
-    return Chooser::execute<Test, hist_count>(c, n, pre, cap, steps, alpha, name);
+    return Chooser::execute<test_type, hist_count>(c, n, pre, cap, steps, alpha, name);
 }

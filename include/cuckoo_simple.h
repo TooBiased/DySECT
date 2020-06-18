@@ -16,7 +16,7 @@
  * All rights reserved. Published under the BSD-2 license in the LICENSE file.
  ******************************************************************************/
 
-#include "utils/default_hash.h"
+#include "utils/default_hash.hpp"
 #include "cuckoo_base.h"
 
 namespace dysect
@@ -25,7 +25,7 @@ namespace dysect
     template<class K0, class D0, class HF0, class Conf0>
     class cuckoo_adapter_2lvl;
 
-    template<class K, class D, class HF = hash::default_hash,
+    template<class K, class D, class HF = utils_tm::hash_tm::default_hash,
              class Conf = cuckoo_config<> >
     class cuckoo_standard : public cuckoo_traits<cuckoo_standard<K,D,HF,Conf> >::base_type
     {
@@ -279,7 +279,7 @@ namespace dysect
 // IN PLACE GROWING ************************************************************
 // *****************************************************************************
 
-    template<class K, class D, class HF = hash::default_hash,
+    template<class K, class D, class HF = utils_tm::hash_tm::default_hash,
              class Conf = cuckoo_config<> >
     class cuckoo_standard_inplace : public cuckoo_traits<cuckoo_standard_inplace<K,D,HF,Conf> >::base_type
     {
@@ -586,8 +586,6 @@ namespace dysect
             return tables[getInd(k)].erase(k);
         }
 
-
-
         inline iterator begin()              { return tables[0].begin(); }
         inline iterator end()                { return tables[0].end(); }
         inline const_iterator begin()  const { return tables[0].begin(); }
@@ -602,17 +600,18 @@ namespace dysect
         }
 
     public:
-        inline static void print_init_header(std::ostream& out)
+        inline static void print_init_header(otm::output_type& out)
         {
-            out.width(9); out << "f_cap" << " " << std::flush;
+            out << otm::width(10) << "f_cap" << std::flush;
         }
 
-        inline void print_init_data(std::ostream& out)
+        inline void print_init_data(otm::output_type& out)
         {
             size_t cap = 0;
             for (size_t i = 0; i < tl; ++i)
                 cap += tables[i].capacity;
-            out.width(9); out << cap << " " << std::flush;
+
+            out << otm::width(10) << cap << std::flush;
         }
     };
 }

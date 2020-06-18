@@ -18,8 +18,12 @@
 #include <vector>
 #include <tuple>
 
+#include "utils/output.hpp"
+
 #include "bucket.h"
 #include "iterator_base.h"
+
+namespace otm = utils_tm::out_tm;
 
 namespace dysect
 {
@@ -140,10 +144,10 @@ namespace dysect
         void propagate_remove(size_type origin);
 
     public:
-        inline static void print_init_header(std::ostream& out)
-        { out.width(9); out << "f_cap"  << " " <<  std::flush;}
-        inline void print_init_data  (std::ostream& out)
-        { out.width(9); out << capacity << " " << std::flush;}
+        inline static void print_init_header(otm::output_type& out)
+        { out << otm::width(10) << "f_cap"; }
+        inline void print_init_data  (otm::output_type& out)
+        { out << otm::width(10) << capacity;}
     };
 
 
