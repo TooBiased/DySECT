@@ -185,7 +185,7 @@ namespace dysect
 
     template <class K, class D, class HF, class C>
     inline typename prob_quadratic<K,D,HF,C>::size_type
-    prob_quadratic<K,D,HF,C>::erase(const key_type& k)
+    prob_quadratic<K,D,HF,C>::erase([[maybe_unused]] const key_type& k)
     {
         // TODO
         return 0;
