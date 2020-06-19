@@ -56,8 +56,8 @@ table in place.
 The goal for our implementation was to stay as close
 to possible to the interface established by ~std::unordered_map~.  We
 are still working on achieving this goal, so the actual interface
-might still go through some minor changes.  /Take a look at the
-~example~ folder!/
+might still go through some minor changes.  /Take a look at the/
+~example~ /folder!/
 
 *** Operations
 Currently there are three "main" differences in the way our interface
@@ -73,9 +73,9 @@ usually initiated with their table size (that in some cases needs to
 be a power of two).
 
 All of our tables however, are initiated with a number of elements
-$n$, and a memory factor $d$ /(larger than 1)/. The table is then
-allocated with $d*n$ slots.  The tables grow in a greedy fashion, when
-more than $n$ elements are inserted.
+/n/, and a memory factor /d/ /(larger than 1)/. The table is then
+allocated with /d*n/ slots.  The tables grow in a greedy fashion, when
+more than /n/ elements are inserted.
 
 **** (Unsuccessful) Insertions
 Given the nature of our experiments, it was necessary, to control when
