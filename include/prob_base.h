@@ -18,8 +18,12 @@
 #include <vector>
 #include <tuple>
 
+#include "utils/output.hpp"
+
 #include "bucket.h"
 #include "iterator_base.h"
+
+namespace otm = utils_tm::out_tm;
 
 namespace dysect
 {
@@ -90,7 +94,8 @@ namespace dysect
         const_iterator            find  (const key_type& k) const;
         std::pair<iterator, bool> insert(const key_type& k, const mapped_type& d);
         std::pair<iterator, bool> insert(const value_intern& t);
-        size_type                    erase (const key_type& k);
+        size_type                 erase (const key_type& k);
+        int                 displacement(const key_type& k) const;
 
         // Easy use Accessors for std compliance ***********************************
         inline iterator           begin ()
@@ -139,10 +144,10 @@ namespace dysect
         void propagate_remove(size_type origin);
 
     public:
-        inline static void print_init_header(std::ostream& out)
-        { out.width(9); out << "f_cap"  << " " <<  std::flush;}
-        inline void print_init_data  (std::ostream& out)
-        { out.width(9); out << capacity << " " << std::flush;}
+        inline static void print_init_header(otm::output_type& out)
+        { out << otm::width(10) << "f_cap"; }
+        inline void print_init_data  (otm::output_type& out)
+        { out << otm::width(10) << capacity;}
     };
 
 
@@ -253,6 +258,28 @@ namespace dysect
         return 0;
     }
 
+    template<class SpProb>
+    inline int
+    prob_base<SpProb>::displacement(const key_type& k) const
+    {
+        auto ind = h(k);
+
+        for (size_type i = ind; ; ++i)
+        {
+            size_type ti = static_cast<const specialized_type*>(this)->mod(i);
+            auto temp = table[ti];
+
+            if ( temp.first == 0 )
+            {
+                break;
+            }
+            else if ( temp.first == k )
+            {
+                return i - ind;
+            }
+        }
+        return -1;
+    }
 
 
 // Accessor Implementations ****************************************************

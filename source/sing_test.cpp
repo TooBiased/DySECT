@@ -1,7 +1,11 @@
 #include "selection.h"
-#include "utils/default_hash.h"
-#include "utils/commandline.h"
-#include "utils/thread_basics.h"
+
+#include "utils/default_hash.hpp"
+#include "utils/command_line_parser.hpp"
+#include "utils/pin_thread.hpp"
+#include "utils/output.hpp"
+namespace utm = utils_tm;
+namespace otm = utils_tm::out_tm;
 
 #ifdef MALLOC_COUNT
 #include "malloc_count.h"
@@ -12,66 +16,31 @@
 #include <fstream>
 #include <chrono>
 
-template <class T>
-inline void print(std::ostream& out, const T& t, size_t w)
-{
-    out.width(w);
-    out << t << " " << std::flush;
-}
 
 template<class Config>
 struct Test
 {
-    //using Table = ProbIndependentBase<HASHTYPE<size_t, size_t, dysect::hash::default_hash, Config> >;
-    using Table = HASHTYPE<size_t, size_t, dysect::hash::default_hash, Config>;
+    using table_type = HASHTYPE<size_t, size_t, utm::hash_tm::default_hash, Config>;
 
-    inline void print_headline(std::ostream& out)
-    {
-        print(out, "# it"   , 4);
-        print(out, "cap"    , 9);
-        print(out, "n"      , 9);
-        print(out, "steps"  , 6);
-        print(out, "ngrow"  , 6);
-        Table::print_init_header(out);
-        print(out, "g_elem" , 9);
-        out << std::endl;
-    }
 
-    inline void print_timing(std::ostream& out,
-                             size_t i,
-                             size_t cap,
-                             size_t n,
-                             size_t steps,
-                             size_t ngrow,
-                             size_t j,
-                             Table& table)
+    int operator()(size_t it, size_t n, size_t cap, size_t steps)
     {
-        print(out, i     , 4);
-        print(out, cap   , 9);
-        print(out, n     , 9);
-        print(out, steps , 6);
-        print(out, ngrow , 6);
-        table.print_init_data(out);
-        print(out, j     , 9);
-        out << std::endl;
-    }
+        otm::out() << otm::width(4) << "# it"
+                   << otm::width(9) << "cap"
+                   << otm::width(9) << "n"
+                   << otm::width(6) << "steps"
+                   << otm::width(6) << "ngrow";
+        table_type::print_init_header(otm::out());
+        otm::out() << otm::width(9) << "g_elem"
+                   << std::endl;
 
-    int operator()(size_t it, size_t n, size_t cap, size_t steps,
-                   std::string name)
-    {
+
         constexpr size_t range = (1ull<<63) -1;
 
         size_t* keys = new size_t[2*n];
 
         std::uniform_int_distribution<uint64_t> dis(1,range);
         std::mt19937_64 re;
-
-        std::ostream* file;
-        if (name == "") file = &(std::cout);
-        else file = new std::ofstream(name + ".sing",
-                                      std::ofstream::out | std::ofstream::app);
-
-        print_headline(*file);
 
         for (size_t i = 0; i < it; ++i)
         {
@@ -80,14 +49,23 @@ struct Test
                 keys[i] = dis(re);
             }
 
-            Table table(cap, 1.0, steps);
+            table_type table(cap, 1.0, steps);
 
             size_t ngrow = 0;
             for (size_t j = 0; j < n; ++j)
             {
                 while (!table.insert(keys[j], j).second)
                 {
-                    print_timing(*file, i, cap, n, steps, ngrow++,  j, table);
+                    otm::out() << otm::width(4) << i
+                               << otm::width(9) << cap
+                               << otm::width(9) << n
+                               << otm::width(6) << steps
+                               << otm::width(6) << ngrow;
+                    table.print_init_data(otm::out());
+                    otm::out() << otm::width(9) << j
+                               << std::endl;
+
+                    ngrow++;
                     table.explicit_grow();
                 }
             }
@@ -102,13 +80,19 @@ struct Test
 int main(int argn, char** argc)
 {
     // pin_to_core(0);
-    CommandLine c(argn, argc);
-    size_t it     = c.intArg("-it"   , 5);
-    size_t n      = c.intArg("-n"    , 2000000);
-    size_t cap    = c.intArg("-cap"  , 50000);
-    size_t steps  = c.intArg("-steps", 512);
+    utm::command_line_parser c(argn, argc);
 
-    const std::string name  = c.strArg("-out"  , "");
+    size_t it     = c.int_arg("-it"   , 5);
+    size_t n      = c.int_arg("-n"    , 2000000);
+    size_t cap    = c.int_arg("-cap"  , 50000);
+    size_t steps  = c.int_arg("-steps", 512);
 
-    return Chooser::execute<Test,true> (c, it, n, cap, steps, name);
+    if (c.bool_arg("-out") || c.bool_arg("-file"))
+    {
+        std::string name = c.str_arg("-out", "");
+        name = c.str_arg("-file", name) + ".del";
+        otm::out().set_file(name);
+    }
+
+    return Chooser::execute<Test,true> (c, it, n, cap, steps);
 }

@@ -17,14 +17,14 @@
  * All rights reserved. Published under the BSD-2 license in the LICENSE file.
  ******************************************************************************/
 
-#include "utils/default_hash.h"
+#include "utils/default_hash.hpp"
 #include "cuckoo_base.h"
 #include "cobucket.h"
 
 namespace dysect
 {
 
-    template<class K, class D, class HF = hash::default_hash,
+    template<class K, class D, class HF = utils_tm::hash_tm::default_hash,
              class Conf = cuckoo_config<> >
     class cuckoo_overlap : public cuckoo_traits<cuckoo_overlap<K,D,HF,Conf> >::base_type
     {
@@ -288,7 +288,7 @@ namespace dysect
 // IN PLACE GROWING ************************************************************
 // *****************************************************************************
 
-    template<class K, class D, class HF = hash::default_hash,
+    template<class K, class D, class HF = utils_tm::hash_tm::default_hash,
              class Conf = cuckoo_config<> >
     class cuckoo_overlap_inplace : public cuckoo_traits<cuckoo_overlap_inplace<K,D,HF,Conf> >::base_type
     {
@@ -298,7 +298,7 @@ namespace dysect
         using bucket_type       = typename cuckoo_traits<this_type>::bucket_type;
         using hasher_type       = typename cuckoo_traits<this_type>::hasher_type;
         using hashed_type       = typename hasher_type::hashed_type;
-        using ext            = typename hasher_type::extractor_type;
+        using ext               = typename hasher_type::extractor_type;
 
         friend base_type;
         friend iterator_incr<this_type>;

@@ -1,4 +1,4 @@
-#include "utils/hash/murmur2_hash.h"
+#include "utils/hash/murmur2_hash.hpp"
 
 #include "include/cuckoo_dysect.h"
 #include <unordered_map>
@@ -22,7 +22,7 @@ int main(int, char**)
     // If you want to have some control on template parameters, following
     dysect::cuckoo_dysect<
         key_type, mapped_type,
-        dysect::hash::murmur2_hash, // hash function, the result has to have 64 significant bits
+        utils_tm::hash_tm::murmur2_hash, // hash function, the result has to have 64 significant bits
         dysect::cuckoo_config<8,   // bucket size
                               3,   // number of hash functions
                               256, // number of subtables

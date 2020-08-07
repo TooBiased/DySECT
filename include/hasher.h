@@ -15,6 +15,9 @@
  * All rights reserved. Published under the BSD-2 license in the LICENSE file.
  ******************************************************************************/
 
+#include <cstdint>
+#include <cstddef>
+
 namespace dysect
 {
 

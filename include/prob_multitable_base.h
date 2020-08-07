@@ -1,7 +1,11 @@
 #pragma once
 
+#include "utils/output.hpp"
+
 #include "prob_simple.h"
 #include "prob_robin.h"
+
+namespace otm = utils_tm::out_tm;
 
 namespace dysect
 {
@@ -52,11 +56,20 @@ public:
         return tables[getInd(k)].find(k);
     }
 
+    inline const_iterator find(key_type k) const
+    {
+        return tables[getInd(k)].find(k);
+    }
+
     inline size_t erase(key_type k)
     {
         return tables[getInd(k)].erase(k);
     }
 
+    inline int displacement(key_type k) const
+    {
+        return tables[getInd(k)].displacement(k);
+    }
 
 
     inline iterator begin()              { return tables[0].begin(); }
@@ -67,23 +80,24 @@ public:
     inline const_iterator cend()   const { return tables[0].cend(); }
 
 private:
-    inline size_t getInd(key_type k)
+    inline size_t getInd(key_type k) const
     {
         return hasher(k) & bits;
     }
 
 public:
-    inline static void print_init_header(std::ostream& out)
+    inline static void print_init_header(otm::output_type& out)
     {
-        out.width(9); out << "f_cap" << " " << std::flush;
+        out << otm::width(10) << "f_cap";
     }
 
-    inline void print_init_data(std::ostream& out)
+    inline void print_init_data(otm::output_type& out)
     {
         size_t cap = 0;
         for (size_t i = 0; i < tl; ++i)
             cap += tables[i].get_capacity();
-        out.width(9); out << cap << " " << std::flush;
+
+        out << otm::width(10) << cap;
     }
 };
 
@@ -133,12 +147,20 @@ public:
         return tables[getInd(k)].find(k);
     }
 
+    inline iterator find(key_type k) const
+    {
+        return tables[getInd(k)].find(k);
+    }
+
     inline size_t erase(key_type k)
     {
         return tables[getInd(k)].erase(k);
     }
 
-
+    inline int displacement(key_type k) const
+    {
+        return tables[getInd(k)].displacement(k);
+    }
 
     inline iterator begin()              { return tables[0].begin(); }
     inline iterator end()                { return tables[0].end(); }
@@ -148,23 +170,24 @@ public:
     inline const_iterator cend()   const { return tables[0].cend(); }
 
 private:
-    inline size_t getInd(key_type k)
+    inline size_t getInd(key_type k) const
     {
         return hasher(k) & bits;
     }
 
 public:
-    inline static void print_init_header(std::ostream& out)
+    inline static void print_init_header(otm::output_type& out)
     {
-        out.width(9); out << "f_cap" << " " << std::flush;
+        out << otm::width(10) << "f_cap";
     }
 
-    inline void print_init_data(std::ostream& out)
+    inline void print_init_data(otm::output_type& out)
     {
         size_t cap = 0;
         for (size_t i = 0; i < tl; ++i)
             cap += tables[i].get_capacity();
-        out.width(9); out << cap << " " << std::flush;
+
+        out << otm::width(10) << cap;
     }
 };
 

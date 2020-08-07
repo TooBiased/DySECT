@@ -1,6 +1,6 @@
-# DySECT
+* DySECT
 
-## Motivation 
+** Motivation
 In many circumstances hash tables can only be space
 efficient when they can also adapt to the number of inserted elements.
 Otherwise programmers have to correctly estimate the final table size
@@ -16,9 +16,9 @@ technique violates space constraints even when growing in small steps
 because both the source and the target table are allocated at the same
 time.
 
-## Contents
+** Contents
 
-### DySECT
+*** DySECT
 This is our clean and simple data-structure presented at [ESA 2017]
 (http://drops.dagstuhl.de/opus/volltexte/2017/7848/pdf/LIPIcs-ESA-2017-58.pdf).
 It is based on a number of subtables that can grow independently.
@@ -26,7 +26,7 @@ Elements can be moved between subtatbles -- using techniques similar
 to cuckoo hashing -- such that the free space generated from growing
 one subtable can be used efficiently.
 
-### Common Hashing Techniques
+*** Common Hashing Techniques
 We also offer a number implementations of common hashing techniques
 (cuckoo hashing, linear probing, robin hood hashing, and hopscotch
 hashing).  For every one of them we implement a cache efficient
@@ -39,7 +39,7 @@ both the new and the old table are allocated.  But outside of the
 migration they are.  This necessitates small growing factors and thus
 is relatively inefficient.
 
-### Inplace migration (through overallocation)
+*** Inplace migration (through overallocation)
 This technique allows us to increase the size of the hash table in
 place.  Therefore removing the necessity of having both an old and a
 new table during the migration.  Instead the whole table is reordered
@@ -52,14 +52,90 @@ table) is actually mapped to physical memory.  Whenever the table is
 grown, we access more of the virtual memory, therefore, resizing the
 table in place.
 
-## Implementation
+** Implementation
 The goal for our implementation was to stay as close
-to possible to the interface established by `std::unordered_map`.  We
+to possible to the interface established by ~std::unordered_map~.  We
 are still working on achieving this goal, so the actual interface
-might still go through some minor changes.  *Take a look at the
-`example` folder!*
+might still go through some minor changes.  /Take a look at the/
+~example~ /folder!/
 
-```cpp
+*** Operations
+Currently there are three "main" differences in the way our interface
+is used compared to ~std::unordered_map~. Those differences are the
+constructor parameterization (being able to define the memory-factor),
+insert operations (insertions can fail), and the bucket interface.
+
+**** Initialization/Constructors
+Usually hash tables are either initialized with a starting capacity or
+with a number of elements.  Libraries are usually initialized with the
+number of expected elements, and scientific implementations are
+usually initiated with their table size (that in some cases needs to
+be a power of two).
+
+All of our tables however, are initiated with a number of elements
+/n/, and a memory factor /d/ /(larger than 1)/. The table is then
+allocated with /d*n/ slots.  The tables grow in a greedy fashion, when
+more than /n/ elements are inserted.
+
+**** (Unsuccessful) Insertions
+Given the nature of our experiments, it was necessary, to control when
+tables grow, and by how much, they are allowed to grow (to control the
+minimum fill degree).  Because of this, and because of the nature of
+cuckoo (and hopscotch) hash tables there is a possibility for
+unsuccessful insertions, e.g., when no displacement-path is found
+within a cuckoo hash table, that makes space for the new element.
+
+To find out if an insertion was successful, look at the returned
+boolean result or at the returned iterator (and compare it to
+~table.end()~).
+
+/Note:/ unsuccessful insertions can even lead to segmentation faults,
+if there iterator is dereferenced.  This can happen inadvertently when
+using the ~table[<key>]~ operator on an uninserted element.
+
+#+BEGIN_SRC c++
+  table_type table{100,1.3};
+
+  // inserting an element
+  table_type::iterator it = table.begin();
+  bool                 ins;
+  std::tie(it, ins) = table.insert(10, 42);
+
+  if (ins)
+  {
+    // insertion was successful (key 10 was not in the table, now it is)
+    table[10] = 43; // is safe
+  }
+  else
+  {
+    // insertion was not successful this could be because either:
+    if (it != end())
+    {
+      // the key was already in the table
+      table[10] = 44; // is also safe
+    }
+    else
+    {
+      // no place was found for the element
+      table[10] = 45; // tries to dereference table.end() and thus leads
+                      // to a segmentation fault
+    }
+  }
+#+END_SRC
+
+**** Bucket Interface
+The bucket interface, for accessing all elements hashed to the same
+slot of an ~std::unordered_map~ is widely considered to be a
+problematic interface.  The problem is, that it suggests any kind of
+control over the collisions in a hash table, that is not possible when
+using a good hash function. Additionally, it is unclear how to model
+buckets in other types of hash tables, e.g., a linear probing hash
+table (where buckets are overlapping interleaving), much less in a
+cuckoo hash table (where buckets have a different purpose/meaning).
+
+
+*** Variants
+#+BEGIN_SRC c++
 // our dysect data-structure
 dysect::cuckoo_dysect
 
@@ -86,21 +162,17 @@ dysect::cuckoo_deamortized
 dysect::cuckoo_overlap
 dysect::cuckoo_overlap_inplace
 dysect::prob_linear_doubling
+#+END_SRC
 
-```
-
-## Installation / Usage
-Our implementations are all header only, so including the correct file
-should be enough.
-
+** Tests
 Try our test files by:
 
-```sh
+#+BEGIN_SRC bash
 mkdir build
 cd build
 cmake ..
 make
-```
+#+END_SRC
 
 This will create a multitude of folders with different tests, each
 built with many of our hashing techniques. Use ccmake, to change
