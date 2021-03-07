@@ -50,8 +50,8 @@ namespace dysect
         using value_intern = std::pair<key_type, mapped_type>;
 
     public:
-        cuckoo_overlap(size_type cap = 0      , double size_constraint = 1.1,
-                       size_type dis_steps = 0, size_type seed = 0)
+        cuckoo_overlap(size_type cap = 0        , double size_constraint = 1.1,
+                       size_type dis_steps = 256, size_type seed = 0)
             : base_type(size_constraint, dis_steps, seed),
               beta((size_constraint + 1.)/2.)
         {
@@ -83,13 +83,14 @@ namespace dysect
         static constexpr size_type bs  = cuckoo_traits<this_type>::bs;
         static constexpr size_type nh  = cuckoo_traits<this_type>::nh;
         static constexpr size_type tl  = 1;
+        static constexpr bool fix_errors = cuckoo_traits<this_type>::fix_errors;
+        static constexpr size_type min_grow_buckets = 10;
 
         size_type n_subbuckets;
         double beta;
         double factor;
 
         std::unique_ptr<value_intern[]> table;
-        std::vector<value_intern> grow_buffer;
 
         using base_type::make_iterator;
         using base_type::make_citerator;
@@ -134,26 +135,28 @@ namespace dysect
 
         inline void grow()
         {
-            if (grow_buffer.size()) return;
+            //if (!fix_errors && grow_buffer.size()) return; // I think this should not happen
             size_type nsize = size_type(double(n)*alpha) / sbs;
-            nsize           = std::max(nsize, n_subbuckets+1);
+            nsize           = std::max(nsize, n_subbuckets+min_grow_buckets);
             double nfactor  = double(nsize+1-(bs/sbs))/double(1ull << 32);
             size_type nthresh = n * beta;
 
             //std::cout << n << " " << n_buckets << " -> " << nsize << std::endl;
 
             auto ntable     = std::make_unique<value_intern[]>(nsize*sbs);
-            migrate(ntable, nfactor);
+            std::vector<value_intern> grow_buffer;
+            migrate(ntable, nfactor, grow_buffer);
 
             n_subbuckets    = nsize;
             table           = std::move(ntable);
             capacity        = nsize*sbs;
             grow_thresh     = nthresh;
             factor          = nfactor;
-            if (grow_buffer.size()) finalize_grow();
+            finalize_grow(grow_buffer);
         }
 
-        inline void migrate(std::unique_ptr<value_intern[]>& target, double nfactor)
+        inline void migrate(std::unique_ptr<value_intern[]>& target, double nfactor,
+                            std::vector<value_intern>& grow_buffer)
         {
             for (size_type i = 0; i < capacity; ++i)
             {
@@ -174,40 +177,16 @@ namespace dysect
                         }
                     }
                 }
-
-                // bucket_type& curr = table[i];
-
-                // for (size_type j = 0; j < bs; ++j)
-                // {
-                //     auto e = curr.elements[j];
-                //     if (! e.first) break;
-                //     auto hash = hasher(e.first);
-                //     for (size_type ti = 0; ti < nh; ++ti)
-                //     {
-                //         if (i == size_type(ext::loc(hash, ti)*factor))
-                //         {
-                //             if (! target[ext::loc(hash, ti) * nfactor].insert(e.first, e.second))
-                //             {
-                //                 grow_buffer.push_back(e);
-                //             }
-                //             break;
-                //         }
-                //     }
-                // }
             }
         }
 
-        inline void finalize_grow()
+        inline void finalize_grow(std::vector<value_intern>& grow_buffer)
         {
-            size_type temp = n;
+            n -= grow_buffer.size(); // the size will be reincremented by insertions
             for (auto& e : grow_buffer)
             {
                 insert(e);
             }
-            n = temp;
-            std::vector<value_intern> tbuf;
-            //grow_buffer.clear();
-            std::swap(tbuf, grow_buffer);
         }
     };
 
@@ -232,6 +211,7 @@ namespace dysect
         static constexpr size_type bs  = Conf::bs;
         static constexpr size_type sbs = Conf::sbs;
         static constexpr size_type nh  = Conf::nh;
+        static constexpr bool fix_errors = Conf::fix_errors;
 
         using hasher_type      = hasher<K, HF, 0, nh, true, true>;
         using bucket_type      = co_bucket<K,D,bs>;
@@ -317,12 +297,14 @@ namespace dysect
         static constexpr size_type sbs = cuckoo_traits<this_type>::sbs;
         static constexpr size_type nh  = cuckoo_traits<this_type>::nh;
         static constexpr size_type tl  = 1;
+        static constexpr bool fix_errors = cuckoo_traits<this_type>::fix_errors;
+        static constexpr size_type min_grow_buckets = 10;
 
         static constexpr size_type max_size     = 10ull << 30;
 
     public:
-        cuckoo_overlap_inplace(size_type cap = 0      , double size_constraint = 1.1,
-                               size_type dis_steps = 0, size_type seed = 0)
+        cuckoo_overlap_inplace(size_type cap = 0        , double size_constraint = 1.1,
+                               size_type dis_steps = 256, size_type seed = 0)
             : base_type(size_constraint, dis_steps, seed),
               beta((size_constraint + 1.)/2.)
         {
@@ -358,7 +340,6 @@ namespace dysect
         double    factor;
 
         std::unique_ptr<value_intern[]> table;
-        std::vector<value_intern>   grow_buffer;
 
         using base_type::make_iterator;
         using base_type::make_citerator;
@@ -403,24 +384,24 @@ namespace dysect
 
         inline void grow()
         {
-            if (grow_buffer.size()) return;
             size_type nsize   = size_type(double(n)*alpha) / sbs;
-            nsize             = std::max(nsize, n_subbuckets+1);
+            nsize             = std::max(nsize, n_subbuckets+min_grow_buckets);
             capacity          = nsize*sbs;
             double    nfactor = double(nsize+1-(bs/sbs))/double(1ull << 32);
             size_type nthresh = n * beta;
 
             std::fill(table.get()+capacity, table.get()+(nsize*sbs), value_intern());
 
-            migrate(nfactor);
+            std::vector<value_intern> grow_buffer;
+            migrate(nfactor, grow_buffer);
 
             n_subbuckets      = nsize;
             grow_thresh       = nthresh;
             factor            = nfactor;
-            if (grow_buffer.size()) finalize_grow();
+            finalize_grow(grow_buffer);
         }
 
-        inline void migrate(double nfactor)
+        inline void migrate(double nfactor, std::vector<value_intern>& grow_buffer)
         {
             for (int i = capacity-1; i >= 0; --i)
             {
@@ -443,44 +424,16 @@ namespace dysect
                         break;
                     }
                 }
-
-                // bucket_type& curr = table[i];
-
-                // for (size_type j = 0; j < bs; ++j)
-                // {
-                //     auto e = curr.elements[j];
-                //     if (! e.first) break;
-                //     auto hash = hasher(e.first);
-
-                //     for (size_type ti = 0; ti < nh; ++ti)
-                //     {
-                //         if (i == int (ext::loc(hash, ti)*factor))
-                //         {
-                //             auto nbucket = ext::loc(hash,ti) * nfactor;
-                //             if (    (i == nbucket)
-                //                  || (! table[nbucket].insert(e.first, e.second)) )
-                //             {
-                //                 grow_buffer.push_back(e);
-                //             }
-                //             break;
-                //         }
-                //     }
-                // }
-                // curr = bucket_type();
             }
         }
 
-        inline void finalize_grow()
+        inline void finalize_grow(std::vector<value_intern>& grow_buffer)
         {
-            size_type temp = n;
+            n -= grow_buffer.size(); // n will be increased by insertions
             for (auto& e : grow_buffer)
             {
                 insert(e);
             }
-            n = temp;
-            std::vector<value_intern> tbuf;
-            //grow_buffer.clear();
-            std::swap(tbuf, grow_buffer);
         }
     };
 
@@ -505,6 +458,7 @@ namespace dysect
         static constexpr size_type bs = Conf::bs;
         static constexpr size_type nh = Conf::nh;
         static constexpr size_type sbs= Conf::sbs;
+        static constexpr bool fix_errors = Conf::fix_errors;
 
         using hasher_type      = hasher<K, HF, 0, nh, true, true>;
         using bucket_type      = co_bucket<K,D,bs>;

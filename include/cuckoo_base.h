@@ -21,6 +21,7 @@
 #include <vector>
 #include <tuple>
 #include <limits>
+#include <algorithm>
 
 #include "utils/output.hpp"
 
@@ -83,6 +84,7 @@ namespace dysect
 
     template<size_t BS = 8, size_t NH = 3, size_t TL = 256,
              template <class> class DisStrat = cuckoo_displacement::bfs,
+             bool FixErrors = true,
              class HistCount = no_hist_count>
     struct cuckoo_config
     {
@@ -90,6 +92,7 @@ namespace dysect
         static constexpr size_t tl = TL;
         static constexpr size_t nh = NH;
         static constexpr size_t sbs = 2;
+        static constexpr size_t fix_errors = FixErrors;
 
         template <class T>
         using dis_strat_type  = DisStrat<T>;
@@ -156,15 +159,18 @@ namespace dysect
     private:
     // Members *****************************************************************
         size_type       n;
+    public:
         size_type       capacity;
+    private:
         size_type       grow_thresh;
         double          alpha;
         hasher_type     hasher;
         dis_strat_type  displacer;
         hist_count_type hcounter;
-        static constexpr size_type bs = cuckoo_traits<specialized_type>::bs;
-        static constexpr size_type tl = cuckoo_traits<specialized_type>::tl;
-        static constexpr size_type nh = cuckoo_traits<specialized_type>::nh;
+        static constexpr size_type bs    = cuckoo_traits<specialized_type>::bs;
+        static constexpr size_type tl    = cuckoo_traits<specialized_type>::tl;
+        static constexpr size_type nh    = cuckoo_traits<specialized_type>::nh;
+        static constexpr bool fix_errors = cuckoo_traits<specialized_type>::fix_errors;
 
     public:
     // Basic Hash Table Functionality ******************************************
@@ -327,6 +333,11 @@ namespace dysect
             return std::make_pair(make_iterator(pos), true);
         }
 
+        if constexpr (fix_errors)
+        {
+            explicit_grow();
+            return insert(t);
+        }
         return std::make_pair(end(), false);
     }
 

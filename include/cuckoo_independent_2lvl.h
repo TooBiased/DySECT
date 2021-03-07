@@ -56,7 +56,7 @@ namespace dysect
 
     public:
         cuckoo_independent_2lvl(size_type cap = 0      , double size_constraint = 1.1,
-                                size_type dis_steps = 0, size_type seed = 0)
+                                size_type dis_steps = 256, size_type seed = 0)
             : base_type(size_constraint, dis_steps, seed), beta((1.0+size_constraint)/2.0)
         {
             size_type lsize       = std::floor(cap * size_constraint / double(tl*bs));
@@ -285,6 +285,9 @@ namespace dysect
         static constexpr size_t bs = Conf::bs;
         static constexpr size_t tl = Conf::tl;
         static constexpr size_t nh = Conf::nh;
+        static_assert(!config_type::fix_errors,
+                      "2lvl independent table does not support fix_errors!");
+        static constexpr bool fix_errors = false;
 
         using hasher_type       = hasher<K, HF, ct_log(tl), nh, true, true>;
         using bucket_type       = bucket<K,D,bs>;

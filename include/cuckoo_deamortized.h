@@ -64,7 +64,7 @@ namespace dysect
 
     public:
         cuckoo_deamortized(size_type cap = 0      , double size_constraint = 1.1,
-                          size_type dis_steps = 0, size_type seed = 0)
+                          size_type dis_steps = 256, size_type seed = 0)
             : base_type(size_constraint, dis_steps, seed)
             {
                 auto temp = reinterpret_cast<value_intern*>(operator new (max_size));
@@ -239,6 +239,7 @@ namespace dysect
         static constexpr size_type tl = 1;
         static constexpr size_type bs = Conf::bs;
         static constexpr size_type nh = Conf::nh;
+        static constexpr bool fix_errors = Conf::fix_errors;
 
         using hasher_type      = hasher<K, HF, 0, nh, true, true>;
         using bucket_type      = bucket<K,D,bs>;

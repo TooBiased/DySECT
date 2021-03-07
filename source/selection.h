@@ -304,12 +304,14 @@ struct Chooser
         if (HistCount)
         {
             Functor<dysect::cuckoo_config<BS,NH,TL,Displacer,
+                                          false,
                                           dysect::hist_count> > f;
             return f(std::forward<Types>(param)...);
         }
         else
         {
             Functor<dysect::cuckoo_config<BS,NH,TL,Displacer,
+                                          false,
                                           dysect::no_hist_count> > f;
             return f(std::forward<Types>(param)...);
         }

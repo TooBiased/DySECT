@@ -59,7 +59,7 @@ namespace dysect
 
 
         cuckoo_dysect(size_type cap = 0      , double size_constraint = 1.1,
-                      size_type dis_steps = 0, size_type seed = 0)
+                      size_type dis_steps = 256, size_type seed = 0)
             : base_type(size_constraint, dis_steps, seed)
         {
             double avg_size_f = double(cap) * size_constraint / double(tl*bs);
@@ -347,6 +347,7 @@ namespace dysect
         static constexpr size_type tl = config_type::tl;
         static constexpr size_type bs = config_type::bs;
         static constexpr size_type nh = config_type::nh;
+        static constexpr bool fix_errors = config_type::fix_errors;
 
         using hasher_type    = hasher<K, HF, ct_log(tl), nh, true, true>;
         using bucket_type    = bucket<K,D,bs>;
@@ -482,7 +483,7 @@ namespace dysect
 
 
         cuckoo_dysect_inplace(size_type cap = 0      , double size_constraint = 1.1,
-                              size_type dis_steps = 0, size_type seed = 0)
+                              size_type dis_steps = 256, size_type seed = 0)
             : base_type(size_constraint, dis_steps, seed)
         {
             //auto temp = operator new (max_size);
@@ -760,10 +761,10 @@ namespace dysect
         static constexpr size_type tl = config_type::tl;
         static constexpr size_type bs = config_type::bs;
         static constexpr size_type nh = config_type::nh;
+        static constexpr bool fix_errors = config_type::fix_errors;
 
         using hasher_type      = hasher<K, HF, ct_log(tl), nh, true, true>;
         using bucket_type      = bucket<K,D,bs>;
-
     };
 
 
