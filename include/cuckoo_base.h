@@ -183,10 +183,12 @@ namespace dysect
 
     // Easy use Accessors for std compliance ***********************************
         inline iterator       begin ();       // see specialized_type
-        inline const_iterator begin () const { return static_cast<specialized_type*>(this)->cbegin(); }
+        inline const_iterator begin () const
+        { return static_cast<const specialized_type*>(this)->cbegin(); }
         inline const_iterator cbegin() const; // see specialized_type
         inline iterator       end   ()       { return make_iterator(nullptr); }
-        inline const_iterator end   () const { return static_cast<specialized_type*>(this)->cend(); }
+        inline const_iterator end   () const
+        { return static_cast<const specialized_type*>(this)->cend(); }
         inline const_iterator cend  () const { return make_citerator(nullptr); }
 
         mapped_type&          at    (const key_type& k);
