@@ -19,7 +19,9 @@
 
 #include <cmath>
 #include "utils/default_hash.hpp"
+#include "utils/fastrange.hpp"
 #include "cuckoo_base.h"
+
 
 namespace dysect
 {
@@ -61,7 +63,7 @@ namespace dysect
         {
             size_type lsize       = std::floor(cap * size_constraint / double(tl*bs));
             lsize                 = std::max(lsize, 256ul);
-            double    factor      = double(lsize)/fac_div;
+            // double    factor      = double(lsize)/fac_div;
             size_type grow_thresh = double(lsize) / beta;
 
             for (size_type i = 0; i < tl; ++i)
@@ -70,7 +72,7 @@ namespace dysect
                 ll_size[i]   = lsize;
                 ll_elem[i]   = 0;
                 ll_thresh[i] = grow_thresh;
-                ll_factor[i] = factor;
+                // ll_factor[i] = factor;
             }
 
             capacity    = bs * tl * lsize;
@@ -88,7 +90,7 @@ namespace dysect
                 ll_size[i]   = rhs.ll_size[i];
                 ll_elem[i]   = rhs.ll_elem[i];
                 ll_thresh[i] = rhs.ll_thresh[i];
-                ll_factor[i] = rhs.ll_factor[i];
+                // ll_factor[i] = rhs.ll_factor[i];
             }
         }
 
@@ -103,7 +105,7 @@ namespace dysect
                 std::swap(ll_size[i]  , rhs.ll_size[i]);
                 std::swap(ll_elem[i]  , rhs.ll_elem[i]);
                 std::swap(ll_thresh[i], rhs.ll_thresh[i]);
-                std::swap(ll_factor[i], rhs.ll_factor[i]);
+                // std::swap(ll_factor[i], rhs.ll_factor[i]);
             }
             return *this;
         }
@@ -123,7 +125,7 @@ namespace dysect
         size_type ll_size  [tl];
         size_type ll_elem  [tl];
         size_type ll_thresh[tl];
-        double    ll_factor[tl];
+        // double    ll_factor[tl];
         std::unique_ptr<bucket_type[]> ll_tab[tl];
         std::vector<value_intern> grow_buffer;
 
@@ -195,7 +197,9 @@ namespace dysect
         inline bucket_type* get_bucket (hashed_type h, size_type i) const
         {
             size_type tab = ext::tab(h,0);
-            return &(ll_tab[tab][ext::loc(h,i)*ll_factor[tab]]);
+            // return &(ll_tab[tab][ext::loc(h,i)*ll_factor[tab]]);
+            return &(ll_tab[tab][utils_tm::fastrange32(ll_size[tab],
+                                                       ext::loc(h,i))]);
         }
 
 
@@ -214,23 +218,23 @@ namespace dysect
             size_type nsize   = std::floor(double(ll_elem[tab]) * alpha / double(bs));
             nsize          = std::max(nsize, ll_size[tab]+1);
             capacity      += nsize - ll_size[tab];
-            double nfactor = double(nsize)      / fac_div;
+            //double nfactor = double(nsize)      / fac_div;
             size_type nthresh = ll_elem[tab] * beta;
 
             auto ntable = std::make_unique<bucket_type[]>(nsize);
-            migrate(tab, ntable, nfactor);
+            migrate(tab, ntable, nsize);
 
             ll_tab[tab]    = std::move(ntable);
             ll_size[tab]   = nsize;
-            ll_factor[tab] = nfactor;
+            //ll_factor[tab] = nfactor;
             ll_thresh[tab] = nthresh;
             if (grow_buffer.size()) finalize_grow();
         }
 
-        inline void migrate(size_type tab, std::unique_ptr<bucket_type[]>& target, double nfactor)
+        inline void migrate(size_type tab, std::unique_ptr<bucket_type[]>& target, size_type nsize)
         {
             size_type csize   = ll_size[tab];
-            double cfactor = ll_factor[tab];
+            //double cfactor = ll_factor[tab];
             for (size_type i = 0; i < csize; ++i)
             {
                 bucket_type& curr = ll_tab[tab][i];
@@ -243,9 +247,9 @@ namespace dysect
 
                     for (size_type ti = 0; ti < nh; ++ti)
                     {
-                        if (i == size_type(ext::loc(hash, ti) * cfactor))
+                        if (i == utils_tm::fastrange32(csize, ext::loc(hash, ti)))
                         {
-                            if (! target[ext::loc(hash, ti) * nfactor].insert(e))
+                            if (! target[utils_tm::fastrange32(nsize, ext::loc(hash, ti))].insert(e))
                                 grow_buffer.push_back(e);
                             break;
                         }

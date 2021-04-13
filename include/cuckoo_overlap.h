@@ -18,6 +18,7 @@
  ******************************************************************************/
 
 #include "utils/default_hash.hpp"
+#include "utils/fastrange.hpp"
 #include "cuckoo_base.h"
 #include "cobucket.h"
 
@@ -61,7 +62,8 @@ namespace dysect
             capacity    = n_subbuckets*sbs;
             grow_thresh = beta*std::max<size_type>(256ull, cap);
 
-            factor      = double(n_subbuckets+1-(bs/sbs))/double(1ull<<32);
+            //factor      = double(n_subbuckets+1-(bs/sbs))/double(1ull<<32);
+            acap        = n_subbuckets+1-(bs/sbs);
 
             table       = std::make_unique<value_intern[]>(n_subbuckets*sbs);
         }
@@ -87,8 +89,9 @@ namespace dysect
         static constexpr size_type min_grow_buckets = 10;
 
         size_type n_subbuckets;
+        size_type acap;
         double beta;
-        double factor;
+//        double factor;
 
         std::unique_ptr<value_intern[]> table;
 
@@ -125,7 +128,7 @@ namespace dysect
 
         inline bucket_type* get_bucket(hashed_type h, size_type i) const
         {
-            size_type l = ext::loc(h,i) * factor;
+            size_type l = utils_tm::fastrange32(acap, ext::loc(h,i));// * factor;
             return reinterpret_cast<bucket_type*>(&(table[l*sbs]));
         }
 
@@ -138,24 +141,26 @@ namespace dysect
             //if (!fix_errors && grow_buffer.size()) return; // I think this should not happen
             size_type nsize = size_type(double(n)*alpha) / sbs;
             nsize           = std::max(nsize, n_subbuckets+min_grow_buckets);
-            double nfactor  = double(nsize+1-(bs/sbs))/double(1ull << 32);
+            //double nfactor  = double(nsize+1-(bs/sbs))/double(1ull << 32);
+            size_type ncap  = nsize+1-(bs/sbs);
             size_type nthresh = n * beta;
 
             //std::cout << n << " " << n_buckets << " -> " << nsize << std::endl;
 
             auto ntable     = std::make_unique<value_intern[]>(nsize*sbs);
             std::vector<value_intern> grow_buffer;
-            migrate(ntable, nfactor, grow_buffer);
+            migrate(ntable, ncap, grow_buffer);
 
             n_subbuckets    = nsize;
             table           = std::move(ntable);
             capacity        = nsize*sbs;
             grow_thresh     = nthresh;
-            factor          = nfactor;
+            //factor          = nfactor;
+            acap            = ncap;
             finalize_grow(grow_buffer);
         }
 
-        inline void migrate(std::unique_ptr<value_intern[]>& target, double nfactor,
+        inline void migrate(std::unique_ptr<value_intern[]>& target, size_type ncap,
                             std::vector<value_intern>& grow_buffer)
         {
             for (size_type i = 0; i < capacity; ++i)
@@ -166,11 +171,11 @@ namespace dysect
 
                 for (size_type ti = 0; ti < nh; ++ti)
                 {
-                    size_type off_ti = size_type(ext::loc(hash,ti) * factor)*sbs;
+                    size_type off_ti = utils_tm::fastrange32(acap, ext::loc(hash,ti))*sbs;
                     if (i >= off_ti && i < off_ti+bs)
                     {
                         if (! reinterpret_cast<bucket_type*>
-                            (&target[size_type(ext::loc(hash, ti)*nfactor)*sbs])
+                            (&target[utils_tm::fastrange32(ncap, ext::loc(hash, ti))*sbs])
                             ->insert(e))
                         {
                             grow_buffer.push_back(e);
@@ -317,7 +322,8 @@ namespace dysect
             capacity     = n_subbuckets*sbs;
             grow_thresh  = beta*std::max<size_type>(256ull, cap);
 
-            factor       = double(n_subbuckets+1-(bs/sbs))/double(1ull<<32);
+            //factor       = double(n_subbuckets+1-(bs/sbs))/double(1ull<<32);
+            acap         = n_subbuckets+1-(bs/sbs);
 
             std::fill(table.get(), table.get()+capacity, value_intern());
         }
@@ -336,8 +342,9 @@ namespace dysect
         using base_type::hasher;
 
         size_type n_subbuckets;
+        size_type acap;
         double    beta;
-        double    factor;
+        // double    factor;
 
         std::unique_ptr<value_intern[]> table;
 
@@ -374,7 +381,7 @@ namespace dysect
 
         inline bucket_type* get_bucket(hashed_type h, size_type i) const
         {
-            size_type l = ext::loc(h,i) * factor;
+            size_type l = utils_tm::fastrange32(acap, ext::loc(h,i));// * factor;
             return reinterpret_cast<bucket_type*>(&(table[l*sbs]));
         }
 
@@ -387,21 +394,23 @@ namespace dysect
             size_type nsize   = size_type(double(n)*alpha) / sbs;
             nsize             = std::max(nsize, n_subbuckets+min_grow_buckets);
             capacity          = nsize*sbs;
-            double    nfactor = double(nsize+1-(bs/sbs))/double(1ull << 32);
+            //double    nfactor = double(nsize+1-(bs/sbs))/double(1ull << 32);
+            size_type ncap    = nsize+1-(bs/sbs);
             size_type nthresh = n * beta;
 
             std::fill(table.get()+capacity, table.get()+(nsize*sbs), value_intern());
 
             std::vector<value_intern> grow_buffer;
-            migrate(nfactor, grow_buffer);
+            migrate(ncap, grow_buffer);
 
             n_subbuckets      = nsize;
             grow_thresh       = nthresh;
-            factor            = nfactor;
+            // factor            = nfactor;
+            acap = ncap;
             finalize_grow(grow_buffer);
         }
 
-        inline void migrate(double nfactor, std::vector<value_intern>& grow_buffer)
+        inline void migrate(size_type ncap, std::vector<value_intern>& grow_buffer)
         {
             for (int i = capacity-1; i >= 0; --i)
             {
@@ -412,10 +421,10 @@ namespace dysect
 
                 for (size_type ti = 0; ti < nh; ++ti)
                 {
-                    size_type off_i = size_type(ext::loc(hash, ti)*factor)*sbs;
+                    size_type off_i = utils_tm::fastrange32(acap, ext::loc(hash, ti))*sbs;
                     if (i >= int(off_i) && i < int(off_i + bs))
                     {
-                        size_type nbucket = size_type(ext::loc(hash,ti) * nfactor)*sbs;
+                        size_type nbucket = utils_tm::fastrange32(ncap, ext::loc(hash,ti))*sbs;
                         if (nbucket >= size_type(i) ||
                             ! reinterpret_cast<bucket_type*>(&table[nbucket])->insert(e))
                         {

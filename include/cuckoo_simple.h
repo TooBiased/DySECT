@@ -17,6 +17,8 @@
  ******************************************************************************/
 
 #include "utils/default_hash.hpp"
+#include "utils/fastrange.hpp"
+
 #include "cuckoo_base.h"
 
 namespace dysect
@@ -64,7 +66,7 @@ namespace dysect
             capacity    = n_buckets*bs;
             grow_thresh = beta*std::max<size_type>(256ull, cap);
 
-            factor      = double(n_buckets)/double(1ull<<32);
+            //factor      = double(n_buckets)/double(1ull<<32);
 
             table       = std::make_unique<bucket_type[]>(n_buckets);
         }
@@ -94,7 +96,7 @@ namespace dysect
 
         size_type n_buckets;
         double beta;
-        double factor;
+        //double factor;
 
         std::unique_ptr<bucket_type[]> table;
 
@@ -137,7 +139,7 @@ namespace dysect
 
         inline bucket_type* get_bucket(hashed_type h, size_type i) const
          {
-             size_type l = ext::loc(h,i) * factor;
+             size_type l = utils_tm::fastrange32(n_buckets, ext::loc(h,i));// * factor;
              return &(table[l]);
          }
 
@@ -150,23 +152,23 @@ namespace dysect
             size_type nsize = size_type(double(n)*alpha) / bs;
             nsize        = std::max(nsize, n_buckets+min_grow_buckets);
             capacity     = nsize*bs;
-            double nfactor = double(nsize)/double(1ull << 32);
+            //double nfactor = double(nsize)/double(1ull << 32);
             size_type nthresh = n * beta;
 
             //std::cout << n << " " << n_buckets << " -> " << nsize << std::endl;
 
             auto ntable = std::make_unique<bucket_type[]>(nsize);
             std::vector<value_intern> grow_buffer;
-            migrate(ntable, nfactor, grow_buffer);
+            migrate(ntable, nsize, grow_buffer); // factor -> nsize
 
             n_buckets   = nsize;
             table       = std::move(ntable);
             grow_thresh = nthresh;
-            factor      = nfactor;
+            //factor      = nfactor;
             finalize_grow(grow_buffer);
         }
 
-        inline void migrate(std::unique_ptr<bucket_type[]>& target, double nfactor,
+        inline void migrate(std::unique_ptr<bucket_type[]>& target, size_type nsize,
                             std::vector<value_intern>& grow_buffer)
         {
             for (size_type i = 0; i < n_buckets; ++i)
@@ -180,9 +182,10 @@ namespace dysect
                     auto hash = hasher(e.first);
                     for (size_type ti = 0; ti < nh; ++ti)
                     {
-                        if (i == size_type(ext::loc(hash, ti)*factor))
+                        if (i == utils_tm::fastrange32(n_buckets, ext::loc(hash, ti)))//*factor))
                         {
-                            if (! target[ext::loc(hash, ti) * nfactor].insert(e.first, e.second))
+                            if (! target[utils_tm::fastrange32(nsize, ext::loc(hash, ti))]
+                                         .insert(e.first, e.second))
                             {
                                 grow_buffer.push_back(e);
                             }
@@ -327,7 +330,7 @@ namespace dysect
             capacity    = n_buckets*bs;
             grow_thresh = beta*std::max<size_type>(256ull, cap);
 
-            factor      = double(n_buckets)/double(1ull<<32);
+            //factor      = double(n_buckets)/double(1ull<<32);
 
             //table       = std::make_unique<bucket_type[]>(n_buckets);
             std::fill(table.get(), table.get()+n_buckets, bucket_type());
@@ -348,7 +351,7 @@ namespace dysect
 
         size_type n_buckets;
         double    beta;
-        double    factor;
+        //double    factor;
 
         std::unique_ptr<bucket_type[]> table;
 
@@ -391,7 +394,7 @@ namespace dysect
 
         inline bucket_type* get_bucket(hashed_type h, size_type i) const
         {
-            size_type l = ext::loc(h,i) * factor;
+            size_type l = utils_tm::fastrange32(n_buckets, ext::loc(h,i));// * factor;
             return &(table[l]);
         }
 
@@ -404,21 +407,21 @@ namespace dysect
             size_type nsize   = size_type(double(n)*alpha) / bs;
             nsize             = std::max(nsize, n_buckets+min_grow_buckets);
             capacity          = nsize*bs;
-            double    nfactor = double(nsize)/double(1ull << 32);
+            //double    nfactor = double(nsize)/double(1ull << 32);
             size_type nthresh = n * beta;
 
             std::fill(table.get()+n_buckets, table.get()+nsize, bucket_type());
 
             std::vector<value_intern> grow_buffer;
-            migrate(nfactor, grow_buffer);
+            migrate(nsize, grow_buffer);
 
             n_buckets   = nsize;
             grow_thresh = nthresh;
-            factor      = nfactor;
+            //factor      = nfactor;
             finalize_grow(grow_buffer);
         }
 
-        inline void migrate(double nfactor, std::vector<value_intern>& grow_buffer)
+        inline void migrate(size_type nsize, std::vector<value_intern>& grow_buffer)
         {
             for (int i = n_buckets; i >= 0; --i)
             {
@@ -432,11 +435,11 @@ namespace dysect
 
                     for (size_type ti = 0; ti < nh; ++ti)
                     {
-                        if (i == int (ext::loc(hash, ti)*factor))
+                        if (i == int(utils_tm::fastrange32(n_buckets, ext::loc(hash, ti))))
                         {
-                            auto nbucket = ext::loc(hash,ti) * nfactor;
-                            if (    (i == nbucket)
-                                    || (! table[nbucket].insert(e.first, e.second)) )
+                            int nbucket = utils_tm::fastrange32(nsize, ext::loc(hash,ti));
+                            if ((i == nbucket)
+                                || (! table[nbucket].insert(e.first, e.second)) )
                             {
                                 grow_buffer.push_back(e);
                             }
