@@ -265,7 +265,7 @@ namespace dysect
 
     private:
         inline size_t index(size_t i) const
-        { return ((bitmask & i) * capacity) >> 32; }
+        { return utils_tm::fastrange64(capacity, i); }
         inline size_t mod  (size_t i) const
         { return (i < capacity) ? i : i-capacity; }
 
@@ -417,7 +417,7 @@ namespace dysect
 
     private:
         inline size_t index(size_t i) const
-        { return ((bitmask & i) * capacity) >> 32; }
+        { return utils_tm::fastrange64(capacity, i); }
         inline size_t mod  (size_t i) const
         { return (i < capacity) ? i : i-capacity; }
 

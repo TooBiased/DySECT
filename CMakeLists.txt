@@ -7,9 +7,9 @@ project (space-grow-table)
 
 #### USER DEFINED ##############################################################
 
-set(DYSECT_HASHFCT XXHASH CACHE STRING
+set(DYSECT_HASHFCT XXH3 CACHE STRING
   "Changes the used hash function if XXHASH is not available, MURMUR2 is used as backoff!")
-set_property(CACHE DYSECT_HASHFCT PROPERTY STRINGS XXHASH MURMUR2 MURMUR3 CRC)
+set_property(CACHE DYSECT_HASHFCT PROPERTY STRINGS XXH3 XXHASH MURMUR2 MURMUR3 CRC)
 
 set(DYSECT_MALLOC_COUNT OFF CACHE BOOL
   "Display the amount of allocated memory! Needs the malloc_count submodule.")
@@ -21,7 +21,7 @@ set(DYSECT_RSS_COUNT OFF CACHE BOOL
 
 include_directories(.)
 
-set (CMAKE_CXX_FLAGS "-std=c++17 -msse4.2 -Wall -Wextra -O3 -g")
+set (CMAKE_CXX_FLAGS "-std=c++17 -msse4.2 -Wall -Wextra -O3 -g -march=native")
 
 #### FIND PTHREAD (less variance after pin to core) ############################
 
@@ -30,7 +30,8 @@ set(TEST_DEP_LIBRARIES ${CMAKE_THREAD_LIBS_INIT} ${TEST_DEP_LIBRARIES})
 
 #### HASH FUNCTIONS ############################################################
 
-if (DYSECT_HASHFCT STREQUAL XXHASH)
+if ((DYSECT_HASHFCT STREQUAL XXHASH) OR
+    (DYSECT_HASHFCT STREQUAL XXH3))
   message(STATUS "Looking for xxhash")
   find_path(XXHASH_DIR xxhash/xxhash.h
     PATHS ${CMAKE_CURRENT_SOURCE_DIR}/module)

@@ -4,8 +4,13 @@
 
 #include "prob_simple.h"
 #include "prob_robin.h"
-
 namespace otm = utils_tm::out_tm;
+
+
+// THESE TABLES USE THE LOWERMOST FEW BITS FOR THEIR TABLE ADDRESSING:
+//  -> SUBTABLES SHOULD USE LINEAR MAPPING (MOSTLY USE UPPER BITS)
+
+
 
 namespace dysect
 {
@@ -14,30 +19,30 @@ template<class K, class D, class HF, class Conf>
 class multitable_linear
 {
 private:
-    using This_t     = multitable_linear<K,D,HF,Conf>;
-    using Subtable_t = prob_linear<K,D,HF,Conf>;
-    using HashFct_t  = HF;
+    using this_type           = multitable_linear<K,D,HF,Conf>;
+    using subtable_type       = prob_linear<K,D,HF,Conf>;
+    using hash_function_type  = HF;
 
 public:
-    using key_type    = typename Subtable_t::key_type;
-    using mapped_type = typename Subtable_t::mapped_type;
+    using key_type       = typename subtable_type::key_type;
+    using mapped_type    = typename subtable_type::mapped_type;
 
-    using iterator    = typename Subtable_t::iterator;
-    using const_iterator = typename Subtable_t::const_iterator;
+    using iterator       = typename subtable_type::iterator;
+    using const_iterator = typename subtable_type::const_iterator;
 
     static constexpr size_t tl   = 256;
     static constexpr size_t bits = tl-1;
 
 private:
-    HashFct_t hasher;
-    Subtable_t tables[tl];
+    hash_function_type hasher;
+    subtable_type tables[tl];
 
 public:
     multitable_linear(size_t cap   = 0, double size_constraint = 1.1, size_t /**/ = 0, size_t /**/ = 0)
     {
         for (size_t i = 0; i < tl; ++i)
         {
-            tables[i] = Subtable_t(cap/tl, size_constraint);
+            tables[i] = subtable_type(cap/tl, size_constraint);
         }
     }
 
@@ -48,27 +53,27 @@ public:
 
     inline std::pair<iterator,bool> insert(std::pair<key_type,mapped_type> t)
     {
-        return tables[getInd(t.first)].insert(t);
+        return tables[get_table(t.first)].insert(t);
     }
 
     inline iterator find(key_type k)
     {
-        return tables[getInd(k)].find(k);
+        return tables[get_table(k)].find(k);
     }
 
     inline const_iterator find(key_type k) const
     {
-        return tables[getInd(k)].find(k);
+        return tables[get_table(k)].find(k);
     }
 
     inline size_t erase(key_type k)
     {
-        return tables[getInd(k)].erase(k);
+        return tables[get_table(k)].erase(k);
     }
 
     inline int displacement(key_type k) const
     {
-        return tables[getInd(k)].displacement(k);
+        return tables[get_table(k)].displacement(k);
     }
 
 
@@ -80,7 +85,7 @@ public:
     inline const_iterator cend()   const { return tables[0].cend(); }
 
 private:
-    inline size_t getInd(key_type k) const
+    inline size_t get_table(key_type k) const
     {
         return hasher(k) & bits;
     }
@@ -105,30 +110,30 @@ template<class K, class D, class HF, class Conf>
 class multitable_robin
 {
 private:
-    using This_t     = multitable_robin<K,D,HF,Conf>;
-    using Subtable_t = prob_robin<K,D,HF,Conf>;
-    using HashFct_t  = HF;
+    using this_type          = multitable_robin<K,D,HF,Conf>;
+    using subtable_type      = prob_robin<K,D,HF,Conf>;
+    using hash_function_type = HF;
 
 public:
-    using key_type    = typename Subtable_t::key_type;
-    using mapped_type = typename Subtable_t::mapped_type;
+    using key_type       = typename subtable_type::key_type;
+    using mapped_type    = typename subtable_type::mapped_type;
 
-    using iterator    = typename Subtable_t::iterator;
-    using const_iterator = typename Subtable_t::const_iterator;
+    using iterator       = typename subtable_type::iterator;
+    using const_iterator = typename subtable_type::const_iterator;
 
     static constexpr size_t tl   = 256;
     static constexpr size_t bits = tl-1;
 
 private:
-    HashFct_t hasher;
-    Subtable_t tables[tl];
+    hash_function_type hasher;
+    subtable_type      tables[tl];
 
 public:
     multitable_robin(size_t cap   = 0, double size_constraint = 1.1, size_t /**/ = 0, size_t /**/ = 0)
     {
         for (size_t i = 0; i < tl; ++i)
         {
-            tables[i] = Subtable_t(cap/tl, size_constraint);
+            tables[i] = subtable_type(cap/tl, size_constraint);
         }
     }
 
@@ -139,27 +144,27 @@ public:
 
     inline std::pair<iterator,bool> insert(std::pair<key_type,mapped_type> t)
     {
-        return tables[getInd(t.first)].insert(t);
+        return tables[get_table(t.first)].insert(t);
     }
 
     inline iterator find(key_type k)
     {
-        return tables[getInd(k)].find(k);
+        return tables[get_table(k)].find(k);
     }
 
     inline iterator find(key_type k) const
     {
-        return tables[getInd(k)].find(k);
+        return tables[get_table(k)].find(k);
     }
 
     inline size_t erase(key_type k)
     {
-        return tables[getInd(k)].erase(k);
+        return tables[get_table(k)].erase(k);
     }
 
     inline int displacement(key_type k) const
     {
-        return tables[getInd(k)].displacement(k);
+        return tables[get_table(k)].displacement(k);
     }
 
     inline iterator begin()              { return tables[0].begin(); }
@@ -170,7 +175,7 @@ public:
     inline const_iterator cend()   const { return tables[0].cend(); }
 
 private:
-    inline size_t getInd(key_type k) const
+    inline size_t get_table(key_type k) const
     {
         return hasher(k) & bits;
     }

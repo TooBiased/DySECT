@@ -146,7 +146,8 @@ namespace dysect
                  size_t /*dis_steps*/ = 0, size_t /*seed*/ = 0)
             : base_type(cap, size_constraint), nh_data(capacity-nh_size+1, capacity-nh_size+1)
         {
-            factor = double(capacity-nh_size)/double(1ull << 32);
+            //factor = double(capacity-nh_size)/double(1ull << 32);
+            acap = capacity-nh_size;
         }
 
         prob_hopscotch(const prob_hopscotch&) = delete;
@@ -161,7 +162,8 @@ namespace dysect
         using base_type::capacity;
         using base_type::table;
 
-        double    factor;
+        //double    factor;
+        size_t acap;
         AugData_t nh_data;
 
         static constexpr size_t bitmask = (1ull << 32) - 1;
@@ -291,7 +293,7 @@ namespace dysect
 
     private:
         inline size_t index(size_t i) const
-        { return double(bitmask & i) * factor; }
+        { return utils_tm::fastrange64(acap, i); }
         inline size_t mod  (size_t i) const
         { return i; }
 
@@ -410,7 +412,8 @@ namespace dysect
             capacity = capacity*bucket_size;
             thresh   = (cap) ? cap*beta  : 2048*beta;
 
-            factor = double(capacity/bucket_size-bitset_size)/double(1ull << 32);
+            //factor = double(capacity/bucket_size-bitset_size)/double(1ull << 32);
+            acap = capacity/bucket_size-bitset_size;
 
             std::fill(table.get(), table.get()+capacity, value_intern());
             nh_data.clear_init(capacity);
@@ -429,7 +432,8 @@ namespace dysect
         using base_type::thresh;
         using base_type::table;
 
-        double    factor;
+        //double    factor;
+        size_t    acap;
         AugData_t nh_data;
 
         static constexpr size_t bitmask = (1ull << 32) - 1;
@@ -559,7 +563,7 @@ namespace dysect
 
     private:
         inline size_t index(size_t i) const
-        { return size_t(double(bitmask & i) * factor) * bucket_size; }
+        { return utils_tm::fastrange64(acap,i) * bucket_size; }
         inline size_t mod  (size_t i) const
         { return i; }
 
@@ -572,7 +576,8 @@ namespace dysect
             capacity = capacity*bucket_size;
             thresh   = n*beta;
 
-            factor = double(capacity/bucket_size-bitset_size)/double(1ull << 32);
+            //factor = double(capacity/bucket_size-bitset_size)/double(1ull << 32);
+            acap = capacity/bucket_size - bitset_size;
 
             std::fill(table.get()+osize, table.get()+capacity, value_intern());
             nh_data.clear_init(capacity);

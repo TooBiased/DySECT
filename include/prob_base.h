@@ -18,6 +18,7 @@
 #include <vector>
 #include <tuple>
 
+#include "utils/fastrange.hpp"
 #include "utils/output.hpp"
 
 #include "bucket.h"

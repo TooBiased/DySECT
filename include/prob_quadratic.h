@@ -42,7 +42,6 @@ namespace dysect
         prob_quadratic(size_type cap = 0, double size_constraint = 1.1, size_type /*steps*/=0)
             : base_type(std::max<size_type>(cap, 500), size_constraint)
         {
-            factor = double(capacity)/double(1ull << 32);
         }
         prob_quadratic(const prob_quadratic&) = delete;
         prob_quadratic& operator=(const prob_quadratic&) = delete;
@@ -65,16 +64,18 @@ namespace dysect
         using base_type::make_iterator;
         using base_type::make_citerator;
 
-        double factor;
-
         static constexpr size_type bitmask = (1ull<<32)-1;
 
 
         // Access Functions ****************************************************
         inline size_type index(size_type i) const
-        { return (bitmask & i)*factor; }
+        { return utils_tm::fastrange64(capacity, i); }
         inline size_type mod(size_type i)   const
-        { return (i < capacity) ? i : i-capacity; }
+        {
+            auto tmp = i;
+            while(tmp >= capacity) tmp -= capacity;
+            return tmp;
+        }
 
         // Growing *************************************************************
         inline void grow()
@@ -255,14 +256,11 @@ namespace dysect
         prob_quadratic_inplace(size_type cap = 0, double size_constraint = 1.1, size_type /*steps*/=0)
             : base_type(0, size_constraint), bla(0)
         {
-            // factor = double(capacity-300)/double(1ull << 32);
-
             value_intern* temp = reinterpret_cast<value_intern*>(operator new (max_size));
             if (temp) table = std::unique_ptr<value_intern[]>(temp);
 
             capacity = (cap) ? cap*alpha : 2048*alpha;
             thresh   = (cap) ? cap*beta  : 2048*beta;
-            factor = double(capacity)/double(1ull << 32);
 
             std::fill(table.get(), table.get()+capacity, value_intern());
         }
@@ -288,7 +286,6 @@ namespace dysect
         using base_type::make_iterator;
         using base_type::make_citerator;
 
-        double    factor;
         size_type bla;
 
         static constexpr size_type bitmask = (1ull<<32)-1;
@@ -297,9 +294,13 @@ namespace dysect
 
         // Access Functions ****************************************************
         inline size_type index(size_type i) const
-        { return (bitmask & i)*factor; }
+        { return utils_tm::fastrange64(capacity, i); }
         inline size_type mod(size_type i)   const
-        { return (i < capacity) ? i : i-capacity; }
+        {
+            auto tmp = i;
+            while(tmp >= capacity) tmp -= capacity;
+            return tmp;
+        }
 
     private:
         // Growing *************************************************************

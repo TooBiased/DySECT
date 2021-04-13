@@ -137,7 +137,8 @@ namespace dysect
         prob_linear(size_type cap = 0, double size_constraint = 1.1, size_type /*steps*/=0)
             : base_type(std::max<size_type>(cap, 500), size_constraint)
         {
-            factor = double(capacity-300)/double(1ull << 32);
+            //factor = double(capacity-300)/double(1ull << 32);
+            acap = capacity-300;
         }
         prob_linear(const prob_linear&) = delete;
         prob_linear& operator=(const prob_linear&) = delete;
@@ -151,13 +152,14 @@ namespace dysect
         using base_type::table;
         using base_type::h;
 
-        double factor;
+        size_type acap;
+        // double factor;
 
         static constexpr size_type bitmask = (1ull<<32)-1;
 
 
         // Access Functions ********************************************************
-        inline size_type index(size_type i) const { return (bitmask & i)*factor; }
+        inline size_type index(size_type i) const { return utils_tm::fastrange64(capacity, i); }
         inline size_type mod(size_type i)   const { return i; }
 
         // Growing *****************************************************************
@@ -255,7 +257,8 @@ namespace dysect
 
             capacity = (cap) ? cap*alpha : 2048*alpha;
             thresh   = (cap) ? cap*beta  : 2048*beta;
-            factor = double(capacity-300)/double(1ull << 32);
+            //factor = double(capacity-300)/double(1ull << 32);
+            acap = capacity-300;
 
             std::fill(table.get(), table.get()+capacity, value_intern());
         }
@@ -272,7 +275,8 @@ namespace dysect
         using base_type::thresh;
         using base_type::table;
 
-        double    factor;
+        size_type acap;
+        //double    factor;
         size_type bla;
 
         static constexpr size_type bitmask = (1ull<<32)-1;
@@ -280,7 +284,7 @@ namespace dysect
         using base_type::h;
 
         // Access Functions ********************************************************
-        inline size_type index(size_type i) const { return (bitmask & i)*factor; }
+        inline size_type index(size_type i) const { return utils_tm::fastrange64(capacity, i); }
         inline size_type mod(size_type i)   const { return i; }
 
     public:
@@ -294,13 +298,13 @@ namespace dysect
 
             size_type ncap    = n*alpha;
             size_type nthresh = n*beta;
-            double    nfactor = double(ncap-300)/double(1ull << 32);
+            //double    nfactor = double(ncap-300)/double(1ull << 32);
 
             std::fill(table.get()+capacity, table.get()+ncap, value_intern());
 
             capacity = ncap;
             thresh   = nthresh;
-            factor   = nfactor;
+            acap     = ncap-300;
             n = 0;
 
             std::vector<value_intern> buffer;
