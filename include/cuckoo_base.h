@@ -220,6 +220,12 @@ namespace dysect
         { return static_cast<const specialized_type*>(this)->get_buckets(h, mem); }
         inline bucket_type*   get_bucket (hashed_type h, size_type i) const
         { return static_cast<const specialized_type*>(this)->get_bucket(h, i); }
+        inline void           prefetch_buckets([[maybe_unused]]bucket_type** buckets) const
+        {
+            #ifdef PREFETCH
+            for (size_t i = 0; i < nh; ++i) __builtin_prefetch(buckets[i]);
+            #endif
+        }
 
     public:
     // auxiliary functions for testing *****************************************
@@ -269,10 +275,14 @@ namespace dysect
     {
         auto hash = hasher(k);
 
+        bucket_type* buckets[nh];
+        get_buckets(hash, buckets);
+        prefetch_buckets(buckets);
+
         for (size_type i = 0; i < nh; ++i)
         {
-            bucket_type* tb = get_bucket(hash, i);
-            value_intern*   tp = tb->find_ptr(k);
+            //bucket_type* tb = get_bucket(hash, i);
+            value_intern*   tp = buckets[i]->find_ptr(k);
             if (tp) return make_iterator(tp);
         }
         return end();
@@ -284,10 +294,14 @@ namespace dysect
     {
         auto hash = hasher(k);
 
+        bucket_type* buckets[nh];
+        get_buckets(hash, buckets);
+        prefetch_buckets(buckets);
+
         for (size_type i = 0; i < nh; ++i)
         {
-            bucket_type*  tb = get_bucket(hash, i);
-            value_intern* tp = tb->find_ptr(k);
+            //bucket_type*  tb = get_bucket(hash, i);
+            value_intern* tp = buckets[i]->find_ptr(k);
             if (tp) return make_citerator(tp);
         }
         return end();
@@ -307,10 +321,15 @@ namespace dysect
         if (n > grow_thresh) static_cast<specialized_type*>(this)->grow();
         auto hash = hasher(t.first);
 
+        bucket_type* buckets[nh];
+        get_buckets(hash, buckets);
+        prefetch_buckets(buckets);
+
         std::pair<int,value_intern*> max = std::make_pair(0, nullptr);
         for (size_type i = 0; i < nh; ++i)
         {
-            auto temp = get_bucket(hash, i)->probe_ptr(t.first);
+            // auto temp = get_bucket(hash, i)->probe_ptr(t.first);
+            auto temp = buckets[i]->probe_ptr(t.first);
 
             if (temp.first < 0)
                 return std::make_pair(make_iterator(temp.second), false);
@@ -348,10 +367,16 @@ namespace dysect
     cuckoo_base<SCuckoo>::erase(const key_type& k)
     {
         auto hash = hasher(k);
+
+        bucket_type* buckets[nh];
+        get_buckets(hash, buckets);
+        prefetch_buckets(buckets);
+
         for (size_type i = 0; i < nh; ++i)
         {
-            bucket_type* tb = get_bucket(hash, i);
-            if (tb->remove(k))
+
+            //bucket_type* tb = get_bucket(hash, i);
+            if (buckets[i]->remove(k))
             {
                 static_cast<specialized_type*>(this)->dec_n();
                 return 1;
@@ -367,10 +392,14 @@ namespace dysect
         auto hash = hasher(k);
         int disp = 0;
 
+        bucket_type* buckets[nh];
+        get_buckets(hash, buckets);
+        prefetch_buckets(buckets);
+
         for (size_type i = 0; i < nh; ++i)
         {
-            bucket_type*  tb = get_bucket(hash, i);
-            int           td = tb->displacement(k);
+            //bucket_type*  tb = get_bucket(hash, i);
+            int td = buckets[i]->displacement(k);
             disp += td;
             if (td < int(bs)) return disp;
         }

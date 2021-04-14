@@ -2,13 +2,13 @@
 
 // cuckoo_simple tables
 
-#ifdef CUCKOO_STANDARD
+#ifdef MULTI_CUCKOO_STANDARD
 #define MULTI
 #include "include/cuckoo_simple.h"
 #define HASHTYPE dysect::cuckoo_standard
 #endif // CUCKOO_STANDARD
 
-#ifdef CUCKOO_STANDARD_INPLACE
+#ifdef MULTI_CUCKOO_STANDARD_INPLACE
 #define MULTI
 #include "include/cuckoo_simple.h"
 #define HASHTYPE dysect::cuckoo_standard_inplace
@@ -18,7 +18,7 @@
 
 // cuckoo_deamortized table
 
-#ifdef CUCKOO_DEAMORTIZED
+#ifdef MULTI_CUCKOO_DEAMORTIZED
 #define MULTI
 #include "include/cuckoo_deamortized.h"
 #define HASHTYPE dysect::cuckoo_deamortized
@@ -28,13 +28,13 @@
 
 // cuckoo_dysect tables
 
-#ifdef DYSECT
+#ifdef MULTI_DYSECT
 #define MULTI
 #include "include/cuckoo_dysect.h"
 #define HASHTYPE dysect::cuckoo_dysect
 #endif // DYSECT
 
-#ifdef DYSECT_INPLACE
+#ifdef MULTI_DYSECT_INPLACE
 #define MULTI
 #include "include/cuckoo_dysect.h"
 #define HASHTYPE dysect::cuckoo_dysect_inplace
@@ -44,7 +44,7 @@
 
 // cuckoo_independent_2lvl table
 
-#ifdef CUCKOO_INDEPENDENT_2LVL
+#ifdef MULTI_CUCKOO_INDEPENDENT_2LVL
 #define MULTI
 #include "include/cuckoo_independent_2lvl.h"
 #define HASHTYPE dysect::cuckoo_independent_2lvl
@@ -54,13 +54,13 @@
 
 // cuckoo_overlap tables
 
-#ifdef CUCKOO_OVERLAP
+#ifdef MULTI_CUCKOO_OVERLAP
 #define MULTI
 #include "include/cuckoo_overlap.h"
 #define HASHTYPE dysect::cuckoo_overlap
 #endif // OVERLAP
 
-#ifdef CUCKOO_OVERLAP_INPLACE
+#ifdef MULTI_CUCKOO_OVERLAP_INPLACE
 #define MULTI
 #include "include/cuckoo_overlap.h"
 #define HASHTYPE dysect::cuckoo_overlap_inplace
@@ -70,13 +70,13 @@
 
 // prob_hops tables
 
-#ifdef HOPSCOTCH
+#ifdef HOP_HOPSCOTCH
 #define HOPSCOTCH_CONFIG
 #include "include/prob_hops.h"
 #define  HASHTYPE dysect::prob_hopscotch
 #endif // HOPSCOTCH
 
-#ifdef HOPSCOTCH_INPLACE
+#ifdef HOP_HOPSCOTCH_INPLACE
 #define HOPSCOTCH_CONFIG
 #include "include/prob_hops.h"
 #define  HASHTYPE dysect::prob_hopscotch_inplace
@@ -86,13 +86,13 @@
 
 // prob_robin tables
 
-#ifdef ROBIN
+#ifdef TRIV_ROBIN
 #define TRIV_CONFIG
 #include "include/prob_robin.h"
 #define  HASHTYPE dysect::prob_robin
 #endif // ROBIN
 
-#ifdef ROBIN_INPLACE
+#ifdef TRIV_ROBIN_INPLACE
 #define TRIV_CONFIG
 #include "include/prob_robin.h"
 #define  HASHTYPE dysect::prob_robin_inplace
@@ -102,19 +102,19 @@
 
 // prob_simple tables
 
-#ifdef LINEAR_DOUBLING
-#define TRIV_CONFIG
-#include "include/prob_simple.h"
-#define  HASHTYPE dysect::prob_linear_doubling
-#endif // LINEAR_DOUBLING
+// #ifdef LINEAR_DOUBLING
+// #define TRIV_CONFIG
+// #include "include/prob_simple.h"
+// #define  HASHTYPE dysect::prob_linear_doubling
+// #endif // LINEAR_DOUBLING
 
-#ifdef LINEAR
+#ifdef TRIV_LINEAR
 #define TRIV_CONFIG
 #include "include/prob_simple.h"
 #define  HASHTYPE dysect::prob_linear
 #endif // LINEAR
 
-#ifdef LINEAR_INPLACE
+#ifdef TRIV_LINEAR_INPLACE
 #define TRIV_CONFIG
 #include "include/prob_simple.h"
 #define  HASHTYPE dysect::prob_linear_inplace
@@ -122,7 +122,7 @@
 
 // prob_quadratic table
 
-#ifdef QUADRATIC
+#ifdef TRIV_QUADRATIC
 #define TRIV_CONFIG
 #include "include/prob_quadratic.h"
 #define  HASHTYPE dysect::prob_quadratic
@@ -130,13 +130,13 @@
 
 // multitable variants
 
-#ifdef MULTITABLE_LINEAR
+#ifdef TRIV_MULTITABLE_LINEAR
 #define TRIV_CONFIG
 #include "include/prob_multitable_base.h"
 #define HASHTYPE dysect::multitable_linear
 #endif
 
-#ifdef MULTITABLE_ROBIN
+#ifdef TRIV_MULTITABLE_ROBIN
 #define TRIV_CONFIG
 #include "include/prob_multitable_base.h"
 #define HASHTYPE dysect::multitable_robin
@@ -227,12 +227,12 @@ struct Chooser
             return executeDT<Functor, HistCount, Displacer,  256> (c, std::forward<Types>(param)...);
         // case 512:
         //     return executeDT<Functor, HistCount, Displacer,  512> (c, std::forward<Types>(param)...);
-        case 1024:
-            return executeDT<Functor, HistCount, Displacer, 1024> (c, std::forward<Types>(param)...);
+        // case 1024:
+        //     return executeDT<Functor, HistCount, Displacer, 1024> (c, std::forward<Types>(param)...);
         // case 2048:
         //     return executeDT<Functor, HistCount, Displacer, 2048> (c, std::forward<Types>(param)...);
-        case 4096:
-            return executeDT<Functor, HistCount, Displacer, 4096> (c, std::forward<Types>(param)...);
+        // case 4096:
+        //     return executeDT<Functor, HistCount, Displacer, 4096> (c, std::forward<Types>(param)...);
         default:
             constexpr auto ttl = dysect::cuckoo_config<>::tl;
             std::cout << "ERROR: unknown TL value (use "
@@ -256,8 +256,8 @@ struct Chooser
         //     return executeDTB<Functor, HistCount, Displacer, TL,  6> (c, std::forward<Types>(param)...);
         case 8:
             return executeDTB<Functor, HistCount, Displacer, TL,  8> (c, std::forward<Types>(param)...);
-        // case 12:
-        //     return executeDTB<Functor, HistCount, Displacer, TL, 12> (c, std::forward<Types>(param)...);
+        case 12:
+            return executeDTB<Functor, HistCount, Displacer, TL, 12> (c, std::forward<Types>(param)...);
         // case 16:
         //     return executeDTB<Functor, HistCount, Displacer, TL, 16> (c, std::forward<Types>(param)...);
         default:
@@ -283,9 +283,9 @@ struct Chooser
         case 3:
             return executeDTBN<Functor, HistCount, Displacer, TL, BS, 3>
                 (c, std::forward<Types>(param)...);
-        // case 4:
-        //     return executeDTBN<Functor, HistCount, Displacer, TL, BS, 4>
-        //         (c, std::forward<Types>(param)...);
+        case 4:
+            return executeDTBN<Functor, HistCount, Displacer, TL, BS, 4>
+                (c, std::forward<Types>(param)...);
         default:
             constexpr auto tnh = dysect::cuckoo_config<>::nh;
             std::cout << "ERROR: unknown nh value (use "
