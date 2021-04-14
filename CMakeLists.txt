@@ -366,7 +366,7 @@ add_dependencies(all_quadratic
   crawl_triv_quadratic
   displ_triv_quadratic)
 
-add_custom_targets(diss_targets)
+add_custom_target(diss_targets)
 add_dependencies(diss_targets
   time_multi_dysect
   time_multi_dysect_inplace
