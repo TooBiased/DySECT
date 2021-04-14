@@ -13,20 +13,23 @@ do
     do
         for H in 3
         do
+            pname="$(basename -- $tab)"
             ./$tab -n $n -cap $cap -steps $steps -tl 256 -bs $B -nh $H -bfs \
-                   -out ${outfolder}/${tab}
+                   -out ${outfolder}/${pname}
         done
     done
 done
 
 for tab in $binfolder/displ_hop_*
 do
+    pname="$(basename -- $tab)"
     ./$tab -n $n -cap $cap -steps $steps -ns 64 \
-           -out ${outfolder}/${tab}
+           -out ${outfolder}/${pname}
 done
 
 for tab in $binfolder/displ_triv_*
 do
+    pname="$(basename -- $tab)"
     ./$tab -n $n -cap $cap -steps $steps \
-           -out ${outfolder}/${tab}
+           -out ${outfolder}/${pname}
 done

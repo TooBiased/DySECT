@@ -12,8 +12,9 @@ do
     do
         for H in 4 3 2
         do
+            pname="$(basename -- $tab)"
             ./$tab -n $n -cap 50000 -steps $steps -tl 256 -bs $B -nh $H -bfs \
-                   -out ${outfolder}/${tab} &
+                   -out ${outfolder}/${pname} &
         done
     done
 done

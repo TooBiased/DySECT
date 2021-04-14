@@ -14,21 +14,24 @@ do
         do
             for H in 3
             do
+                pname="$(basename -- $tab)"
                 ./$tab -cap 50000 -steps $steps -load $load -tl 256 -bs $B -nh $H -bfs \
-                       -in $ifile -out ${outfolder}/${tab}
+                       -in $ifile -out ${outfolder}/${pname}
             done
         done
     done
 
     # for tab in $binfolder/crawl_hop_*
     # do
+            # pname="$(basename -- $tab)"
             # ./$tab -cap 50000 -steps $steps -load $load -ns 64 \
-            #            -in $ifile -out ${outfolder}/${tab}
+            #            -in $ifile -out ${outfolder}/${pname}
     # done
 
     for tab in $binfolder/crawl_triv_*
     do
+        pname="$(basename -- $tab)"
         ./$tab -cap 50000 -steps $steps -load $load \
-                       -in $ifile -out ${outfolder}/${tab}
+                       -in $ifile -out ${outfolder}/${pname}
     done
 done

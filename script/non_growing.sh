@@ -13,21 +13,24 @@ do
         do
             for H in 4 3 2
             do
+                pname="$(basename -- $tab)"
                 ./$tab -n $neps -steps $steps -tl 256 -bs $B -nh $H -bfs -load 0.8 \
-                      -out ${outfolder}/${tab}
+                      -out ${outfolder}/${pname}
             done
         done
     done
 
     # for tab in $binfolder/eps_hop_*
     # do
+    #     pname="$(basename -- $tab)"
     #     ./$tab -n $neps -steps $steps -ns 64 -load 0.8 \
-    #                   -out ${outfolder}/${tab}
+    #                   -out ${outfolder}/${pname}
     # done
 
     for tab in $binfolder/eps_triv_*
     do
+        pname="$(basename -- $tab)"
         ./$tab -n $neps -steps $steps -load 0.8 \
-                      -out ${outfolder}/${tab}
+                      -out ${outfolder}/${pname}
     done
 done

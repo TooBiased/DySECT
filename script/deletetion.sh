@@ -15,8 +15,9 @@ do
         do
             for H in 3
             do
+                pname="$(basename -- $tab)"
                 ./$tab -n $mxn -pre $mxpre -cap 50000 -steps $steps -load $load -tl 256 -bs $B -nh $H -bfs \
-                       -out ${outfolder}/${tab}
+                       -out ${outfolder}/${pname}
             done
         done
     done
@@ -24,12 +25,13 @@ do
     # for tab in $binfolder/del_hop_*
     # do
     #     ./$tab -n $mxn -pre $mxpre -cap 50000 -steps $steps -load $load -ns 64 \
-    #            -out ${outfolder}/${tab}
+    #            -out ${outfolder}/${pname}
     # done
 
     for tab in $binfolder/del_triv_*
     do
+        pname="$(basename -- $tab)"
         ./$tab -n $mxn -pre $mxpre -cap 50000 -steps $steps -load $load \
-               -out ${outfolder}/${tab}
+               -out ${outfolder}/${pname}
     done
 done

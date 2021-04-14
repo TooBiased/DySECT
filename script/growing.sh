@@ -15,27 +15,30 @@ do
         do
             for H in 4 3 2
             do
+                pname="$(basename -- $tab)"
                 ./$tab -n $n -pre $pre -cap 50000 -steps $steps -load $load -tl 256 -bs $B -nh $H -bfs \
-                       -out ${outfolder}/${tab}
+                       -out ${outfolder}/${pname}
                 ./$tab -n $n -pre $pre            -steps $steps -load $load -tl 256 -bs $B -nh $H -bfs \
-                       -out ${outfolder}/${tab}
+                       -out ${outfolder}/${pname}
             done
         done
     done
 
     # for tab in $binfolder/time_hop_*
     # do
+    # pname="$(basename -- $tab)"
     # ./$tab -n $n -pre $pre -cap 50000 -steps $steps -load $load -ns 64 \
-        #        -out ${outfolder}/${tab}
+        #        -out ${outfolder}/${pname}
     # ./$tab -n $n -pre $pre            -steps $steps -load $load -ns 64 \
-        #        -out ${outfolder}/${tab}
+        #        -out ${outfolder}/${pname}
     # done
 
     for tab in $binfolder/time_triv_*
     do
+        pname="$(basename -- $tab)"
         ./$tab -n $n -pre $pre -cap 50000 -steps $steps -load $load \
-               -out ${outfolder}/${tab}
+               -out ${outfolder}/${pname}
         ./$tab -n $n -pre $pre            -steps $steps -load $load \
-               -out ${outfolder}/${tab}
+               -out ${outfolder}/${pname}
     done
 done
