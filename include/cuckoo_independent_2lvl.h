@@ -189,7 +189,7 @@ namespace dysect
     private:
         // Functions for finding buckets *******************************************
 
-        inline size_type fastrange(size_type cap, hashed_type h) const
+        inline size_type fastrange(size_type cap, size_type h) const
         {
             return (cap*h) >> range_shift;
         }
