@@ -90,7 +90,6 @@ namespace dysect
                     ntable.insert(temp);
                 }
             }
-
             (*this) = std::move(ntable);
         }
         // Specialized Deletion stuff ******************************************
@@ -254,7 +253,7 @@ namespace dysect
 
     public:
         prob_quadratic_inplace(size_type cap = 0, double size_constraint = 1.1, size_type /*steps*/=0)
-            : base_type(0, size_constraint), bla(0)
+            : base_type(0, size_constraint), max_buffer_size(0)
         {
             value_intern* temp = reinterpret_cast<value_intern*>(operator new (max_size));
             if (temp) table = std::unique_ptr<value_intern[]>(temp);
@@ -286,7 +285,7 @@ namespace dysect
         using base_type::make_iterator;
         using base_type::make_citerator;
 
-        size_type bla;
+        size_type max_buffer_size;
 
         static constexpr size_type bitmask = (1ull<<32)-1;
 
@@ -306,19 +305,62 @@ namespace dysect
         // Growing *************************************************************
         inline void grow()
         {
-            // TODO
+            size_type ncap    = n*alpha;
+            size_type nthresh = n*beta;
+            std::fill(table.get()+capacity, table.get()+ncap, value_intern());
+
+            auto ocap = capacity;
+            capacity = ncap;
+            thresh   = nthresh;
+
+            std::vector<value_intern> buffer;
+
+            for (int i = ocap -1; i >= 0; --i)
+            {
+                auto temp = table[i];
+
+                if (temp.first)
+                {
+                    table[i] = value_intern();
+
+                    if (!intern_migration_insert(i, temp))
+                        buffer.push_back(temp);
+                }
+            }
+
+            max_buffer_size = std::max(max_buffer_size, buffer.size());
+            for (auto it = buffer.begin(); it != buffer.end(); it++)
+            {
+                insert(*it);
+            }
+        }
+
+        inline bool intern_migration_insert(uint low, const value_intern& e)
+        {
+            auto ind = h(e.first);
+
+            for (size_t i=0; ind>low; ++i)
+            {
+                if (table[ind].first == 0)
+                {
+                    table[ind] = e;
+                    return true;
+                }
+                ind = mod(ind + 2*i + 1);
+            }
+            return false;
         }
 
     public:
         inline static void print_init_header(std::ostream& out)
         {
-            out.width(6); out  << "busize" << " ";
+            out << otm::width(8) << "mbuffer";
             base_type::print_init_header(out);
         }
 
         inline        void print_init_data  (std::ostream& out)
         {
-            out.width(6);  out << bla << " ";
+            out << otm::width(8) << max_buffer_size;
             base_type::print_init_data(out);
         }
     };
@@ -394,19 +436,21 @@ namespace dysect
     prob_quadratic_inplace<K,D,HF,C>::find(const key_type& k) const
     {
         size_t ind = h(k);
+
+        // x+(i+1)² = x+i²+2i+1²
         for (size_t i=0; ; ++i)
         {
-            auto ti    = mod(i*i + ind);
-            auto temp  = table[ti];
+            auto temp  = table[ind];
 
             if (temp.first == k)
             {
-                return make_citerator(&table[ti]);
+                return make_citerator(&table[ind]);
             }
             if ( temp.first == 0)
             {
                 return base_type::cend();
             }
+            ind = mod(ind + 2*i + 1);
         }
     }
 
@@ -425,12 +469,12 @@ namespace dysect
         size_t ind = h(k);
         for (size_t i=0; ; ++i)
         {
-            auto ti    = mod(i*i + ind);
 
-            if (table[ti].first == k)
+            if (table[ind].first == k)
             {
                 return i;
             }
+            ind = mod(ind + 2*i + 1);
         }
     }
 

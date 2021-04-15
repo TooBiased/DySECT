@@ -284,7 +284,8 @@ namespace dysect
         using base_type::h;
 
         // Access Functions ********************************************************
-        inline size_type index(size_type i) const { return utils_tm::fastrange64(capacity, i); }
+        inline size_type index(size_type i) const
+        { return utils_tm::fastrange64(capacity, i); }
         inline size_type mod(size_type i)   const { return i; }
 
     public:
@@ -302,6 +303,7 @@ namespace dysect
 
             std::fill(table.get()+capacity, table.get()+ncap, value_intern());
 
+            auto old_cap = capacity;
             capacity = ncap;
             thresh   = nthresh;
             acap     = ncap-300;
@@ -309,7 +311,7 @@ namespace dysect
 
             std::vector<value_intern> buffer;
 
-            for (int i = capacity - 1; i >= 0; --i)
+            for (int i = old_cap - 1; i >= 0; --i)
             {
                 auto temp = table[i];
 
@@ -340,7 +342,6 @@ namespace dysect
                 {
                     insert(*it);
                 }
-                buffer.clear();
             }
         }
 

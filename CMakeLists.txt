@@ -60,7 +60,7 @@ endif()
 
 #### HASH TABLES ###############################################################
 
-set(HASH_TABLES_LIST "multi_dysect;multi_dysect_inplace;multi_cuckoo_standard;multi_cuckoo_standard_inplace;multi_cuckoo_deamortized;multi_cuckoo_independent_2lvl;multi_cuckoo_overlap;multi_cuckoo_overlap_inplace;hop_hopscotch;hop_hopscotch_inplace;triv_robin;triv_robin_inplace;triv_multitable_robin;triv_linear;triv_linear_inplace;triv_multitable_linear;triv_quadratic")
+set(HASH_TABLES_LIST "multi_dysect;multi_dysect_inplace;multi_cuckoo_standard;multi_cuckoo_standard_inplace;multi_cuckoo_deamortized;multi_cuckoo_independent_2lvl;multi_cuckoo_overlap;multi_cuckoo_overlap_inplace;hop_hopscotch;hop_hopscotch_inplace;triv_robin;triv_robin_inplace;triv_multitable_robin;triv_linear;triv_linear_inplace;triv_multitable_linear;triv_quadratic;triv_multitable_quadratic;triv_quadratic_inplace")
 
 #### LOOKS FOR THE MALLOC COUNTING LIB #########################################
 

@@ -128,6 +128,12 @@
 #define  HASHTYPE dysect::prob_quadratic
 #endif // QUADRATIC
 
+#ifdef TRIV_QUADRATIC_INPLACE
+#define TRIV_CONFIG
+#include "include/prob_quadratic.h"
+#define  HASHTYPE dysect::prob_quadratic_inplace
+#endif // QUADRATIC
+
 // multitable variants
 
 #ifdef TRIV_MULTITABLE_LINEAR
@@ -141,6 +147,13 @@
 #include "include/prob_multitable_base.h"
 #define HASHTYPE dysect::multitable_robin
 #endif
+
+#ifdef TRIV_MULTITABLE_QUADRATIC
+#define TRIV_CONFIG
+#include "include/prob_multitable_base.h"
+#define HASHTYPE dysect::multitable_quadratic
+#endif
+
 
 // #ifdef MULTITABLE_QUADRATIC
 // #define TRIV_CONFIG
