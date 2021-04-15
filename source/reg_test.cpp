@@ -29,7 +29,7 @@ struct Test
     {
         otm::out() << otm::width(4) << "# it"
                    << otm::width(6) << "block"
-                   << otm::width(5) << "alpha";
+                   << otm::width(8) << "alpha";
         table_type::print_init_header(out);
         otm::out() << otm::width( 9) << "cap"
                    << otm::width( 9) << "n_full"
@@ -71,7 +71,7 @@ struct Test
 
                 otm::out() << otm::width(4) << i
                            << otm::width(6) << j
-                           << otm::width(5) << alpha;
+                           << otm::width(8) << alpha;
                 table.print_init_data(out);
                 otm::out() << otm::width(9) << cap
                            << otm::width(9) << n

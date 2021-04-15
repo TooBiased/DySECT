@@ -64,7 +64,7 @@ namespace dysect
             size_type lsize       = std::floor(cap * size_constraint / double(tl*bs));
             lsize                 = std::max(lsize, 256ul);
             // double    factor      = double(lsize)/fac_div;
-            size_type grow_thresh = double(lsize) / beta;
+            size_type grow_thresh = double(lsize*bs) / beta;
 
             for (size_type i = 0; i < tl; ++i)
             {
@@ -128,7 +128,6 @@ namespace dysect
         size_type ll_thresh[tl];
         // double    ll_factor[tl];
         std::unique_ptr<bucket_type[]> ll_tab[tl];
-        std::vector<value_intern> grow_buffer;
 
         using base_type::make_iterator;
         using base_type::make_citerator;
@@ -150,7 +149,7 @@ namespace dysect
             if (result.second)
             {
                 auto currsize = ++ll_elem[ttl];
-                if (currsize > ll_thresh[ttl]) growTab(ttl);
+                if (currsize > ll_thresh[ttl]) grow_tab(ttl);
             }
             return result;
         }
@@ -204,8 +203,7 @@ namespace dysect
         {
             size_type tab = ext::tab(h,0);
             // return &(ll_tab[tab][ext::loc(h,i)*ll_factor[tab]]);
-            return &(ll_tab[tab][fastrange(ll_size[tab],
-                                                       ext::loc(h,i))]);
+            return &(ll_tab[tab][fastrange(ll_size[tab], ext::loc(h,i))]);
         }
 
 
@@ -217,27 +215,32 @@ namespace dysect
             // individually for each subtable in this specialization
         }
 
-        inline void growTab(size_type tab)
+        inline void grow_tab(size_type tab)
         {
+            //otm::out() << "growing in table" << tab << std::endl;
             //TODO make this prettier
-            if (grow_buffer.size()) return;
-            size_type nsize   = std::floor(double(ll_elem[tab]) * alpha / double(bs));
-            nsize          = std::max(nsize, ll_size[tab]+1);
-            capacity      += nsize - ll_size[tab];
+            size_type nsize  = std::floor(double(ll_elem[tab]) * alpha / double(bs));
+            nsize            = std::max(nsize, ll_size[tab]+1);
+            capacity        += (nsize - ll_size[tab])*bs;
             //double nfactor = double(nsize)      / fac_div;
             size_type nthresh = ll_elem[tab] * beta;
 
+            std::vector<value_intern> grow_buffer;
+
             auto ntable = std::make_unique<bucket_type[]>(nsize);
-            migrate(tab, ntable, nsize);
+            migrate(tab, ntable, nsize, grow_buffer);
 
             ll_tab[tab]    = std::move(ntable);
             ll_size[tab]   = nsize;
             //ll_factor[tab] = nfactor;
             ll_thresh[tab] = nthresh;
-            if (grow_buffer.size()) finalize_grow();
+            finalize_grow(grow_buffer);
         }
 
-        inline void migrate(size_type tab, std::unique_ptr<bucket_type[]>& target, size_type nsize)
+        inline void migrate(size_type tab,
+                            std::unique_ptr<bucket_type[]>& target,
+                            size_type nsize,
+                            std::vector<value_intern>& grow_buffer)
         {
             size_type csize   = ll_size[tab];
             //double cfactor = ll_factor[tab];
@@ -253,9 +256,9 @@ namespace dysect
 
                     for (size_type ti = 0; ti < nh; ++ti)
                     {
-                        if (i == utils_tm::fastrange32(csize, ext::loc(hash, ti)))
+                        if (i == fastrange(csize, ext::loc(hash, ti)))
                         {
-                            if (! target[utils_tm::fastrange32(nsize, ext::loc(hash, ti))].insert(e))
+                            if (! target[fastrange(nsize, ext::loc(hash, ti))].insert(e))
                                 grow_buffer.push_back(e);
                             break;
                         }
@@ -264,16 +267,12 @@ namespace dysect
             }
         }
 
-        inline void finalize_grow()
+        inline void finalize_grow(std::vector<value_intern>& grow_buffer)
         {
-            size_type temp = n;
             for (auto& e : grow_buffer)
             {
                 base_type::insert(e);
             }
-            n = temp;
-            std::vector<std::pair<key_type, mapped_type> > ttemp;
-            std::swap(ttemp, grow_buffer);
         }
     };
 

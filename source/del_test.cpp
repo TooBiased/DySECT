@@ -25,7 +25,7 @@ struct test_type
                    double alpha)
     {
         otm::out() << otm::width(4) << "# it"
-                   << otm::width(5) << "alpha";
+                   << otm::width(8) << "alpha";
         table_type::print_init_header(otm::out());
         otm::out() << otm::width(9) << "cap"
                    << otm::width(9) << "n_win"
@@ -33,8 +33,8 @@ struct test_type
                    << otm::width(8) << "t_win"
                    << otm::width(8) << "t_mix"
                    << otm::width(8) << "t_eval"
-                   << otm::width(7) << "op_err"
-                   << otm::width(7) << "ev_err"
+                   << otm::width(9) << "op_err"
+                   << otm::width(9) << "ev_err"
         #ifdef MALLOC_COUNT
                    << otm::width(7) << "mem"
         #endif

@@ -28,13 +28,13 @@ struct test_type
                    std::string inf_name)
     {
         otm::out() << otm::width(4)  << "# it"
-                   << otm::width(6)  << "alpha";
+                   << otm::width(8)  << "alpha";
         table_type::print_init_header(otm::out());
         otm::out() << otm::width(9)  << "cap"
                    << otm::width(9)  << "time"
                    << otm::width(10) << "doubles"
                    << otm::width(9)  << "individ"
-                   << otm::width(6)  << "err"
+                   << otm::width(9)  << "err"
 #ifdef MALLOC_COUNT
                    << otm::width(7)  << "mem"
                    << otm::width(7)  << "mx_mem"
@@ -94,13 +94,13 @@ struct test_type
                                (t1 - t0).count()/1000.;
 
             otm::out() << otm::width(4)  << i
-                       << otm::width(6)  << alpha;
+                       << otm::width(8)  << alpha;
             table.print_init_data(otm::out());
             otm::out() << otm::width(9)  << cap
                        << otm::width(9)  << ttest
                        << otm::width(10) << contained
                        << otm::width(9)  << individual
-                       << otm::width(6)  << errors
+                       << otm::width(9)  << errors
 #ifdef MALLOC_COUNT
                        << otm::width(7)
                        << double(malloc_count_current())/double(8*2*n)

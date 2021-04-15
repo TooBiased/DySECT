@@ -55,8 +55,8 @@ struct test_type
                    << otm::width(8) << "t_in"
                    << otm::width(8) << "t_fip"
                    << otm::width(8) << "t_fin"
-                   << otm::width(6) << "in_err"
-                   << otm::width(6) << "fi_err"
+                   << otm::width(8) << "in_err"
+                   << otm::width(8) << "fi_err"
 #ifdef MALLOC_COUNT
                    << otm::width(7) << "memory"
 #endif
@@ -133,8 +133,8 @@ struct test_type
                            << otm::width(8) << d_in
                            << otm::width(8) << d_fip
                            << otm::width(8) << d_fin
-                           << otm::width(6) << in_errors
-                           << otm::width(6) << fi_errors
+                           << otm::width(8) << in_errors
+                           << otm::width(8) << fi_errors
 #ifdef MALLOC_COUNT
                            << otm::width(7)
                            << malloc_count_current() - n*8 -win*16

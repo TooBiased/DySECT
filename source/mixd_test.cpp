@@ -32,7 +32,7 @@ struct Test
                    double alpha)
     {
         otm::out() << otm::width(4) << "# it"
-                   << otm::width(5) << "alpha";
+                   << otm::width(8) << "alpha";
         table_type::print_init_header(otm::out());
         otm::out() << otm::width(9) << "cap"
                    << otm::width(4) << "pat"
@@ -40,7 +40,7 @@ struct Test
                    << otm::width(9) << "n"
                    << otm::width(8) << "t_pre"
                    << otm::width(8) << "t_mix"
-                   << otm::width(6) << "in_err"
+                   << otm::width(9) << "in_err"
         #ifdef MALLOC_COUNT
                    << otm::width(7) << "memory"
         #endif
@@ -119,7 +119,7 @@ struct Test
             double d_mix = std::chrono::duration_cast<std::chrono::microseconds> (t2 - t1).count()/1000.;
 
             otm::out() << otm::width(4) << i
-                       << otm::width(5) << alpha;
+                       << otm::width(8) << alpha;
             table.print_init_data(otm::out());
             otm::out() << otm::width(9) << cap
                        << otm::width(4) << pattern
@@ -127,7 +127,7 @@ struct Test
                        << otm::width(9) << n
                        << otm::width(8) << d_pre
                        << otm::width(8) << d_mix
-                       << otm::width(6) << errors
+                       << otm::width(9) << errors
 #ifdef MALLOC_COUNT
                        << otm::width(7) << double(malloc_count_current()-(n+pre)*8)/
                 (0.1*double(pattern*8*2*n)+double(8*2*pre))

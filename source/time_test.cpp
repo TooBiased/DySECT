@@ -52,7 +52,7 @@ struct Test
                    double alpha)
     {
         otm::out() << otm::width(4) << "# it"
-                   << otm::width(5) << "alpha";
+                   << otm::width(8) << "alpha";
         table_type::print_init_header(otm::out());
         otm::out() << otm::width(9) << "cap"
                    << otm::width(9) << "n_0"
@@ -61,8 +61,8 @@ struct Test
                    << otm::width(8) << "t_in1"
                    << otm::width(8) << "t_find+"
                    << otm::width(8) << "t_find-"
-                   << otm::width(6) << "in_err"
-                   << otm::width(6) << "fi_err";
+                   << otm::width(9) << "in_err"
+                   << otm::width(9) << "fi_err";
         if constexpr (malloc_mode) otm::out() << otm::width(7) << "memory";
         if constexpr (rss_mode)    otm::out() << otm::width(7) << "rss";
         otm::out() << std::endl;
@@ -111,16 +111,19 @@ struct Test
                 auto e = table.find(keys[i]);
                 if ( (e == table.end()) || ((*e).second != i))
                     //if (ctable.at(keys[i]) != i)
-                    fin_errors++;
+                {  fin_errors++;  }
             }
+            size_t bla = fin_errors;
+            if (bla) otm::out() << "successfull find error " << std::endl;
             auto t3 = std::chrono::high_resolution_clock::now();
             for (size_t i = n; i < 2*n; ++i)
             {
                 auto e = table.find(keys[i]);
                 if ( (e != table.end()) && (keys[(*e).second] != keys[i]))
-                    fin_errors++;
+                {  fin_errors++;  }
             }
             auto t4 = std::chrono::high_resolution_clock::now();
+            if (bla != fin_errors) otm::out() << "unsuccessful find errors " << std::endl;
 
             double d_in0 = std::chrono::duration_cast<std::chrono::microseconds>
                 (t1 - t0).count()/1000.;
@@ -132,7 +135,7 @@ struct Test
                 (t4 - t3).count()/1000.;
 
             otm::out() << otm::width(4) << i
-                       << otm::width(5) << alpha;
+                       << otm::width(8) << alpha;
             table.print_init_data(otm::out());
             otm::out() << otm::width(9) << cap
                        << otm::width(9) << n0
@@ -141,8 +144,8 @@ struct Test
                        << otm::width(8) << d_in1
                        << otm::width(8) << d_fn0
                        << otm::width(8) << d_fn1
-                       << otm::width(6) << in_errors
-                       << otm::width(6) << fin_errors;
+                       << otm::width(9) << in_errors
+                       << otm::width(9) << fin_errors;
             if constexpr (malloc_mode)
                 otm::out() << otm::width( 7)
                            << double(get_malloc())/double(8*2*n)-1.;
