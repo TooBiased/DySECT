@@ -119,7 +119,8 @@ namespace dysect
         static constexpr size_type bs = cuckoo_traits<this_type>::bs;
         static constexpr size_type tl = cuckoo_traits<this_type>::tl;
         static constexpr size_type nh = cuckoo_traits<this_type>::nh;
-        static constexpr double    fac_div = double (1ull << (32 - ct_log(tl)));
+        //static constexpr double    fac_div = double (1ull << (32 - ct_log(tl)));
+        static constexpr uint range_shift = 32-ct_log(tl);
 
         double    beta;
         size_type ll_size  [tl];
@@ -188,6 +189,11 @@ namespace dysect
     private:
         // Functions for finding buckets *******************************************
 
+        inline size_type fastrange(size_type cap, hashed_type h) const
+        {
+            return (cap*h) >> range_shift;
+        }
+
         inline void get_buckets(hashed_type h, bucket_type** mem) const
         {
             for (size_type i = 0; i < nh; ++i)
@@ -198,7 +204,7 @@ namespace dysect
         {
             size_type tab = ext::tab(h,0);
             // return &(ll_tab[tab][ext::loc(h,i)*ll_factor[tab]]);
-            return &(ll_tab[tab][utils_tm::fastrange32(ll_size[tab],
+            return &(ll_tab[tab][fastrange(ll_size[tab],
                                                        ext::loc(h,i))]);
         }
 
