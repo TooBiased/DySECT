@@ -86,7 +86,7 @@ int main(int argn, char** argc)
     if (c.bool_arg("-out") || c.bool_arg("-file"))
     {
         std::string name = c.str_arg("-out", "");
-        name = c.str_arg("-file", name) + ".del";
+        name = c.str_arg("-file", name) + ".mxls";
         otm::out().set_file(name);
     }
 

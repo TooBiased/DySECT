@@ -395,11 +395,11 @@ add_dependencies(diss_targets
   eps_multi_dysect
   eps_multi_dysect_inplace
   eps_multi_cuckoo_standard_inplace
-  eps_multi_cuckoo_independent_2lvl
+  # eps_multi_cuckoo_independent_2lvl
   eps_triv_robin_inplace
-  eps_triv_multitable_robin
+  # eps_triv_multitable_robin
   eps_triv_linear_inplace
-  eps_triv_multitable_linear
+  # eps_triv_multitable_linear
 
   crawl_multi_dysect
   crawl_multi_dysect_inplace
