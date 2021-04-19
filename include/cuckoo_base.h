@@ -333,7 +333,7 @@ namespace dysect
 
             if (temp.first < 0)
                 return std::make_pair(make_iterator(temp.second), false);
-            max = (max.first > temp.first) ? max : temp;
+            max = (max.first >= temp.first) ? max : temp;
         }
 
         if (max.first > 0)
