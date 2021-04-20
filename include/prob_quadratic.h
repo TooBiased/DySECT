@@ -350,19 +350,6 @@ namespace dysect
             }
             return false;
         }
-
-    public:
-        inline static void print_init_header(std::ostream& out)
-        {
-            out << otm::width(8) << "mbuffer";
-            base_type::print_init_header(out);
-        }
-
-        inline        void print_init_data  (std::ostream& out)
-        {
-            out << otm::width(8) << max_buffer_size;
-            base_type::print_init_data(out);
-        }
     };
 
 
