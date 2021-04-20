@@ -376,6 +376,8 @@ add_dependencies(diss_targets
   time_triv_multitable_robin
   time_triv_linear_inplace
   time_triv_multitable_linear
+  time_triv_quadratic_inplace
+  time_triv_multitable_quadratic
 
   displ_multi_cuckoo_standard
   displ_hop_hopscotch
@@ -395,11 +397,9 @@ add_dependencies(diss_targets
   eps_multi_dysect
   eps_multi_dysect_inplace
   eps_multi_cuckoo_standard_inplace
-  # eps_multi_cuckoo_independent_2lvl
   eps_triv_robin_inplace
-  # eps_triv_multitable_robin
   eps_triv_linear_inplace
-  # eps_triv_multitable_linear
+  eps_triv_quadratic_inplace
 
   crawl_multi_dysect
   crawl_multi_dysect_inplace
@@ -409,5 +409,7 @@ add_dependencies(diss_targets
   crawl_triv_multitable_robin
   crawl_triv_linear_inplace
   crawl_triv_multitable_linear
+  crawl_triv_quadratic_inplace
+  crawl_triv_multitable_quadratic
 
   sing_multi_dysect)
