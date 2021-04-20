@@ -161,9 +161,9 @@ namespace dysect
         static constexpr size_t loc_mask = (1ull<<(64-tab_width))-1;
     public:
         inline static size_t tab(const Hashed& h, size_t i)
-        { return (h.split[0].tab + i*h.split[1].tab) & tab_mask; }
+        { return (h.split[0].tab + i*(h.split[1].tab|1)) & tab_mask; }
         inline static size_t loc(const Hashed& h, size_t i)
-        { return (h.split[0].loc + i*h.split[1].loc) & tab_mask; }
+        { return (h.split[0].loc + i*(h.split[1].loc|1)) & tab_mask; }
     };
 
     template <class Hashed, size_t tab_width>
@@ -174,9 +174,9 @@ namespace dysect
         static constexpr size_t loc_mask = (1ull<<(32-tab_width))-1;
     public:
         inline static size_t tab(const Hashed& h, size_t i)
-        { return (h.split[0].tab0 + i*h.split[0].tab1) & tab_mask; }
+        { return (h.split[0].tab0 + i*(h.split[0].tab1|1)) & tab_mask; }
         inline static size_t loc(const Hashed& h, size_t i)
-        { return (h.split[0].loc0 + i*h.split[0].loc1) & loc_mask; }
+        { return (h.split[0].loc0 + i*(h.split[0].loc1|1)) & loc_mask; }
     };
 
 } // namespace dysect
