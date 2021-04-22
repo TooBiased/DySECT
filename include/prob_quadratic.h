@@ -76,6 +76,10 @@ namespace dysect
             while(tmp >= capacity) tmp -= capacity;
             return tmp;
         }
+        inline size_type next(size_t ind, size_t i) const
+        {
+            return (i < capacity) ? mod(ind +2*i +1) : ind+1;
+        }
 
         // Growing *************************************************************
         inline void grow()
@@ -123,21 +127,23 @@ namespace dysect
     prob_quadratic<K,D,HF,C>::insert(const std::pair<key_type, mapped_type>&t)
     {
         size_t ind = h(t.first);
+
+        // x+(i+1)² = x+i²+2i+1²
         for (size_t i=0; ; ++i)
         {
-            auto ti    = mod(i*i + ind);
-            auto temp  = table[ti];
+            auto temp  = table[ind];
 
             if ( temp.first == 0)
             {
-                table[ti] = t;
+                table[ind] = t;
                 inc_n();
-                return std::make_pair(make_iterator(&table[ti]), true);
+                return std::make_pair(make_iterator(&table[ind]), true);
             }
             if (temp.first == t.first)
             {
-                return std::make_pair(make_iterator(&table[ti]), false);
+                return std::make_pair(make_iterator(&table[ind]), false);
             }
+            ind = next(ind, i);
         }
     }
 
@@ -146,19 +152,21 @@ namespace dysect
     prob_quadratic<K,D,HF,C>::find(const key_type& k)
     {
         size_t ind = h(k);
+
+        // x+(i+1)² = x+i²+2i+1²
         for (size_t i=0; ; ++i)
         {
-            auto ti    = mod(i*i + ind);
-            auto temp  = table[ti];
+            auto temp  = table[ind];
 
             if (temp.first == k)
             {
-                return make_iterator(&table[ti]);
+                return make_iterator(&table[ind]);
             }
             if ( temp.first == 0)
             {
                 return base_type::end();
             }
+            ind = next(ind, i);
         }
     }
 
@@ -167,19 +175,22 @@ namespace dysect
     prob_quadratic<K,D,HF,C>::find(const key_type& k) const
     {
         size_t ind = h(k);
+
+        // x+(i+1)² = x+i²+2i+1²
         for (size_t i=0; ; ++i)
         {
-            auto ti    = mod(i*i + ind);
-            auto temp  = table[ti];
+            auto temp  = table[ind];
 
             if (temp.first == k)
             {
-                return make_citerator(&table[ti]);
+                return make_citerator(&table[ind]);
             }
             if ( temp.first == 0)
             {
                 return base_type::cend();
             }
+            ind = next(ind, i);
+
         }
     }
 
@@ -196,14 +207,16 @@ namespace dysect
     prob_quadratic<K,D,HF,C>::displacement(const key_type& k) const
     {
         size_t ind = h(k);
+
+        // x+(i+1)² = x+i²+2i+1²
         for (size_t i=0; ; ++i)
         {
-            auto ti    = mod(i*i + ind);
-
-            if (table[ti].first == k)
+            if (table[ind].first == k)
             {
                 return i;
             }
+            ind = next(ind, i);
+
         }
     }
 
@@ -300,6 +313,10 @@ namespace dysect
             while(tmp >= capacity) tmp -= capacity;
             return tmp;
         }
+        inline size_type next(size_t ind, size_t i) const
+        {
+            return (i < capacity) ? mod(ind +2*i +1) : ind+1;
+        }
 
     private:
         // Growing *************************************************************
@@ -339,6 +356,7 @@ namespace dysect
         {
             auto ind = h(e.first);
 
+            // x+(i+1)² = x+i²+2i+1²
             for (size_t i=0; ind>low; ++i)
             {
                 if (table[ind].first == 0)
@@ -346,7 +364,7 @@ namespace dysect
                     table[ind] = e;
                     return true;
                 }
-                ind = mod(ind + 2*i + 1);
+                ind = next(ind, i);
             }
             return false;
         }
@@ -379,21 +397,23 @@ namespace dysect
     prob_quadratic_inplace<K,D,HF,C>::insert(const std::pair<key_type, mapped_type>&t)
     {
         size_t ind = h(t.first);
+
+        // x+(i+1)² = x+i²+2i+1²
         for (size_t i=0; ; ++i)
         {
-            auto ti    = mod(i*i + ind);
-            auto temp  = table[ti];
+            auto temp  = table[ind];
 
             if ( temp.first == 0)
             {
-                table[ti] = t;
+                table[ind] = t;
                 inc_n();
-                return std::make_pair(make_iterator(&table[ti]), true);
+                return std::make_pair(make_iterator(&table[ind]), true);
             }
             if (temp.first == t.first)
             {
-                return std::make_pair(make_iterator(&table[ti]), false);
+                return std::make_pair(make_iterator(&table[ind]), false);
             }
+            ind = next(ind, i);
         }
     }
 
@@ -402,19 +422,21 @@ namespace dysect
     prob_quadratic_inplace<K,D,HF,C>::find(const key_type& k)
     {
         size_t ind = h(k);
+
+        // x+(i+1)² = x+i²+2i+1²
         for (size_t i=0; ; ++i)
         {
-            auto ti    = mod(i*i + ind);
-            auto temp  = table[ti];
+            auto temp  = table[ind];
 
             if (temp.first == k)
             {
-                return make_iterator(&table[ti]);
+                return make_iterator(&table[ind]);
             }
             if ( temp.first == 0)
             {
                 return base_type::end();
             }
+            ind = next(ind, i);
         }
     }
 
@@ -437,7 +459,7 @@ namespace dysect
             {
                 return base_type::cend();
             }
-            ind = mod(ind + 2*i + 1);
+            ind = next(ind, i);
         }
     }
 
@@ -454,14 +476,15 @@ namespace dysect
     prob_quadratic_inplace<K,D,HF,C>::displacement(const key_type& k) const
     {
         size_t ind = h(k);
+
+        // x+(i+1)² = x+i²+2i+1²
         for (size_t i=0; ; ++i)
         {
-
             if (table[ind].first == k)
             {
                 return i;
             }
-            ind = mod(ind + 2*i + 1);
+            ind = next(ind, i);
         }
     }
 
