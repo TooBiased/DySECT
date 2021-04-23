@@ -78,7 +78,7 @@ namespace dysect
         }
         inline size_type next(size_t ind, size_t i) const
         {
-            return (i < capacity) ? mod(ind +2*i +1) : ind+1;
+            return (i < capacity) ? mod(ind +2*i +1) : mod(ind+1);
         }
 
         // Growing *************************************************************
@@ -315,7 +315,7 @@ namespace dysect
         }
         inline size_type next(size_t ind, size_t i) const
         {
-            return (i < capacity) ? mod(ind +2*i +1) : ind+1;
+            return (i < capacity) ? mod(ind +2*i +1) : mod(ind+1);
         }
 
     private:
