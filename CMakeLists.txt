@@ -60,7 +60,7 @@ endif()
 
 #### HASH TABLES ###############################################################
 
-set(HASH_TABLES_LIST "multi_dysect;multi_dysect_inplace;multi_cuckoo_standard;multi_cuckoo_standard_inplace;multi_cuckoo_deamortized;multi_cuckoo_independent_2lvl;multi_cuckoo_overlap;multi_cuckoo_overlap_inplace;hop_hopscotch;hop_hopscotch_inplace;triv_robin;triv_robin_inplace;triv_multitable_robin;triv_linear;triv_linear_inplace;triv_multitable_linear;triv_quadratic;triv_multitable_quadratic;triv_quadratic_inplace")
+set(HASH_TABLES_LIST "multi_dysect;multi_dysect_inplace;multi_cuckoo_standard;multi_cuckoo_standard_inplace;multi_cuckoo_deamortized;multi_cuckoo_independent_2lvl;multi_cuckoo_overlap;multi_cuckoo_overlap_inplace;hop_hopscotch;hop_hopscotch_inplace;triv_robin;triv_robin_inplace;triv_multitable_robin;triv_linear;triv_linear_inplace;triv_multitable_linear;triv_quadratic;triv_multitable_quadratic;triv_quadratic_inplace;triv_chaining")
 
 #### LOOKS FOR THE MALLOC COUNTING LIB #########################################
 
@@ -154,7 +154,8 @@ add_dependencies(all_time
   time_triv_linear
   time_triv_linear_inplace
   time_triv_multitable_linear
-  time_triv_quadratic)
+  time_triv_quadratic
+  time_triv_chaining)
 
 add_custom_target(all_displ)
 add_dependencies(all_displ
@@ -174,7 +175,8 @@ add_dependencies(all_displ
   displ_triv_linear
   displ_triv_linear_inplace
   displ_triv_multitable_linear
-  displ_triv_quadratic)
+  displ_triv_quadratic
+  displ_triv_chaining)
 
 add_custom_target(all_del)
 add_dependencies(all_del
@@ -194,7 +196,8 @@ add_dependencies(all_del
   del_triv_linear
   del_triv_linear_inplace
   del_triv_multitable_linear
-  del_triv_quadratic)
+  del_triv_quadratic
+  del_triv_chaining)
 
 add_custom_target(all_eps)
 add_dependencies(all_eps
@@ -214,7 +217,8 @@ add_dependencies(all_eps
   eps_triv_linear
   eps_triv_linear_inplace
   eps_triv_multitable_linear
-  eps_triv_quadratic)
+  eps_triv_quadratic
+  eps_triv_chaining)
 
 add_custom_target(all_mix)
 add_dependencies(all_mix
@@ -234,7 +238,8 @@ add_dependencies(all_mix
   mix_triv_linear
   mix_triv_linear_inplace
   mix_triv_multitable_linear
-  mix_triv_quadratic)
+  mix_triv_quadratic
+  mix_triv_chaining)
 
 add_custom_target(all_crawl)
 add_dependencies(all_crawl
@@ -254,7 +259,8 @@ add_dependencies(all_crawl
   crawl_triv_linear
   crawl_triv_linear_inplace
   crawl_triv_multitable_linear
-  crawl_triv_quadratic)
+  crawl_triv_quadratic
+  crawl_triv_chaining)
 
 add_custom_target(all_mixd)
 add_dependencies(all_mixd
@@ -274,7 +280,8 @@ add_dependencies(all_mixd
   mixd_triv_linear
   mixd_triv_linear_inplace
   mixd_triv_multitable_linear
-  mixd_triv_quadratic)
+  mixd_triv_quadratic
+  mixd_triv_chaining)
 
 add_custom_target(all_linear)
 add_dependencies(all_linear
@@ -384,6 +391,7 @@ add_dependencies(diss_targets
   displ_triv_robin
   displ_triv_linear
   displ_triv_quadratic
+  displ_triv_chaining
 
   del_multi_dysect
   del_multi_dysect_inplace

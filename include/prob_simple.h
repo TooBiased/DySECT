@@ -159,7 +159,7 @@ namespace dysect
 
 
         // Access Functions ********************************************************
-        inline size_type index(size_type i) const { return utils_tm::fastrange64(capacity, i); }
+        inline size_type index(size_type i) const { return utils_tm::fastrange64(acap, i); }
         inline size_type mod(size_type i)   const { return i; }
 
         // Growing *****************************************************************
@@ -285,7 +285,7 @@ namespace dysect
 
         // Access Functions ********************************************************
         inline size_type index(size_type i) const
-        { return utils_tm::fastrange64(capacity, i); }
+        { return utils_tm::fastrange64(acap, i); }
         inline size_type mod(size_type i)   const { return i; }
 
     public:

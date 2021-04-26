@@ -48,9 +48,9 @@ namespace dysect
 
 
         // Constructors ************************************************************
-
-        iterator_base(cval_intern* pair_, const table_type& table)
-            : ptr(reinterpret_cast<pointer>(pair_)), incr(table) { }
+        template<class ... Args>
+        iterator_base(cval_intern* pair_, Args&& ... args)
+            : ptr(reinterpret_cast<pointer>(pair_)), incr(args...) { }
 
         iterator_base(const iterator_base& rhs) : ptr(rhs.ptr), incr(rhs.incr) { }
         iterator_base& operator=(const iterator_base& r)

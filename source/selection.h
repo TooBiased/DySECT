@@ -168,6 +168,12 @@
 // #endif
 
 
+#ifdef TRIV_CHAINING
+#define TRIV_CONFIG
+#include "include/chaining.hpp"
+#define HASHTYPE dysect::chaining
+#endif
+
 
 
 
