@@ -26,11 +26,11 @@ struct test_type
 
     int operator()(size_t it, size_t n, size_t cap, size_t mdisp)
     {
-        otm::out() << otm::width(3) << "#it"
-                   << otm::width(9) << "n"
-                   << otm::width(8) << "cap"
-                   << otm::width(5) << "disp"
-                   << otm::width(9) << "ndisp"
+        otm::out() << otm::width(3)  << "#it"
+                   << otm::width(10) << "n"
+                   << otm::width(10) << "cap"
+                   << otm::width(5)  << "disp"
+                   << otm::width(9)  << "ndisp"
                    << otm::width(10) << "time"
                    << std::endl;
 
@@ -80,11 +80,11 @@ struct test_type
 
             for (size_t i = 0; i <= mdisp; ++i)
             {
-                otm::out() << otm::width(3) << j
-                           << otm::width(9) << n
-                           << otm::width(8) << cap
-                           << otm::width(5) << i
-                           << otm::width(9) << disps[i].size()
+                otm::out() << otm::width(3)  << j
+                           << otm::width(10) << n
+                           << otm::width(10) << cap
+                           << otm::width(5)  << i
+                           << otm::width(9)  << disps[i].size()
                            << std::flush;
 
                 if (! disps[i].size())
