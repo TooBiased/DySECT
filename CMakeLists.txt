@@ -7,6 +7,10 @@ project (space-grow-table)
 
 #### USER DEFINED ##############################################################
 
+set(DYSECT_BUILD_MODE RELEASE CACHE STRING
+  "the build mode of the current tests (controls optimizations and symbols)!")
+set_property(CACHE DYSECT_BUILD_MODE PROPERTY STRINGS RELEASE DEBUG REL_W_SYMBOLS )
+
 set(DYSECT_HASHFCT XXH3 CACHE STRING
   "Changes the used hash function if XXHASH is not available, MURMUR2 is used as backoff!")
 set_property(CACHE DYSECT_HASHFCT PROPERTY STRINGS XXH3 XXHASH MURMUR2 MURMUR3 CRC)
@@ -24,7 +28,19 @@ set(DYSECT_CUCKOO_PREFETCH ON CACHE BOOL
 
 include_directories(.)
 
-set (CMAKE_CXX_FLAGS "-std=c++17 -msse4.2 -Wall -Wextra -O3 -g -march=native")
+#set (CMAKE_CXX_FLAGS "-std=c++17 -msse4.2 -Wall -Wextra -O3 -g -march=native")
+set (FLAGS "-std=c++17 -msse4.2 -Wall -Wextra")
+
+if (DYSECT_BUILD_MODE STREQUAL DEBUG)
+set (FLAGS "${FLAGS} -g3 -ggdb -O0")
+endif()
+if (DYSECT_BUILD_MODE STREQUAL RELEASE)
+set (FLAGS "${FLAGS} -march=native -O3")
+endif()
+if (DYSECT_BUILD_MODE STREQUAL REL_W_SYMBOLS)
+set (FLAGS "${FLAGS} -g3 -ggdb -march=native -O3")
+endif()
+
 
 #### FIND PTHREAD (less variance after pin to core) ############################
 
@@ -44,7 +60,7 @@ if ((DYSECT_HASHFCT STREQUAL XXHASH) OR
   else()
     message(STATUS "Looking for xxhash -- not found")
     message("Cannot find xxHash. Use MURMUR2 instead.")
-    set(GROWT_HASHFCT MURMUR2)
+    set(DYSECT_HASHFCT MURMUR2)
   endif()
 endif()
 
@@ -80,6 +96,8 @@ endif()
 
 #### BUILD THE EXAMPLE #########################################################
 add_executable(example example/example.cpp)
+set_target_properties(example PROPERTIES COMPILE_FLAGS "${FLAGS}")
+
 
 
 #### CONSTRUCT EXECUTABLE ######################################################
@@ -99,6 +117,7 @@ foreach(t time del eps mix crawl mixd displ)
       add_executable(${t}_${h} source/${t}_test.cpp)
       target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${DYSECT_HASHFCT})
     endif()
+    set_target_properties(${t}_${h} PROPERTIES COMPILE_FLAGS "${FLAGS}")
     target_link_libraries(${t}_${h} ${TEST_DEP_LIBRARIES} dl)
     if (DYSECT_CUCKOO_PREFETCH)
       target_compile_definitions(${t}_${h} PRIVATE -D PREFETCH)
@@ -117,6 +136,7 @@ foreach(t sing)
       add_executable(${t}_${h} source/${t}_test.cpp)
       target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${DYSECT_HASHFCT})
     endif()
+    set_target_properties(${t}_${h} PROPERTIES COMPILE_FLAGS "${FLAGS}")
     target_link_libraries(${t}_${h} ${TEST_DEP_LIBRARIES} dl)
   endforeach()
 endforeach()
@@ -132,6 +152,7 @@ foreach(t mxls)
       add_executable(${t}_${h} source/${t}_test.cpp)
       target_compile_definitions(${t}_${h} PRIVATE -D ${h_uc} -D ${DYSECT_HASHFCT})
     endif()
+    set_target_properties(${t}_${h} PROPERTIES COMPILE_FLAGS "${FLAGS}")
     target_link_libraries(${t}_${h} ${TEST_DEP_LIBRARIES} dl)
   endforeach()
 endforeach()
