@@ -78,6 +78,19 @@ struct test_type
                 disps[disp].push_back(key);
             }
 
+
+            auto t0 = std::chrono::high_resolution_clock::now();
+            for (size_t i = 0; i < n; ++i)
+            {
+                if (table.find(keys[i]) == table.end())
+                {
+                    otm::out() << otm::color::red   << "unsuccessful query in cache clean"
+                               << otm::color::reset << keys[i] << std::endl;
+                }
+            }
+            auto t1 = std::chrono::high_resolution_clock::now();
+            double tfind = std::chrono::duration_cast<std::chrono::microseconds>(t1-t0).count()/1000.;
+
             for (size_t i = 0; i <= mdisp; ++i)
             {
                 otm::out() << otm::width(3)  << j
@@ -90,8 +103,19 @@ struct test_type
                 if (! disps[i].size())
                 {
                     otm::out() << otm::width(10) << 0
+                               << otm::width(10) << tfind
                                << std::endl;
                     continue;
+                }
+
+                // clean the cash
+                for (size_t i = 0; i < n; ++i)
+                {
+                    if (table.find(keys[i]) == table.end())
+                    {
+                        otm::out() << otm::color::red   << "unsuccessful query in cache clean"
+                                   << otm::color::reset << keys[i] << std::endl;
+                    }
                 }
 
                 auto t0 = std::chrono::high_resolution_clock::now();
@@ -102,8 +126,9 @@ struct test_type
                                    << otm::color::reset << key << std::endl;
                 }
                 auto t1 = std::chrono::high_resolution_clock::now();
-                double tdiff = std::chrono::duration_cast<std::chrono::microseconds>(t1-t0).count();
-                otm::out() << otm::width(10) << tdiff/disps[i].size() << std::endl;
+                double tdiff = std::chrono::duration_cast<std::chrono::nanoseconds>(t1-t0).count();
+                otm::out() << otm::width(10) << tdiff/disps[i].size()
+                           << otm::width(10) << tfind << std::endl;
             }
         }
 
