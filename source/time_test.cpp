@@ -113,8 +113,6 @@ struct Test
                     //if (ctable.at(keys[i]) != i)
                 {  fin_errors++;  }
             }
-            size_t bla = fin_errors;
-            if (bla) otm::out() << "successfull find error " << std::endl;
             auto t3 = std::chrono::high_resolution_clock::now();
             for (size_t i = n; i < 2*n; ++i)
             {
@@ -123,7 +121,6 @@ struct Test
                 {  fin_errors++;  }
             }
             auto t4 = std::chrono::high_resolution_clock::now();
-            if (bla != fin_errors) otm::out() << "unsuccessful find errors " << std::endl;
 
             double d_in0 = std::chrono::duration_cast<std::chrono::microseconds>
                 (t1 - t0).count()/1000.;
