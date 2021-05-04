@@ -48,19 +48,17 @@ struct Test
     //using table_type = ProbIndependentBase<HASHTYPE<size_t, size_t, dysect::hash::default_hash, Config> >;
     using table_type = HASHTYPE<size_t, size_t, utm::hash_tm::default_hash, Config>;
 
-    int operator()(size_t it, size_t n, size_t n0,  size_t cap, size_t steps,
+    int operator()(size_t it, size_t n,  size_t cap, size_t steps,
                    double alpha)
     {
         otm::out() << otm::width(4) << "# it"
                    << otm::width(8) << "alpha";
         table_type::print_init_header(otm::out());
         otm::out() << otm::width(9) << "cap"
-                   << otm::width(9) << "n_0"
                    << otm::width(9) << "n_full"
-                   << otm::width(8) << "t_in0"
-                   << otm::width(8) << "t_in1"
-                   << otm::width(8) << "t_find+"
-                   << otm::width(8) << "t_find-"
+                   << otm::width(10) << "t_in"
+                   << otm::width(10) << "t_find+"
+                   << otm::width(10) << "t_find-"
                    << otm::width(9) << "in_err"
                    << otm::width(9) << "fi_err";
         if constexpr (malloc_mode) otm::out() << otm::width(7) << "memory";
@@ -89,22 +87,15 @@ struct Test
             auto fin_errors = 0ull;
 
             auto t0 = std::chrono::high_resolution_clock::now();
-            for (size_t i = 0; i < n0 && in_errors < 100; ++i)
+            for (size_t i = 0; i < n && in_errors < 100; ++i)
             {
                 if (!table.insert(keys[i], i).second) ++in_errors;
             }
-
             auto t1 = std::chrono::high_resolution_clock::now();
-            for (size_t i = n0; i < n && in_errors < 100; ++i)
-            {
-                if (!table.insert(keys[i], i).second) ++in_errors;
-            }
-
-            auto t2 = std::chrono::high_resolution_clock::now();
 
             [[maybe_unused]] size_t final_rss = get_rss() - start_rss;
 
-            auto t2i = std::chrono::high_resolution_clock::now();
+            auto t2 = std::chrono::high_resolution_clock::now();
             //const table_type& ctable = table;
             for (size_t i = 0; i < n; ++i)
             {
@@ -122,12 +113,12 @@ struct Test
             }
             auto t4 = std::chrono::high_resolution_clock::now();
 
-            double d_in0 = std::chrono::duration_cast<std::chrono::microseconds>
+            // double d_in0 = std::chrono::duration_cast<std::chrono::microseconds>
+            //     (t1 - t0).count()/1000.;
+            double d_in  = std::chrono::duration_cast<std::chrono::microseconds>
                 (t1 - t0).count()/1000.;
-            double d_in1 = std::chrono::duration_cast<std::chrono::microseconds>
-                (t2 - t1).count()/1000.;
             double d_fn0 = std::chrono::duration_cast<std::chrono::microseconds>
-                (t3 - t2i).count()/1000.;
+                (t3 - t2).count()/1000.;
             double d_fn1 = std::chrono::duration_cast<std::chrono::microseconds>
                 (t4 - t3).count()/1000.;
 
@@ -135,12 +126,10 @@ struct Test
                        << otm::width(8) << alpha;
             table.print_init_data(otm::out());
             otm::out() << otm::width(9) << cap
-                       << otm::width(9) << n0
                        << otm::width(9) << n
-                       << otm::width(8) << d_in0
-                       << otm::width(8) << d_in1
-                       << otm::width(8) << d_fn0
-                       << otm::width(8) << d_fn1
+                       << otm::width(10) << d_in
+                       << otm::width(10) << d_fn0
+                       << otm::width(10) << d_fn1
                        << otm::width(9) << in_errors
                        << otm::width(9) << fin_errors;
             if constexpr (malloc_mode)
@@ -164,8 +153,6 @@ int main(int argn, char** argc)
 
     size_t      it    = c.int_arg("-it"   , 5);
     size_t      n     = c.int_arg("-n"    , 2000000);
-    size_t      n0    = c.int_arg("-pre"  , n/2);
-    if (n0 > n) std::cout << "n0 (pre) has to be smaller than n! set n = n0 = " << n0 << std::endl;
     size_t      cap   = c.int_arg("-cap"  , n);
     size_t      steps = c.int_arg("-steps", 512);
 
@@ -181,5 +168,5 @@ int main(int argn, char** argc)
         otm::out().set_file(name);
     }
 
-    return Chooser::execute<Test,false> (c, it, n, n0, cap, steps, alpha);
+    return Chooser::execute<Test,false> (c, it, n, cap, steps, alpha);
 }
