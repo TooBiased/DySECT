@@ -137,8 +137,7 @@ namespace dysect
         prob_linear(size_type cap = 0, double size_constraint = 1.1, size_type /*steps*/=0)
             : base_type(std::max<size_type>(cap, 500), size_constraint)
         {
-            //factor = double(capacity-300)/double(1ull << 32);
-            acap = capacity-300;
+            //acap = capacity-300;
         }
         prob_linear(const prob_linear&) = delete;
         prob_linear& operator=(const prob_linear&) = delete;
@@ -152,15 +151,16 @@ namespace dysect
         using base_type::table;
         using base_type::h;
 
-        size_type acap;
-        // double factor;
+        // size_type acap;
 
         static constexpr size_type bitmask = (1ull<<32)-1;
 
 
         // Access Functions ********************************************************
-        inline size_type index(size_type i) const { return utils_tm::fastrange64(acap, i); }
-        inline size_type mod(size_type i)   const { return i; }
+        inline size_type index(size_type i) const
+        { return utils_tm::fastrange64(capacity, i); }
+        inline size_type mod(size_type i)   const
+        { return (i < capacity) ? i : i-capacity; }
 
         // Growing *****************************************************************
         inline void grow()
@@ -250,15 +250,12 @@ namespace dysect
         prob_linear_inplace(size_type cap = 0, double size_constraint = 1.1, size_type /*steps*/=0)
             : base_type(0, size_constraint), bla(0)
         {
-            // factor = double(capacity-300)/double(1ull << 32);
-
             value_intern* temp = reinterpret_cast<value_intern*>(operator new (max_size));
             if (temp) table = std::unique_ptr<value_intern[]>(temp);
 
             capacity = (cap) ? cap*alpha : 2048*alpha;
             thresh   = (cap) ? cap*beta  : 2048*beta;
-            //factor = double(capacity-300)/double(1ull << 32);
-            acap = capacity-300;
+            //acap = capacity-300;
 
             std::fill(table.get(), table.get()+capacity, value_intern());
         }
@@ -275,7 +272,7 @@ namespace dysect
         using base_type::thresh;
         using base_type::table;
 
-        size_type acap;
+        //size_type acap;
         //double    factor;
         size_type bla;
 
@@ -285,8 +282,9 @@ namespace dysect
 
         // Access Functions ********************************************************
         inline size_type index(size_type i) const
-        { return utils_tm::fastrange64(acap, i); }
-        inline size_type mod(size_type i)   const { return i; }
+        { return utils_tm::fastrange64(capacity, i); }
+        inline size_type mod(size_type i)   const
+        { return (i < capacity) ? i : i - capacity; }
 
     public:
         using base_type::insert;
@@ -306,7 +304,7 @@ namespace dysect
             auto old_cap = capacity;
             capacity = ncap;
             thresh   = nthresh;
-            acap     = ncap-300;
+            //acap     = ncap-300;
             n = 0;
 
             std::vector<value_intern> buffer;

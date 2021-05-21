@@ -96,7 +96,7 @@ struct test_type
             double d_eval = std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count()/1000.;
 
             otm::out() << otm::width(4) << i
-                       << otm::width(5) << alpha;
+                       << otm::width(8) << alpha;
             table.print_init_data(otm::out());
             otm::out() << otm::width(9) << cap
                        << otm::width(9) << win
