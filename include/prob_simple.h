@@ -271,6 +271,7 @@ namespace dysect
         using base_type::capacity;
         using base_type::thresh;
         using base_type::table;
+        using base_type::dec_n;
 
         //size_type acap;
         //double    factor;
@@ -350,6 +351,20 @@ namespace dysect
             size_type thole = hole;
             for (size_type i = hole+1; ; ++i)
             {
+                if (i == capacity)
+                {
+                    table[thole] = std::make_pair(0,0);
+                    // wrap around is hard and uncommon
+                    // thus do something bad we reinsert elements from start to ...
+                    for (int i = 0; ; ++i)
+                    {
+                        auto temp = table[i];
+                        table[i] = std::make_pair(0,0);
+                        dec_n();
+                        insert(temp);
+                    }
+                    return;
+                }
                 auto temp = table[i];
 
                 if ( temp.first == 0 ) break;
