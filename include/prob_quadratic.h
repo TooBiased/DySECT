@@ -295,6 +295,7 @@ namespace dysect
         using base_type::thresh;
         using base_type::table;
         using base_type::inc_n;
+        using base_type::dec_n;
         using base_type::make_iterator;
         using base_type::make_citerator;
 
@@ -348,6 +349,7 @@ namespace dysect
             max_buffer_size = std::max(max_buffer_size, buffer.size());
             for (auto it = buffer.begin(); it != buffer.end(); it++)
             {
+                dec_n();
                 insert(*it);
             }
         }
