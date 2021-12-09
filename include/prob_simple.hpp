@@ -21,7 +21,7 @@
 
 #include "utils/default_hash.hpp"
 
-#include "prob_base.h"
+#include "prob_base.hpp"
 
 namespace dysect
 {

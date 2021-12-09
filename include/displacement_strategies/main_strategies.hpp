@@ -1,8 +1,8 @@
 #pragma once
 
-#include "dis_bfs1.h"
-#include "dis_random_walk_optimistic.h"
-#include "dis_trivial.h"
+#include "dis_bfs1.hpp"
+#include "dis_random_walk_optimistic.hpp"
+#include "dis_trivial.hpp"
 
 namespace dysect
 {

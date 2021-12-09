@@ -17,7 +17,7 @@
  * All rights reserved. Published under the BSD-2 license in the LICENSE file.
  ******************************************************************************/
 
-#include "cuckoo_base.h"
+#include "cuckoo_base.hpp"
 #include "utils/default_hash.hpp"
 #include "utils/fastrange.hpp"
 #include <cmath>

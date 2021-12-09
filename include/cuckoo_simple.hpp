@@ -19,7 +19,7 @@
 #include "utils/default_hash.hpp"
 #include "utils/fastrange.hpp"
 
-#include "cuckoo_base.h"
+#include "cuckoo_base.hpp"
 
 namespace dysect
 {

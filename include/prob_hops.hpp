@@ -18,7 +18,7 @@
 #include "utils/default_hash.hpp"
 #include "utils/output.hpp"
 
-#include "prob_base.h"
+#include "prob_base.hpp"
 
 namespace otm = utils_tm::out_tm;
 

@@ -1,9 +1,9 @@
-//#include "include/spacegrow.h"
-#include "selection.h"
+//#include "include/spacegrow.hpp"
+#include "selection.hpp"
 
-// #include "include/strategies/dstrat_bfs.h"
-// #include "include/strategies/dstrat_rwalk.h"
-// #include "include/strategies/dstrat_rwalk_cyclic.h"
+// #include "include/strategies/dstrat_bfs.hpp"
+// #include "include/strategies/dstrat_rwalk.hpp"
+// #include "include/strategies/dstrat_rwalk_cyclic.hpp"
 
 #include "utils/command_line_parser.hpp"
 #include "utils/default_hash.hpp"

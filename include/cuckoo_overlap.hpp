@@ -17,8 +17,8 @@
  * All rights reserved. Published under the BSD-2 license in the LICENSE file.
  ******************************************************************************/
 
-#include "cobucket.h"
-#include "cuckoo_base.h"
+#include "cobucket.hpp"
+#include "cuckoo_base.hpp"
 #include "utils/default_hash.hpp"
 #include "utils/fastrange.hpp"
 

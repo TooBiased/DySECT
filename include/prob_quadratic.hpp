@@ -15,7 +15,7 @@
  * All rights reserved. Published under the BSD-2 license in the LICENSE file.
  ******************************************************************************/
 
-#include "prob_base.h"
+#include "prob_base.hpp"
 #include "utils/default_hash.hpp"
 
 namespace dysect
@@ -436,7 +436,7 @@ prob_quadratic_inplace<K, D, HF, C>::find(const key_type& k) const
 
 template <class K, class D, class HF, class C>
 inline typename prob_quadratic_inplace<K, D, HF, C>::size_type
-prob_quadratic_inplace<K, D, HF, C>::erase(const key_type& k)
+prob_quadratic_inplace<K, D, HF, C>::erase([[maybe_unused]]const key_type& k)
 {
     // TODO
     return 0;

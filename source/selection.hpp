@@ -4,13 +4,13 @@
 
 #ifdef MULTI_CUCKOO_STANDARD
 #define MULTI
-#include "include/cuckoo_simple.h"
+#include "include/cuckoo_simple.hpp"
 #define HASHTYPE dysect::cuckoo_standard
 #endif // CUCKOO_STANDARD
 
 #ifdef MULTI_CUCKOO_STANDARD_INPLACE
 #define MULTI
-#include "include/cuckoo_simple.h"
+#include "include/cuckoo_simple.hpp"
 #define HASHTYPE dysect::cuckoo_standard_inplace
 #endif // CUCKOO_STANDARD_INPLACE
 
@@ -20,7 +20,7 @@
 
 #ifdef MULTI_CUCKOO_DEAMORTIZED
 #define MULTI
-#include "include/cuckoo_deamortized.h"
+#include "include/cuckoo_deamortized.hpp"
 #define HASHTYPE dysect::cuckoo_deamortized
 #endif // CUCKOO_DEAMORTIZED
 
@@ -30,13 +30,13 @@
 
 #ifdef MULTI_DYSECT
 #define MULTI
-#include "include/cuckoo_dysect.h"
+#include "include/cuckoo_dysect.hpp"
 #define HASHTYPE dysect::cuckoo_dysect
 #endif // DYSECT
 
 #ifdef MULTI_DYSECT_INPLACE
 #define MULTI
-#include "include/cuckoo_dysect.h"
+#include "include/cuckoo_dysect.hpp"
 #define HASHTYPE dysect::cuckoo_dysect_inplace
 #endif // DYSECT_INPLACE
 
@@ -46,7 +46,7 @@
 
 #ifdef MULTI_CUCKOO_INDEPENDENT_2LVL
 #define MULTI
-#include "include/cuckoo_independent_2lvl.h"
+#include "include/cuckoo_independent_2lvl.hpp"
 #define HASHTYPE dysect::cuckoo_independent_2lvl
 #endif // INDEPENDENT_2LVL
 
@@ -56,13 +56,13 @@
 
 #ifdef MULTI_CUCKOO_OVERLAP
 #define MULTI
-#include "include/cuckoo_overlap.h"
+#include "include/cuckoo_overlap.hpp"
 #define HASHTYPE dysect::cuckoo_overlap
 #endif // OVERLAP
 
 #ifdef MULTI_CUCKOO_OVERLAP_INPLACE
 #define MULTI
-#include "include/cuckoo_overlap.h"
+#include "include/cuckoo_overlap.hpp"
 #define HASHTYPE dysect::cuckoo_overlap_inplace
 #endif // OVERLAP_INPLACE
 
@@ -72,13 +72,13 @@
 
 #ifdef HOP_HOPSCOTCH
 #define HOPSCOTCH_CONFIG
-#include "include/prob_hops.h"
+#include "include/prob_hops.hpp"
 #define HASHTYPE dysect::prob_hopscotch
 #endif // HOPSCOTCH
 
 #ifdef HOP_HOPSCOTCH_INPLACE
 #define HOPSCOTCH_CONFIG
-#include "include/prob_hops.h"
+#include "include/prob_hops.hpp"
 #define HASHTYPE dysect::prob_hopscotch_inplace
 #endif // HOPSCOTCH_INPLACE
 
@@ -88,13 +88,13 @@
 
 #ifdef TRIV_ROBIN
 #define TRIV_CONFIG
-#include "include/prob_robin.h"
+#include "include/prob_robin.hpp"
 #define HASHTYPE dysect::prob_robin
 #endif // ROBIN
 
 #ifdef TRIV_ROBIN_INPLACE
 #define TRIV_CONFIG
-#include "include/prob_robin.h"
+#include "include/prob_robin.hpp"
 #define HASHTYPE dysect::prob_robin_inplace
 #endif // ROBIN_INPLACE
 
@@ -104,19 +104,19 @@
 
 // #ifdef LINEAR_DOUBLING
 // #define TRIV_CONFIG
-// #include "include/prob_simple.h"
+// #include "include/prob_simple.hpp"
 // #define  HASHTYPE dysect::prob_linear_doubling
 // #endif // LINEAR_DOUBLING
 
 #ifdef TRIV_LINEAR
 #define TRIV_CONFIG
-#include "include/prob_simple.h"
+#include "include/prob_simple.hpp"
 #define HASHTYPE dysect::prob_linear
 #endif // LINEAR
 
 #ifdef TRIV_LINEAR_INPLACE
 #define TRIV_CONFIG
-#include "include/prob_simple.h"
+#include "include/prob_simple.hpp"
 #define HASHTYPE dysect::prob_linear_inplace
 #endif // LINEAR_INPLACE
 
@@ -124,13 +124,13 @@
 
 #ifdef TRIV_QUADRATIC
 #define TRIV_CONFIG
-#include "include/prob_quadratic.h"
+#include "include/prob_quadratic.hpp"
 #define HASHTYPE dysect::prob_quadratic
 #endif // QUADRATIC
 
 #ifdef TRIV_QUADRATIC_INPLACE
 #define TRIV_CONFIG
-#include "include/prob_quadratic.h"
+#include "include/prob_quadratic.hpp"
 #define HASHTYPE dysect::prob_quadratic_inplace
 #endif // QUADRATIC
 
@@ -138,32 +138,32 @@
 
 #ifdef TRIV_MULTITABLE_LINEAR
 #define TRIV_CONFIG
-#include "include/prob_multitable_base.h"
+#include "include/prob_multitable_base.hpp"
 #define HASHTYPE dysect::multitable_linear
 #endif
 
 #ifdef TRIV_MULTITABLE_ROBIN
 #define TRIV_CONFIG
-#include "include/prob_multitable_base.h"
+#include "include/prob_multitable_base.hpp"
 #define HASHTYPE dysect::multitable_robin
 #endif
 
 #ifdef TRIV_MULTITABLE_QUADRATIC
 #define TRIV_CONFIG
-#include "include/prob_multitable_base.h"
+#include "include/prob_multitable_base.hpp"
 #define HASHTYPE dysect::multitable_quadratic
 #endif
 
 
 // #ifdef MULTITABLE_QUADRATIC
 // #define TRIV_CONFIG
-// #include "include/prob_multitable_base.h"
+// #include "include/prob_multitable_base.hpp"
 // #define  HASHTYPE dysect::prob_quadratic
 // #endif // QUADRATIC
 
 // #ifdef MULTITABLE_CUCKOO
 // #define MULTI
-// #include "include/cuckoo_simple.h"
+// #include "include/cuckoo_simple.hpp"
 // #define HASHTYPE CuckooIndependentBase
 // #endif
 
@@ -186,7 +186,7 @@
 
 #warning WARNING: No table chosen! Use
 #define MULTI
-#include "include/cuckoo_dysect.h"
+#include "include/cuckoo_dysect.hpp"
 #define  HASHTYPE dysect::cuckoo_dysect_inplace
 #endif // NO TABLE IS DEFINED
 */

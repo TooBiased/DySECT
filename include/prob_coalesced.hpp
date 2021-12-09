@@ -15,8 +15,8 @@
  * All rights reserved. Published under the BSD-2 license in the LICENSE file.
  ******************************************************************************/
 
-#include "prob_base.h"
-#include "utils/default_hash.h"
+#include "prob_base.hpp"
+#include "utils/default_hash.hpp"
 
 namespace dysect
 {

@@ -21,8 +21,8 @@
 #include "utils/fastrange.hpp"
 #include "utils/output.hpp"
 
-#include "bucket.h"
-#include "iterator_base.h"
+#include "bucket.hpp"
+#include "iterator_base.hpp"
 
 namespace otm = utils_tm::out_tm;
 

@@ -2,9 +2,9 @@
 
 #include "utils/output.hpp"
 
-#include "prob_quadratic.h"
-#include "prob_robin.h"
-#include "prob_simple.h"
+#include "prob_quadratic.hpp"
+#include "prob_robin.hpp"
+#include "prob_simple.hpp"
 
 namespace otm = utils_tm::out_tm;
 

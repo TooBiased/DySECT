@@ -1,6 +1,6 @@
 #include "utils/hash/murmur2_hash.hpp"
 
-#include "include/cuckoo_dysect.h"
+#include "include/cuckoo_dysect.hpp"
 #include <unordered_map>
 
 

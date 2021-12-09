@@ -25,10 +25,10 @@
 
 #include "utils/output.hpp"
 
-#include "bucket.h"
-#include "displacement_strategies/main_strategies.h"
-#include "hasher.h"
-#include "iterator_base.h"
+#include "bucket.hpp"
+#include "displacement_strategies/main_strategies.hpp"
+#include "hasher.hpp"
+#include "iterator_base.hpp"
 
 namespace otm = utils_tm::out_tm;
 
