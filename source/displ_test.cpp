@@ -1,13 +1,13 @@
 
-#include <random>
-#include <limits>
 #include <chrono>
+#include <limits>
+#include <random>
 
 
-#include "utils/default_hash.hpp"
 #include "utils/command_line_parser.hpp"
-#include "utils/pin_thread.hpp"
+#include "utils/default_hash.hpp"
 #include "utils/output.hpp"
+#include "utils/pin_thread.hpp"
 namespace utm = utils_tm;
 namespace otm = utils_tm::out_tm;
 
@@ -18,40 +18,32 @@ namespace otm = utils_tm::out_tm;
 #endif
 
 
-template<class Config>
-struct test_type
+template <class Config> struct test_type
 {
-    //using table = ProbIndependentBase<HASHTYPE<size_t, size_t, dysect::hash::default_hash, Config> >;
-    using table_type = HASHTYPE<size_t, size_t, utm::hash_tm::default_hash, Config>;
+    // using table = ProbIndependentBase<HASHTYPE<size_t, size_t,
+    // dysect::hash::default_hash, Config> >;
+    using table_type =
+        HASHTYPE<size_t, size_t, utm::hash_tm::default_hash, Config>;
 
     int operator()(size_t it, size_t n, size_t cap, size_t mdisp)
     {
-        otm::out() << otm::width(3)  << "#it"
-                   << otm::width(10) << "n"
-                   << otm::width(10) << "cap"
-                   << otm::width(5)  << "disp"
-                   << otm::width(9)  << "ndisp"
-                   << otm::width(10) << "time"
+        otm::out() << otm::width(3) << "#it" << otm::width(10) << "n"
+                   << otm::width(10) << "cap" << otm::width(5) << "disp"
+                   << otm::width(9) << "ndisp" << otm::width(10) << "time"
                    << std::endl;
 
         constexpr size_t range = std::numeric_limits<size_t>::max();
 
         size_t*              keys  = new size_t[n];
-        std::vector<size_t>* disps = new std::vector<size_t>[mdisp+1];
+        std::vector<size_t>* disps = new std::vector<size_t>[mdisp + 1];
 
-        std::uniform_int_distribution<uint64_t> dis(1,range);
-        std::mt19937_64 re;
+        std::uniform_int_distribution<uint64_t> dis(1, range);
+        std::mt19937_64                         re;
 
         for (size_t j = 0; j < it; ++j)
         {
-            for (size_t i = 0; i < n; ++i)
-            {
-                keys[i] = dis(re);
-            }
-            for (size_t i = 0; i <= mdisp; ++i)
-            {
-                disps[i].clear();
-            }
+            for (size_t i = 0; i < n; ++i) { keys[i] = dis(re); }
+            for (size_t i = 0; i <= mdisp; ++i) { disps[i].clear(); }
 
             table_type table(cap, 1.0, 1000);
 
@@ -59,8 +51,9 @@ struct test_type
             {
                 if (!table.insert(keys[i], i).second)
                 {
-                    otm::out() << otm::color::red   << "missed insert key: "
-                               << otm::color::reset << keys[i] << std::endl;
+                    otm::out() << otm::color::red
+                               << "missed insert key: " << otm::color::reset
+                               << keys[i] << std::endl;
                 }
             }
 
@@ -71,8 +64,9 @@ struct test_type
 
                 if (disp < 0)
                 {
-                    otm::out() << otm::color::red   << "no displacement key: "
-                               << otm::color::reset << key << std::endl;
+                    otm::out() << otm::color::red
+                               << "no displacement key: " << otm::color::reset
+                               << key << std::endl;
                 }
 
                 disps[disp].push_back(key);
@@ -84,26 +78,26 @@ struct test_type
             {
                 if (table.find(keys[i]) == table.end())
                 {
-                    otm::out() << otm::color::red   << "unsuccessful query in cache clean"
+                    otm::out() << otm::color::red
+                               << "unsuccessful query in cache clean"
                                << otm::color::reset << keys[i] << std::endl;
                 }
             }
-            auto t1 = std::chrono::high_resolution_clock::now();
-            double tfind = std::chrono::duration_cast<std::chrono::microseconds>(t1-t0).count()/1000.;
+            auto   t1 = std::chrono::high_resolution_clock::now();
+            double tfind =
+                std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0)
+                    .count() /
+                1000.;
 
             for (size_t i = 0; i <= mdisp; ++i)
             {
-                otm::out() << otm::width(3)  << j
-                           << otm::width(10) << n
-                           << otm::width(10) << cap
-                           << otm::width(5)  << i
-                           << otm::width(9)  << disps[i].size()
-                           << std::flush;
+                otm::out() << otm::width(3) << j << otm::width(10) << n
+                           << otm::width(10) << cap << otm::width(5) << i
+                           << otm::width(9) << disps[i].size() << std::flush;
 
-                if (! disps[i].size())
+                if (!disps[i].size())
                 {
-                    otm::out() << otm::width(10) << 0
-                               << otm::width(10) << tfind
+                    otm::out() << otm::width(10) << 0 << otm::width(10) << tfind
                                << std::endl;
                     continue;
                 }
@@ -113,7 +107,8 @@ struct test_type
                 {
                     if (table.find(keys[i]) == table.end())
                     {
-                        otm::out() << otm::color::red   << "unsuccessful query in cache clean"
+                        otm::out() << otm::color::red
+                                   << "unsuccessful query in cache clean"
                                    << otm::color::reset << keys[i] << std::endl;
                     }
                 }
@@ -122,12 +117,17 @@ struct test_type
                 for (auto& key : disps[i])
                 {
                     if (table.find(key) == table.end())
-                        otm::out() << otm::color::red << "unsuccessful query key: "
-                                   << otm::color::reset << key << std::endl;
+                        otm::out()
+                            << otm::color::red
+                            << "unsuccessful query key: " << otm::color::reset
+                            << key << std::endl;
                 }
-                auto t1 = std::chrono::high_resolution_clock::now();
-                double tdiff = std::chrono::duration_cast<std::chrono::nanoseconds>(t1-t0).count();
-                otm::out() << otm::width(10) << tdiff/disps[i].size()
+                auto   t1 = std::chrono::high_resolution_clock::now();
+                double tdiff =
+                    std::chrono::duration_cast<std::chrono::nanoseconds>(t1 -
+                                                                         t0)
+                        .count();
+                otm::out() << otm::width(10) << tdiff / disps[i].size()
                            << otm::width(10) << tfind << std::endl;
             }
         }
@@ -145,15 +145,15 @@ int main(int argn, char** argc)
     // pin_to_core(0);
     utm::command_line_parser c(argn, argc);
 
-    size_t it     = c.int_arg("-it" , 5);
-    size_t n      = c.int_arg("-n"  , 700000);
-    size_t cap    = c.int_arg("-cap", 1000000);
-    size_t mdisp  = c.int_arg("-max_disp", 50);
+    size_t it    = c.int_arg("-it", 5);
+    size_t n     = c.int_arg("-n", 700000);
+    size_t cap   = c.int_arg("-cap", 1000000);
+    size_t mdisp = c.int_arg("-max_disp", 50);
 
     if (c.bool_arg("-file") || c.bool_arg("-out"))
     {
         std::string name = c.str_arg("-file", "");
-        name = c.str_arg("-out", name) + ".displ";
+        name             = c.str_arg("-out", name) + ".displ";
         otm::out().set_file(name);
     }
 
@@ -173,5 +173,5 @@ int main(int argn, char** argc)
         return 0;
     }
 
-    return Chooser::execute<test_type,true> (c, it, n, cap, mdisp);
+    return Chooser::execute<test_type, true>(c, it, n, cap, mdisp);
 }

@@ -14,31 +14,32 @@
  ******************************************************************************/
 
 #include <iostream>
-#include <vector>
 #include <tuple>
+#include <vector>
 
 namespace dysect
 {
 namespace cuckoo_displacement
 {
 
-    template <class Parent>
-    class dis_trivial
+template <class Parent> class dis_trivial
+{
+  private:
+    using key_type     = typename Parent::key_type;
+    using mapped_type  = typename Parent::mapped_type;
+    using value_intern = std::pair<key_type, mapped_type>;
+
+    using hashed_type = typename Parent::hashed_type;
+
+  public:
+    dis_trivial(Parent&, size_t, size_t) {}
+    dis_trivial(Parent&, dis_trivial&&) {}
+
+    inline std::pair<int, value_intern*> insert(value_intern, hashed_type)
     {
-    private:
-        using key_type      = typename Parent::key_type;
-        using mapped_type   = typename Parent::mapped_type;
-        using value_intern  = std::pair<key_type,mapped_type>;
-
-        using hashed_type   = typename Parent::hashed_type;
-
-    public:
-        dis_trivial(Parent&, size_t, size_t) {}
-        dis_trivial(Parent&, dis_trivial&&) {}
-
-        inline std::pair<int, value_intern*> insert(value_intern, hashed_type)
-        {   return std::make_pair(-1, nullptr); }
-    };
+        return std::make_pair(-1, nullptr);
+    }
+};
 
 } // namespace cuckoo_displacement
 } // namespace dysect
