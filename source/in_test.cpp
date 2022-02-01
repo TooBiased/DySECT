@@ -11,16 +11,42 @@
 namespace utm = utils_tm;
 namespace otm = utils_tm::out_tm;
 
-template <class Config> struct test_type
+static constexpr size_t TABLE_BS = 4;
+static constexpr size_t TABLE_TL = 1;
+
+class history_histogram
+{
+  public:
+    history_histogram(size_t s) : steps(s), hist(new size_t[s])
+    {
+        for (size_t i = 0; i < s; ++i) { hist[i] = 0; }
+    }
+
+    void add(size_t i)
+    {
+        auto ind = (i < steps) ? i : steps - 1;
+        ++hist[ind];
+    }
+
+    void clear()
+    {
+        for (size_t i = 0; i < steps; ++i) { hist[i] = 0; }
+    }
+
+    const size_t              steps;
+    std::unique_ptr<size_t[]> hist;
+};
+
+
+template <class Config>
+struct test_type
 {
     using table_type =
         HASHTYPE<size_t, size_t, utm::hash_tm::default_hash, Config>;
 
     void print_hist(table_type& table)
     {
-        std::ofstream out(name, std::ofstream::out);
-
-        auto& hcount = table.hcounter;
+        auto& hcount = table.get_history();
 
         otm::out() << otm::width(7) << "# steps" << otm::width(8) << "nFitted"
                    << std::endl;
@@ -35,8 +61,8 @@ template <class Config> struct test_type
     void print_dist(table_type& table)
     {
         otm::out() << otm::width(5) << "# tab";
-        size_t gHist[table.bs + 1];
-        for (size_t i = 0; i <= table.bs; ++i)
+        size_t gHist[TABLE_BS + 1];
+        for (size_t i = 0; i <= TABLE_BS; ++i)
         {
             gHist[i] = 0;
             otm::out() << otm::width(6) << i;
@@ -45,12 +71,12 @@ template <class Config> struct test_type
         otm::out() << otm::width(8) << "n" << otm::width(8) << "cap"
                    << std::endl;
 
-        for (size_t tl = 0; tl < table.tl; ++tl)
+        for (size_t tl = 0; tl < TABLE_TL; ++tl)
         {
-            size_t lHist[table.bs + 1];
-            for (size_t i = 0; i <= table.bs; ++i) lHist[i] = 0;
+            size_t lHist[TABLE_BS + 1];
+            for (size_t i = 0; i <= TABLE_BS; ++i) lHist[i] = 0;
 
-            auto ltab = table.gettable_type(tl);
+            auto ltab = table.getTable(tl);
 
             for (size_t j = 0; j < ltab.first; ++j)
             {
@@ -60,27 +86,32 @@ template <class Config> struct test_type
 
             size_t n = 0;
             otm::out() << otm::width(5) << tl;
-            for (size_t i = 0; i <= table.bs; ++i)
+            for (size_t i = 0; i <= TABLE_BS; ++i)
             {
                 otm::out() << otm::width(6) << lHist[i];
-                n += lHist[i] * (table.bs - i);
+                n += lHist[i] * (TABLE_BS - i);
                 gHist[i] += lHist[i];
             }
             otm::out() << otm::width(8) << n << otm::width(8)
-                       << ltab.first * table.bs << std::endl;
+                       << ltab.first * TABLE_BS << std::endl;
         }
 
         size_t n = 0;
         otm::out() << otm::width(5) << "#all";
-        for (size_t i = 0; i <= table.bs; ++i)
+        for (size_t i = 0; i <= TABLE_BS; ++i)
         {
             otm::out() << otm::width(6) << gHist[i];
-            n += gHist[i] * (table.bs - i);
+            n += gHist[i] * (TABLE_BS - i);
         }
         otm::out() << otm::width(8) << n << std::endl;
     }
 
-    int operator()(size_t n, size_t pre, size_t cap, size_t steps, double alpha)
+    int operator()(size_t             n,
+                   size_t             pre,
+                   size_t             cap,
+                   size_t             steps,
+                   double             alpha,
+                   const std::string& name)
     {
         constexpr size_t range = (1ull << 63) - 1;
 
@@ -95,7 +126,7 @@ template <class Config> struct test_type
 
         for (size_t i = 0; i < pre; ++i) { table.insert(keys[i], i); }
 
-        table.clearHist();
+        table.clear_history();
 
         for (size_t i = pre; i < pre + n; ++i) { table.insert(keys[i], i); }
 
@@ -128,6 +159,6 @@ int main(int argn, char** argc)
     std::string name = c.str_arg("-out", "temp");
     name             = c.str_arg("-file", name);
 
-    return Chooser::execute<test_type, hist_count>(c, n, pre, cap, steps, alpha,
-                                                   name);
+    return Chooser::execute<test_type, history_histogram>(c, n, pre, cap, steps,
+                                                          alpha, name);
 }

@@ -18,7 +18,8 @@ namespace otm = utils_tm::out_tm;
 #endif
 
 
-template <class Config> struct test_type
+template <class Config>
+struct test_type
 {
     // using table = ProbIndependentBase<HASHTYPE<size_t, size_t,
     // dysect::hash::default_hash, Config> >;
@@ -173,5 +174,6 @@ int main(int argn, char** argc)
         return 0;
     }
 
-    return Chooser::execute<test_type, true>(c, it, n, cap, mdisp);
+    return Chooser::execute<test_type, hist::history_none>(c, it, n, cap,
+                                                           mdisp);
 }

@@ -17,15 +17,16 @@ namespace otm = utils_tm::out_tm;
 
 // TWO PROBLEMS!! cutoff words at the end of the buffer
 //                what happens if read reads only half a buffer
-template <class Config> struct test_type
+template <class Config>
+struct test_type
 {
     using table_type =
         HASHTYPE<size_t, size_t, utm::hash_tm::default_hash, Config>;
     static constexpr size_t bsize = 2 * 1024 * 1024;
     static constexpr size_t hseed = 13358259232739045019ull;
 
-    int operator()(size_t it, size_t cap, double alpha, size_t steps,
-                   std::string inf_name)
+    int operator()(
+        size_t it, size_t cap, double alpha, size_t steps, std::string inf_name)
     {
         otm::out() << otm::width(4) << "# it" << otm::width(8) << "alpha";
         table_type::print_init_header(otm::out());
@@ -148,5 +149,6 @@ int main(int argn, char** argc)
 
     const std::string inf = c.str_arg("-in", "/home/maier/WorkEnv/tobias.org");
 
-    return Chooser::execute<test_type, false>(c, it, cap, alpha, steps, inf);
+    return Chooser::execute<test_type, hist::history_none>(c, it, cap, alpha,
+                                                           steps, inf);
 }

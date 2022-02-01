@@ -21,7 +21,8 @@ namespace otm = utils_tm::out_tm;
 #include <iostream>
 #include <random>
 
-template <class Config> struct test_type
+template <class Config>
+struct test_type
 {
     // using table_type = ProbIndependentBase<HASHTYPE<size_t, size_t,
     // dysect::hash::default_hash, Config> >;
@@ -40,8 +41,8 @@ template <class Config> struct test_type
         for (size_t i = fis; i < fis << 1; ++i) { fikeys[i] = ndis(re); }
     }
 
-    int operator()(size_t it, size_t n, size_t steps, double eps, double epstp,
-                   size_t win)
+    int operator()(
+        size_t it, size_t n, size_t steps, double eps, double epstp, size_t win)
     {
         otm::out() << otm::width(4) << "# it";
         table_type::print_init_header(otm::out());
@@ -196,5 +197,6 @@ int main(int argn, char** argc)
         return 8;
     }
 
-    return Chooser::execute<test_type, false>(c, it, n, steps, eps, epstp, win);
+    return Chooser::execute<test_type, hist::history_none>(c, it, n, steps, eps,
+                                                           epstp, win);
 }

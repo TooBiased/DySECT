@@ -17,7 +17,8 @@ namespace otm = utils_tm::out_tm;
 #include <random>
 
 
-template <class Config> struct Test
+template <class Config>
+struct test_type
 {
     using table_type =
         HASHTYPE<size_t, size_t, utm::hash_tm::default_hash, Config>;
@@ -110,5 +111,6 @@ int main(int argn, char** argc)
         otm::out().set_file(name);
     }
 
-    return Chooser::execute<Test, no_hist_count>(c, it, n, cap, steps, alpha);
+    return Chooser::execute<test_type, hist::history_none>(c, it, n, cap, steps,
+                                                           alpha);
 }

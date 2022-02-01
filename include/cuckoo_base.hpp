@@ -38,7 +38,8 @@ namespace otm = utils_tm::out_tm;
 namespace dysect
 {
 
-template <class T> class cuckoo_traits;
+template <class T>
+class cuckoo_traits;
 /* EXAMPLE IMPLEMENTATION
     {
     public:
@@ -57,38 +58,25 @@ template <class T> class cuckoo_traits;
         using bucket_type    = bucket<key_type, mapped_type, bs>;
     };*/
 
-template <class T> class iterator_incr;
+template <class T>
+class iterator_incr;
 
-class hist_count
+class history_none
 {
   public:
-    hist_count(size_t s) : steps(s), hist(new size_t[s])
-    {
-        for (size_t i = 0; i < s; ++i) { hist[i] = 0; }
-    }
-
-    void add(size_t i)
-    {
-        auto ind = (i < steps) ? i : steps - 1;
-        ++hist[ind];
-    }
-
-    const size_t              steps;
-    std::unique_ptr<size_t[]> hist;
-};
-
-class no_hist_count
-{
-  public:
-    no_hist_count(size_t = 0) {}
+    history_none(size_t = 0) {}
     void                     add(size_t) {}
+    void                     clear() {}
     static constexpr size_t  steps = 0;
     static constexpr size_t* hist  = nullptr;
 };
 
-template <size_t BS = 8, size_t NH = 3, size_t TL = 256,
+template <size_t BS                       = 8,
+          size_t NH                       = 3,
+          size_t TL                       = 256,
           template <class> class DisStrat = cuckoo_displacement::bfs,
-          bool FixErrors = true, class HistCount = no_hist_count>
+          bool FixErrors                  = true,
+          class History                   = history_none>
 struct cuckoo_config
 {
     static constexpr size_t bs         = BS;
@@ -97,24 +85,26 @@ struct cuckoo_config
     static constexpr size_t sbs        = 2;
     static constexpr size_t fix_errors = FixErrors;
 
-    template <class T> using dis_strat_type = DisStrat<T>;
+    template <class T>
+    using dis_strat_type = DisStrat<T>;
 
-    using hist_count_type = HistCount;
+    using history_type = History;
 };
 
 
 
 
 
-template <class SCuckoo> class cuckoo_base
+template <class SCuckoo>
+class cuckoo_base
 {
   private:
     using this_type        = cuckoo_base<SCuckoo>;
     using specialized_type = typename cuckoo_traits<SCuckoo>::specialized_type;
     using dis_strat_type   = typename cuckoo_traits<
         SCuckoo>::config_type::template dis_strat_type<this_type>;
-    using hist_count_type =
-        typename cuckoo_traits<SCuckoo>::config_type::hist_count_type;
+    using history_type =
+        typename cuckoo_traits<SCuckoo>::config_type::history_type;
     using bucket_type = typename cuckoo_traits<SCuckoo>::bucket_type;
     using hasher_type = typename cuckoo_traits<SCuckoo>::hasher_type;
     using hashed_type = typename hasher_type::hashed_type;
@@ -147,8 +137,9 @@ template <class SCuckoo> class cuckoo_base
     using value_intern = std::pair<key_type, mapped_type>;
 
   public:
-    cuckoo_base(double size_constraint = 1.1, size_type dis_steps = 0,
-                size_type seed = 0);
+    cuckoo_base(double    size_constraint = 1.1,
+                size_type dis_steps       = 0,
+                size_type seed            = 0);
     ~cuckoo_base()                  = default;
     cuckoo_base(const cuckoo_base&) = delete;
     cuckoo_base(cuckoo_base&& rhs);
@@ -174,7 +165,7 @@ template <class SCuckoo> class cuckoo_base
     double                     alpha;
     hasher_type                hasher;
     dis_strat_type             displacer;
-    hist_count_type            hcounter;
+    history_type               history;
     static constexpr size_type bs = cuckoo_traits<specialized_type>::bs;
     static constexpr size_type tl = cuckoo_traits<specialized_type>::tl;
     static constexpr size_type nh = cuckoo_traits<specialized_type>::nh;
@@ -221,8 +212,11 @@ template <class SCuckoo> class cuckoo_base
     }
 
 
+    history_type& get_history() { return history; }
+
   private:
-    // Easy iterators **********************************************************
+    // Easy iterators
+    // **********************************************************
     inline iterator make_iterator(value_intern* pos) const
     {
         return iterator(pos, *static_cast<const specialized_type*>(this));
@@ -253,7 +247,7 @@ template <class SCuckoo> class cuckoo_base
 
   public:
     // auxiliary functions for testing *****************************************
-    void        clearHist();
+    void        clear_history();
     void        print_init_data(otm::output_type& out);
     static void print_init_header(otm::output_type& out)
     {
@@ -270,11 +264,12 @@ template <class SCuckoo> class cuckoo_base
 // Constructors and Appointments ***********************************************
 
 template <class SCuckoo>
-cuckoo_base<SCuckoo>::cuckoo_base(double size_constraint, size_type dis_steps,
+cuckoo_base<SCuckoo>::cuckoo_base(double    size_constraint,
+                                  size_type dis_steps,
                                   size_type seed)
     : n(0), capacity(0), grow_thresh(std::numeric_limits<size_type>::max()),
       alpha(size_constraint), displacer(*this, dis_steps, seed),
-      hcounter(dis_steps)
+      history(dis_steps)
 {
 }
 
@@ -359,7 +354,7 @@ cuckoo_base<SCuckoo>::insert(const value_intern& t)
     if (max.first > 0)
     {
         *max.second = t;
-        hcounter.add(0);
+        history.add(0);
         static_cast<specialized_type*>(this)->inc_n();
         return std::make_pair(make_iterator(max.second), true);
     }
@@ -369,7 +364,7 @@ cuckoo_base<SCuckoo>::insert(const value_intern& t)
     std::tie(srch, pos) = displacer.insert(t, hash);
     if (srch >= 0)
     {
-        hcounter.add(srch);
+        history.add(srch);
         static_cast<specialized_type*>(this)->inc_n();
         return std::make_pair(make_iterator(pos), true);
     }
@@ -475,9 +470,10 @@ inline void cuckoo_base<SCuckoo>::print_init_data(otm::output_type& out)
         << otm::width(9) << capacity << std::flush;
 }
 
-template <class SCuckoo> inline void cuckoo_base<SCuckoo>::clearHist()
+template <class SCuckoo>
+inline void cuckoo_base<SCuckoo>::clear_history()
 {
-    for (size_type i = 0; i < hcounter.steps; ++i) hcounter.hist[i] = 0;
+    history.clear();
 }
 
 } // namespace dysect

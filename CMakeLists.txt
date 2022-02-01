@@ -442,3 +442,16 @@ add_dependencies(diss_targets
   crawl_triv_multitable_quadratic
 
   sing_multi_dysect)
+
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY .)
+add_executable(in_cuckoo source/in_test.cpp)
+target_compile_definitions(in_cuckoo PRIVATE -D MULTI_CUCKOO_STANDARD -D ${DYSECT_HASHFCT})
+set_target_properties(in_cuckoo PROPERTIES COMPILE_FLAGS "${FLAGS}")
+target_link_libraries(in_cuckoo ${TEST_DEP_LIBRARIES} dl)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY .)
+add_executable(probe_cuckoo source/probe_test.cpp)
+target_compile_definitions(probe_cuckoo PRIVATE -D MULTI_CUCKOO_STANDARD -D ${DYSECT_HASHFCT})
+set_target_properties(probe_cuckoo PROPERTIES COMPILE_FLAGS "${FLAGS}")
+target_link_libraries(probe_cuckoo ${TEST_DEP_LIBRARIES} dl)

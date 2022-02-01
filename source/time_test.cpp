@@ -42,7 +42,8 @@ static constexpr bool rss_mode = false;
 constexpr size_t      get_rss() { return 0; }
 #endif
 
-template <class Config> struct Test
+template <class Config>
+struct Test
 {
     // using table_type = ProbIndependentBase<HASHTYPE<size_t, size_t,
     // dysect::hash::default_hash, Config> >;
@@ -167,5 +168,6 @@ int main(int argn, char** argc)
         otm::out().set_file(name);
     }
 
-    return Chooser::execute<Test, false>(c, it, n, cap, steps, alpha);
+    return Chooser::execute<Test, hist::history_none>(c, it, n, cap, steps,
+                                                      alpha);
 }

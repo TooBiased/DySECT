@@ -191,6 +191,19 @@
 #endif // NO TABLE IS DEFINED
 */
 
+// Two different variants of logging for Cuckoo Based Tables
+namespace hist
+{
+class history_none
+{
+  public:
+    history_none(size_t = 0) {}
+    void                     add(size_t) {}
+    static constexpr size_t  steps = 0;
+    static constexpr size_t* hist  = nullptr;
+};
+} // namespace hist
+
 
 #include "utils/command_line_parser.hpp"
 namespace utm = utils_tm;
@@ -200,7 +213,7 @@ namespace utm = utils_tm;
 struct Chooser
 {
 #if defined QUICK_MULTI
-    template <template <class> class Functor, bool HistCount, class... Types>
+    template <template <class> class Functor, class HistCount, class... Types>
     inline static typename std::result_of<
         Functor<dysect::cuckoo_config<> >(Types&&...)>::type
     execute(utm::command_line_parser&, Types&&... param)
@@ -209,7 +222,7 @@ struct Chooser
         return f(std::forward<Types>(param)...);
     }
 #elif defined MULTI
-    template <template <class> class Functor, bool HistCount, class... Types>
+    template <template <class> class Functor, class HistCount, class... Types>
     inline static typename std::result_of<
         Functor<dysect::cuckoo_config<> >(Types&&...)>::type
     execute(utm::command_line_parser& c, Types&&... param)
@@ -234,8 +247,11 @@ struct Chooser
         //*/
     }
 
-    template <template <class> class Functor, bool HistCount,
-              template <class> class Displacer, class... Types>
+    template <template <class> class Functor,
+              class HistCount,
+              template <class>
+              class Displacer,
+              class... Types>
     inline static typename std::result_of<
         Functor<dysect::cuckoo_config<> >(Types&&...)>::type
     executeD(utm::command_line_parser& c, Types&&... param)
@@ -273,8 +289,12 @@ struct Chooser
         }
     }
 
-    template <template <class> class Functor, bool     HistCount,
-              template <class> class Displacer, size_t TL, class... Types>
+    template <template <class> class Functor,
+              class HistCount,
+              template <class>
+              class Displacer,
+              size_t TL,
+              class... Types>
     inline static typename std::result_of<
         Functor<dysect::cuckoo_config<> >(Types&&...)>::type
     executeDT(utm::command_line_parser& c, Types&&... param)
@@ -306,8 +326,12 @@ struct Chooser
         }
     }
 
-    template <template <class> class Functor, bool     HistCount,
-              template <class> class Displacer, size_t TL, size_t BS,
+    template <template <class> class Functor,
+              class HistCount,
+              template <class>
+              class Displacer,
+              size_t TL,
+              size_t BS,
               class... Types>
     inline static typename std::result_of<
         Functor<dysect::cuckoo_config<> >(Types&&...)>::type
@@ -334,31 +358,25 @@ struct Chooser
         }
     }
 
-    template <template <class> class Functor, bool     HistCount,
-              template <class> class Displacer, size_t TL, size_t BS, size_t NH,
+    template <template <class> class Functor,
+              class HistCount,
+              template <class>
+              class Displacer,
+              size_t TL,
+              size_t BS,
+              size_t NH,
               class... Types>
     inline static typename std::result_of<
         Functor<dysect::cuckoo_config<> >(Types&&...)>::type
     executeDTBN(utm::command_line_parser&, Types&&... param)
     {
-        if (HistCount)
-        {
-            Functor<dysect::cuckoo_config<BS, NH, TL, Displacer, false,
-                                          dysect::hist_count> >
-                f;
-            return f(std::forward<Types>(param)...);
-        }
-        else
-        {
-            Functor<dysect::cuckoo_config<BS, NH, TL, Displacer, false,
-                                          dysect::no_hist_count> >
-                f;
-            return f(std::forward<Types>(param)...);
-        }
+        Functor<dysect::cuckoo_config<BS, NH, TL, Displacer, false, HistCount> >
+            f;
+        return f(std::forward<Types>(param)...);
     }
 
 #elif defined HOPSCOTCH_CONFIG
-    template <template <class> class Functor, bool, class... Types>
+    template <template <class> class Functor, class, class... Types>
     inline static typename std::result_of<
         Functor<dysect::hopscotch_config<> >(Types&&...)>::type
     execute(utm::command_line_parser& c, Types&&... param)
@@ -399,7 +417,7 @@ struct Chooser
     }
 
 #elif defined TRIV_CONFIG
-    template <template <class> class Functor, bool, class... Types>
+    template <template <class> class Functor, class, class... Types>
     inline static
         typename std::result_of<Functor<dysect::triv_config>(Types&&...)>::type
         execute(utm::command_line_parser&, Types&&... param)
@@ -410,7 +428,7 @@ struct Chooser
 
 #else
 
-    template <template <class> class Functor, bool, class... Types>
+    template <template <class> class Functor, class, class... Types>
     inline static void execute(utm::command_line_parser&, Types&&...)
     {
         std::cout << "some precompiler shit is broken" << std::endl;

@@ -16,13 +16,14 @@ namespace otm = utils_tm::out_tm;
 #include <iostream>
 #include <random>
 
-template <class Config> struct test_type
+template <class Config>
+struct test_type
 {
     using table_type =
         HASHTYPE<size_t, size_t, utm::hash_tm::default_hash, Config>;
 
-    int operator()(size_t it, size_t n, size_t win, size_t cap, size_t steps,
-                   double alpha)
+    int operator()(
+        size_t it, size_t n, size_t win, size_t cap, size_t steps, double alpha)
     {
         otm::out() << otm::width(4) << "# it" << otm::width(8) << "alpha";
         table_type::print_init_header(otm::out());
@@ -155,5 +156,6 @@ int main(int argn, char** argc)
         return 0;
     }
 
-    return Chooser::execute<test_type, false>(c, it, n, win, cap, steps, alpha);
+    return Chooser::execute<test_type, hist::history_none>(c, it, n, win, cap,
+                                                           steps, alpha);
 }
