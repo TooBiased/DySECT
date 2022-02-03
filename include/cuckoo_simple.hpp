@@ -24,9 +24,12 @@
 namespace dysect
 {
 
-template <class K0, class D0, class HF0, class Conf0> class cuckoo_adapter_2lvl;
+template <class K0, class D0, class HF0, class Conf0>
+class cuckoo_adapter_2lvl;
 
-template <class K, class D, class HF = utils_tm::hash_tm::default_hash,
+template <class K,
+          class D,
+          class HF   = utils_tm::hash_tm::default_hash,
           class Conf = cuckoo_config<> >
 class cuckoo_standard
     : public cuckoo_traits<cuckoo_standard<K, D, HF, Conf> >::base_type
@@ -56,8 +59,10 @@ class cuckoo_standard
     using value_intern = std::pair<key_type, mapped_type>;
 
   public:
-    cuckoo_standard(size_type cap = 0, double size_constraint = 1.1,
-                    size_type dis_steps = 256, size_type seed = 0)
+    cuckoo_standard(size_type cap             = 0,
+                    double    size_constraint = 1.1,
+                    size_type dis_steps       = 256,
+                    size_type seed            = 0)
         : base_type(size_constraint, dis_steps, seed),
           beta((size_constraint + 1.) / 2.)
     {
@@ -129,6 +134,15 @@ class cuckoo_standard
         return temp;
     }
 
+    this_type explicit_copy(size_t n, double alpha, size_t x)
+    {
+        auto copy = this_type(n, alpha, x);
+        if (copy.n_buckets != n_buckets)
+            std::cout << "Error: copy has unexpected size" << std::endl;
+        for (size_t i = 0; i < n_buckets; ++i) { copy.table[i] = table[i]; }
+        return copy;
+    }
+
   private:
     // Functions for finding buckets *******************************************
 
@@ -169,8 +183,9 @@ class cuckoo_standard
         finalize_grow(grow_buffer);
     }
 
-    inline void migrate(std::unique_ptr<bucket_type[]>& target, size_type nsize,
-                        std::vector<value_intern>& grow_buffer)
+    inline void migrate(std::unique_ptr<bucket_type[]>& target,
+                        size_type                       nsize,
+                        std::vector<value_intern>&      grow_buffer)
     {
         for (size_type i = 0; i < n_buckets; ++i)
         {
@@ -279,7 +294,9 @@ class iterator_incr<cuckoo_standard<K, D, HF, Conf> >
 // IN PLACE GROWING ************************************************************
 // *****************************************************************************
 
-template <class K, class D, class HF = utils_tm::hash_tm::default_hash,
+template <class K,
+          class D,
+          class HF   = utils_tm::hash_tm::default_hash,
           class Conf = cuckoo_config<> >
 class cuckoo_standard_inplace
     : public cuckoo_traits<cuckoo_standard_inplace<K, D, HF, Conf> >::base_type
@@ -314,8 +331,10 @@ class cuckoo_standard_inplace
     static constexpr size_type min_grow_buckets = 10;
 
   public:
-    cuckoo_standard_inplace(size_type cap = 0, double size_constraint = 1.1,
-                            size_type dis_steps = 256, size_type seed = 0)
+    cuckoo_standard_inplace(size_type cap             = 0,
+                            double    size_constraint = 1.1,
+                            size_type dis_steps       = 256,
+                            size_type seed            = 0)
         : base_type(size_constraint, dis_steps, seed),
           beta((size_constraint + 1.) / 2.)
     {
@@ -520,7 +539,8 @@ class iterator_incr<cuckoo_standard_inplace<K, D, HF, Conf> >
 
 
 
-template <class K, class D, class HF, class Conf> class cuckoo_adapter_2lvl
+template <class K, class D, class HF, class Conf>
+class cuckoo_adapter_2lvl
 {
   private:
     using this_type          = cuckoo_adapter_2lvl<K, D, HF, Conf>;
@@ -543,8 +563,10 @@ template <class K, class D, class HF, class Conf> class cuckoo_adapter_2lvl
     subtable_type tables[tl];
 
   public:
-    cuckoo_adapter_2lvl(size_t cap = 0, double size_constraint = 1.1,
-                        size_t /**/ = 0, size_t /**/ = 0)
+    cuckoo_adapter_2lvl(size_t cap             = 0,
+                        double size_constraint = 1.1,
+                        size_t /**/            = 0,
+                        size_t /**/            = 0)
     {
         for (size_t i = 0; i < tl; ++i)
         {
