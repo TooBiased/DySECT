@@ -302,6 +302,17 @@ struct Chooser
         auto bs = c.int_arg("-bs", dysect::cuckoo_config<>::bs);
         switch (bs)
         {
+#ifdef EXTENDED
+        case 1:
+            return executeDTB<Functor, HistCount, Displacer, TL, 1>(
+                c, std::forward<Types>(param)...);
+        case 2:
+            return executeDTB<Functor, HistCount, Displacer, TL, 2>(
+                c, std::forward<Types>(param)...);
+        case 3:
+            return executeDTB<Functor, HistCount, Displacer, TL, 3>(
+                c, std::forward<Types>(param)...);
+#endif
         case 4:
             return executeDTB<Functor, HistCount, Displacer, TL, 4>(
                 c, std::forward<Types>(param)...);
@@ -311,9 +322,9 @@ struct Chooser
         case 8:
             return executeDTB<Functor, HistCount, Displacer, TL, 8>(
                 c, std::forward<Types>(param)...);
-        case 12:
-            return executeDTB<Functor, HistCount, Displacer, TL, 12>(
-                c, std::forward<Types>(param)...);
+        // case 12:
+        //     return executeDTB<Functor, HistCount, Displacer, TL, 12>(
+        //         c, std::forward<Types>(param)...);
         // case 16:
         //     return executeDTB<Functor, HistCount, Displacer, TL, 16> (c,
         //     std::forward<Types>(param)...);

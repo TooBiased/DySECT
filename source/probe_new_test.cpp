@@ -3,6 +3,7 @@
 #include <iostream>
 #include <random>
 
+#define EXTENDED
 #include "selection.hpp"
 #include "utils/command_line_parser.hpp"
 #include "utils/default_hash.hpp"
