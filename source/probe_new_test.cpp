@@ -31,7 +31,12 @@ struct Test
     using table_type =
         HASHTYPE<size_t, size_t, utm::hash_tm::default_hash, Config>;
 
-    int operator()(size_t it, size_t n, size_t steps, size_t seed)
+    int operator()(size_t it,
+                   size_t n,
+                   size_t steps,
+                   size_t seed,
+                   double lower,
+                   double upper)
     {
         constexpr size_t range = (1ull << 63) - 1;
 
@@ -49,7 +54,7 @@ struct Test
             size_t ii = 0;
 
             auto t0 = std::chrono::high_resolution_clock::now();
-            for (; ii < 0.995 * n; ++ii)
+            for (; ii < upper * n; ++ii)
             {
                 if (!table.insert(keys[ii], ii).second) break;
             }
@@ -70,7 +75,7 @@ struct Test
                        << std::endl;
 
             auto& history = table.get_history();
-            for (size_t j = history.trend.size() * 0.97; j < ii - 1; ++j)
+            for (size_t j = history.trend.size() * lower; j < ii - 1; ++j)
             {
                 otm::out() << j << "  " << n << "  " << history.trend[j]
                            << "  0" << std::endl;
@@ -109,6 +114,8 @@ int main(int argn, char** argc)
     size_t n     = c.int_arg("-n", 2000000);
     size_t steps = c.int_arg("-steps", 512);
     size_t seed  = c.int_arg("-seed", 0xDEADBEEF);
+    double lower = c.double_arg("-lower", .97);
+    double upper = c.double_arg("-upper", .998);
 
     if (c.bool_arg("-out") || c.bool_arg("-file"))
     {
@@ -117,5 +124,6 @@ int main(int argn, char** argc)
         otm::out().set_file(name);
     }
 
-    return Chooser::execute<Test, history_raw>(c, it, n, steps, seed);
+    return Chooser::execute<Test, history_raw>(c, it, n, steps, seed, lower,
+                                               upper);
 }
