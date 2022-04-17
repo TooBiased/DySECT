@@ -16,10 +16,10 @@ namespace otm = utils_tm::out_tm;
 static constexpr bool malloc_mode = true;
 size_t                get_malloc() { return malloc_count_current(); }
 #else
+#include <malloc.h>
 static constexpr bool malloc_mode = false;
-constexpr size_t      get_malloc() { return 0; }
+constexpr size_t      get_malloc() { return mallinfo2().uordblks(); }
 #endif
-
 #ifdef RSS_COUNT
 #include <stdio.h>
 static constexpr bool rss_mode = true;
@@ -41,6 +41,7 @@ size_t                get_rss()
 static constexpr bool rss_mode = false;
 constexpr size_t      get_rss() { return 0; }
 #endif
+
 
 template <class Config>
 struct Test
